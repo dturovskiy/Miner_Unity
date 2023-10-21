@@ -6,10 +6,12 @@ public class HeroController : MonoBehaviour
     public float speed = 5f;
     private bool isWalking = false;
     public bool inCave;
+    Rigidbody2D heroRigidbody;
 
     private void Awake()
     {
         animator = GetComponent<Animator>();
+        heroRigidbody = GetComponent<Rigidbody2D>();
     }
 
     private void OnTriggerExit2D(Collider2D collision)
@@ -29,8 +31,7 @@ public class HeroController : MonoBehaviour
         float moveHorizontal = Input.GetAxis("Horizontal");
 
         // Рух героя
-        Vector3 movement = new Vector3(moveHorizontal, 0, 0) * speed * Time.deltaTime;
-        transform.Translate(movement);
+        heroRigidbody.velocity = new Vector2(moveHorizontal * speed, heroRigidbody.velocity.y);
 
         // Зміна напрямку героя
         if (moveHorizontal > 0)

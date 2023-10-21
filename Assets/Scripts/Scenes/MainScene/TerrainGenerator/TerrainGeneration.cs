@@ -18,8 +18,7 @@ public class TerrainGeneration : MonoBehaviour
     [Header("Noise Settings")]
     public float terrainFreq = 0.05f;
     public float caveFreq = 0.05f;
-    public float seed;
-    public Texture2D caveNoiseTexture;
+    public float seed;                                                                                                                                                                                                                                                                               
 
     [Header("Ore Settings")]
     public OreClass[] ores;
@@ -37,10 +36,10 @@ public class TerrainGeneration : MonoBehaviour
         ores[2].spreadTexture = new Texture2D(WORLD_SIZE, DUNGEON_HEIGHT);
         ores[3].spreadTexture = new Texture2D(WORLD_SIZE, DUNGEON_HEIGHT);
 
-        GenerateNoiseTexture(seed, ores[0].rarity, ores[0].size, ores[0].spreadTexture);
-        GenerateNoiseTexture(seed, ores[1].rarity, ores[1].size, ores[1].spreadTexture);
-        GenerateNoiseTexture(seed, ores[2].rarity, ores[2].size, ores[2].spreadTexture);
-        GenerateNoiseTexture(seed, ores[3].rarity, ores[3].size, ores[3].spreadTexture);
+        GenerateNoiseTexture(seed, ores[0].frequency, ores[0].size, ores[0].spreadTexture);
+        GenerateNoiseTexture(seed, ores[1].frequency, ores[1].size, ores[1].spreadTexture);
+        GenerateNoiseTexture(seed, ores[2].frequency, ores[2].size, ores[2].spreadTexture);
+        GenerateNoiseTexture(seed, ores[3].frequency, ores[3].size, ores[3].spreadTexture);
 
         // Генеруємо терен
         GenerateTerrain();

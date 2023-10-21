@@ -5,10 +5,23 @@ public class HeroController : MonoBehaviour
     private Animator animator;
     public float speed = 5f;
     private bool isWalking = false;
+    public bool inCave;
 
     private void Awake()
     {
         animator = GetComponent<Animator>();
+    }
+
+    private void OnTriggerExit2D(Collider2D collision)
+    {
+        if(collision.CompareTag("Cave"))
+            inCave = false;
+    }
+
+    private void OnTriggerStay2D(Collider2D collision)
+    {
+        if(collision.CompareTag("Cave"))
+            inCave = true;
     }
 
     private void Update()

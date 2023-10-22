@@ -6,6 +6,7 @@ public class HeroController : MonoBehaviour
     public float speed = 5f;
     private bool isWalking = false;
     public bool inCave;
+    public bool isMining;
     Rigidbody2D heroRigidbody;
 
     private void Awake()
@@ -29,6 +30,7 @@ public class HeroController : MonoBehaviour
     private void Update()
     {
         float moveHorizontal = Input.GetAxis("Horizontal");
+        isMining = Input.GetKey(KeyCode.Space);
 
         // Рух героя
         heroRigidbody.velocity = new Vector2(moveHorizontal * speed, heroRigidbody.velocity.y);
@@ -53,6 +55,14 @@ public class HeroController : MonoBehaviour
         {
             isWalking = false;
             animator.SetBool("IsWalking", false);
+        }
+        if (isMining)
+        {
+            animator.SetBool("IsMining", true);
+        }
+        if (!isMining)
+        {
+            animator.SetBool("IsMining", false);
         }
     }
 }

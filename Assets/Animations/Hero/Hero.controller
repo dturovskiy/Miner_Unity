@@ -112,12 +112,6 @@ AnimatorController:
   m_Name: Hero
   serializedVersion: 5
   m_AnimatorParameters:
-  - m_Name: Horizontal
-    m_Type: 1
-    m_DefaultFloat: 0
-    m_DefaultInt: 0
-    m_DefaultBool: 0
-    m_Controller: {fileID: 0}
   - m_Name: IsWalking
     m_Type: 4
     m_DefaultFloat: 0
@@ -216,7 +210,7 @@ AnimatorStateTransition:
   m_Mute: 0
   m_IsExit: 0
   serializedVersion: 3
-  m_TransitionDuration: 0.019230664
+  m_TransitionDuration: 0.009160429
   m_TransitionOffset: 0
   m_ExitTime: 0.9704141
   m_HasExitTime: 0
@@ -241,7 +235,7 @@ AnimatorStateTransition:
   m_Mute: 0
   m_IsExit: 0
   serializedVersion: 3
-  m_TransitionDuration: 0.03534031
+  m_TransitionDuration: 0.026441038
   m_TransitionOffset: 0
   m_ExitTime: 0.95842314
   m_HasExitTime: 0
@@ -257,11 +251,11 @@ AnimatorStateTransition:
   m_PrefabAsset: {fileID: 0}
   m_Name: 
   m_Conditions:
-  - m_ConditionMode: 1
-    m_ConditionEvent: IsWalking
-    m_EventTreshold: 0
   - m_ConditionMode: 2
     m_ConditionEvent: IsMining
+    m_EventTreshold: 0
+  - m_ConditionMode: 1
+    m_ConditionEvent: IsWalking
     m_EventTreshold: 0
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 2684760071926388974}
@@ -269,7 +263,7 @@ AnimatorStateTransition:
   m_Mute: 0
   m_IsExit: 0
   serializedVersion: 3
-  m_TransitionDuration: 0.04712826
+  m_TransitionDuration: 0.028861284
   m_TransitionOffset: 0
   m_ExitTime: 0.9274949
   m_HasExitTime: 0

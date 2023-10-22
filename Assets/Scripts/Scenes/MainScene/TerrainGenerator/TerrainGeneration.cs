@@ -14,17 +14,19 @@ public class TerrainGeneration : MonoBehaviour
     public const int TOTAL_HEIGHT = 255;
     public const float STONE_PROBABILITY = 0.07f;
     private const int MAX_X_OFFSET = 22;
+    bool isBackground = false;
 
     [Header("Noise Settings")]
     public float terrainFreq = 0.05f;
     public float caveFreq = 0.05f;
-    public float seed;                                                                                                                                                                                                                                                                               
+    public float seed;
 
     [Header("Ore Settings")]
     public OreClass[] ores;
 
     // Список об'єктів для нижньої частини терену
     [SerializeField] private List<GameObject> lowerTerrainObjects = new List<GameObject>();
+    private List<GameObject> worlTileObjects = new List<GameObject>();
 
     // Метод, який викликається при запуску гри
     private void Start()
@@ -61,7 +63,17 @@ public class TerrainGeneration : MonoBehaviour
                     continue;
                 }
 
-                GameObject newTile = PlaceTile(tileSprite, x, y);
+
+                if (tileSprite == tileAtlas.tunnel.tileSprite)
+                {
+                    isBackground = true;
+                }
+                if (tileSprite != tileAtlas.tunnel.tileSprite)
+                {
+                    isBackground = false;
+                }
+                GameObject newTile = PlaceTile(tileSprite, x, y, isBackground); //todo
+                worlTileObjects.Add(newTile);
 
                 if (y < DUNGEON_HEIGHT)
                 {
@@ -167,11 +179,19 @@ public class TerrainGeneration : MonoBehaviour
     }
 
     // Метод для розміщення плитки на сцені
-    public GameObject PlaceTile(Sprite tileSprite, float x, float y)
+    public GameObject PlaceTile(Sprite tileSprite, float x, float y, bool backgroundElement)
     {
         GameObject newTile = new GameObject();
         newTile.transform.parent = transform;
         newTile.AddComponent<SpriteRenderer>();
+
+        if (!backgroundElement)
+        {
+            newTile.AddComponent<BoxCollider2D>();
+            newTile.GetComponent<BoxCollider2D>().size = Vector2.one;
+            newTile.tag = "Ground";
+        }
+
         newTile.GetComponent<SpriteRenderer>().sprite = tileSprite;
         newTile.name = tileSprite.name;
         newTile.transform.position = new Vector2(x + 0.5f, y + 0.5f);

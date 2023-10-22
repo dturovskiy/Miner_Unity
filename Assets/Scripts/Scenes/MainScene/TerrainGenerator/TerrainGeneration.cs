@@ -26,6 +26,7 @@ public class TerrainGeneration : MonoBehaviour
 
     // Список об'єктів для нижньої частини терену
     [SerializeField] private List<GameObject> lowerTerrainObjects = new List<GameObject>();
+
     private List<GameObject> worlTileObjects = new List<GameObject>();
 
     // Метод, який викликається при запуску гри

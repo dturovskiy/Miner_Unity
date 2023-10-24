@@ -12,7 +12,7 @@ public class TerrainGeneration : MonoBehaviour
     // Налаштування генерації терену
     [Header("Generation Settings")]
     public const int WORLD_SIZE = 100; // Розмір світу
-    public const int DUNGEON_HEIGHT = 250; // Додавання до висоти
+    public const int DUNGEON_HEIGHT = 250; 
     public const int TOTAL_HEIGHT = 255;
     public const float STONE_PROBABILITY = 0.07f;
     private const int MAX_X_OFFSET = 22;
@@ -114,10 +114,15 @@ public class TerrainGeneration : MonoBehaviour
         }
     }
 
+    private bool IsTerrainEdge(int x, int y)
+    {
+        return (x == 0 || x == WORLD_SIZE - 1 || (x <= 19 && y == DUNGEON_HEIGHT + 4));
+    }
+
     private Sprite DetermineTileType(int x, int y)
     {
         //Генерація меж терену
-        if ((x == 0 || x == WORLD_SIZE - 1 || y == 0) && y < DUNGEON_HEIGHT)
+        if (IsTerrainEdge(x, y))
         {
             return tileAtlas.stone.tileSprite;
         }
@@ -140,13 +145,13 @@ public class TerrainGeneration : MonoBehaviour
         }
 
         //Генерація найвищої межі терену
-        if (y >= DUNGEON_HEIGHT && y < TOTAL_HEIGHT)
-        {
-            if (x == 0 || (x <= 19 && y == DUNGEON_HEIGHT + 4))
-            {
-                return tileAtlas.stone.tileSprite;
-            }
-        }
+        //if (y >= DUNGEON_HEIGHT && y < TOTAL_HEIGHT)
+        //{
+        //    if (x == 0 || (x <= 19 && y == DUNGEON_HEIGHT + 4))
+        //    {
+        //        return tileAtlas.stone.tileSprite;
+        //    }
+        //}
 
         if (y < TOTAL_HEIGHT && x < WORLD_SIZE)
         {

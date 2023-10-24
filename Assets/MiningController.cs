@@ -45,16 +45,6 @@ public class MiningController : MonoBehaviour
                 // Дебаг вивід для відстеження знищення плитки
                 Debug.Log("Destroyed a Ground tile!");
             }
-            else
-            {
-                // Дебаг вивід для відстеження інших об'єктів
-                Debug.Log("Hit an object with tag: " + tile.tag);
-            }
-        }
-        else
-        {
-            // Дебаг вивід, якщо зіткнення не відбулось
-            Debug.Log("No collision detected.");
         }
     }
 }

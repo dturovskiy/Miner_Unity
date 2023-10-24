@@ -3,6 +3,8 @@ using UnityEngine;
 
 public class TerrainGeneration : MonoBehaviour
 {
+    GameObject newTile;
+
     // Змінні для спрайтів плиток (трава, грязь, камінь)
     [Header("Tile Atlas")]
     public TileAtlas tileAtlas;
@@ -52,9 +54,9 @@ public class TerrainGeneration : MonoBehaviour
     // Метод для генерації терену
     public void GenerateTerrain()
     {
-        for (int x = 0; x < WORLD_SIZE; x++)
+        for (int y = 0; y < TOTAL_HEIGHT; y++)
         {
-            for (int y = 0; y < TOTAL_HEIGHT; y++)
+            for (int x = 0; x < WORLD_SIZE; x++)
             {
                 Sprite tileSprite = DetermineTileType(x, y);
 
@@ -73,7 +75,7 @@ public class TerrainGeneration : MonoBehaviour
                 {
                     isBackground = false;
                 }
-                GameObject newTile = PlaceTile(tileSprite, x, y, isBackground); //todo
+                PlaceTile(tileSprite, x, y, isBackground); //todo
                 worlTileObjects.Add(newTile);
 
                 if (y < DUNGEON_HEIGHT)
@@ -182,7 +184,7 @@ public class TerrainGeneration : MonoBehaviour
     // Метод для розміщення плитки на сцені
     public GameObject PlaceTile(Sprite tileSprite, float x, float y, bool backgroundElement)
     {
-        GameObject newTile = new GameObject();
+        newTile = new GameObject();
         newTile.transform.parent = transform;
         newTile.AddComponent<SpriteRenderer>();
 

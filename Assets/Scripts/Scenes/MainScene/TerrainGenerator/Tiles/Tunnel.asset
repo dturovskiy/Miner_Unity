@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: Tunnel
   m_EditorClassIdentifier: 
   tileName: Tunnel
-  tileSprite: {fileID: 240961470, guid: 6f0a1765be5afe146a4aa63920229acf, type: 3}
+  tileSprite: {fileID: -1105685279, guid: 2c24cf31f1193454aabf04b887c12308, type: 3}
   inBackground: 1

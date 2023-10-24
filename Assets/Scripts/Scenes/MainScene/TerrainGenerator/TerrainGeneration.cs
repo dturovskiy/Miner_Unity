@@ -1,19 +1,16 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 public class TerrainGeneration : MonoBehaviour
 {
-    GameObject newTile;
-
     // Змінні для спрайтів плиток (трава, грязь, камінь)
     [Header("Tile Atlas")]
     public TileAtlas tileAtlas;
 
     // Налаштування генерації терену
     [Header("Generation Settings")]
-    public const int WORLD_SIZE = 100; // Розмір світу
-    public const int DUNGEON_HEIGHT = 250; 
-    public const int TOTAL_HEIGHT = 255;
+    public const int WORLD_SIZE = 99; // Розмір світу
+    public const int DUNGEON_HEIGHT = 250;
+    public const int TOTAL_HEIGHT = 254;
     public const float STONE_PROBABILITY = 0.07f;
     private const int MAX_X_OFFSET = 22;
     bool isBackground = false;
@@ -26,62 +23,63 @@ public class TerrainGeneration : MonoBehaviour
     [Header("Ore Settings")]
     public OreClass[] ores;
 
-    // Список об'єктів для нижньої частини терену
-    [SerializeField] private List<GameObject> lowerTerrainObjects = new List<GameObject>();
-
-    private List<GameObject> worlTileObjects = new List<GameObject>();
-
     // Метод, який викликається при запуску гри
     private void Start()
     {
+        // Генеруємо випадковий seed для шуму
         seed = Random.Range(-10000, 10000);
 
-        ores[0].spreadTexture = new Texture2D(WORLD_SIZE, DUNGEON_HEIGHT);
-        ores[1].spreadTexture = new Texture2D(WORLD_SIZE, DUNGEON_HEIGHT);
-        ores[2].spreadTexture = new Texture2D(WORLD_SIZE, DUNGEON_HEIGHT);
-        ores[3].spreadTexture = new Texture2D(WORLD_SIZE, DUNGEON_HEIGHT);
-
-        GenerateNoiseTexture(seed, ores[0].frequency, ores[0].size, ores[0].spreadTexture);
-        GenerateNoiseTexture(seed, ores[1].frequency, ores[1].size, ores[1].spreadTexture);
-        GenerateNoiseTexture(seed, ores[2].frequency, ores[2].size, ores[2].spreadTexture);
-        GenerateNoiseTexture(seed, ores[3].frequency, ores[3].size, ores[3].spreadTexture);
+        // Ініціалізуємо текстури розповсюдження руд
+        InitializeOreSpreadTextures();
 
         // Генеруємо терен
         GenerateTerrain();
-        //HideLowerTerrain();
+        //HideLowerTerrain(); // Якщо ця функція потрібна, розкоментуйте
+    }
+
+    private void InitializeOreSpreadTextures()
+    {
+        // Ініціалізуємо текстури розповсюдження руд для кожного типу руди
+        foreach (OreClass ore in ores)
+        {
+            ore.spreadTexture = new Texture2D(WORLD_SIZE, DUNGEON_HEIGHT);
+            GenerateNoiseTexture(seed, ore.frequency, ore.size, ore.spreadTexture);
+        }
     }
 
     // Метод для генерації терену
     public void GenerateTerrain()
     {
-        for (int y = 0; y < TOTAL_HEIGHT; y++)
+        for (int y = 0; y <= TOTAL_HEIGHT; y++)
         {
-            for (int x = 0; x < WORLD_SIZE; x++)
+            for (int x = 0; x <= WORLD_SIZE; x++)
             {
+                // Визначаємо тип плитки для поточних координат
                 Sprite tileSprite = DetermineTileType(x, y);
 
+                // Перевіряємо умови, щоб припинити генерацію терену
+                if (y > DUNGEON_HEIGHT + 1 && x > MAX_X_OFFSET - 1)
+                    break;
+
+                if (y >= DUNGEON_HEIGHT && x > MAX_X_OFFSET)
+                    break;
+
                 if (tileSprite == null)
-                {
-                    // Якщо плитка пуста, переходимо до наступної ітерації циклу y.
-                    continue;
-                }
+                    break;
 
-
+                // Встановлюємо чи плитка належить до фону
                 if (tileSprite == tileAtlas.tunnel.tileSprite)
                 {
                     isBackground = true;
                 }
+
                 if (tileSprite != tileAtlas.tunnel.tileSprite)
                 {
                     isBackground = false;
                 }
-                PlaceTile(tileSprite, x, y, isBackground); //todo
-                worlTileObjects.Add(newTile);
 
-                if (y < DUNGEON_HEIGHT)
-                {
-                    lowerTerrainObjects.Add(newTile);
-                }
+                // Розміщуємо плитку на сцені
+                PlaceTile(tileSprite, x, y, isBackground);
             }
         }
     }
@@ -92,11 +90,12 @@ public class TerrainGeneration : MonoBehaviour
         {
             for (int y = 0; y < noise.height; y++)
             {
+                // Генеруємо шум за допомогою Perlin Noise
                 float v = Mathf.PerlinNoise((x + seed) * frequency, (y + seed) * frequency);
 
+                // Встановлюємо колір пікселя на основі шуму
                 if (v > limit)
                     noise.SetPixel(x, y, Color.white);
-
                 else
                     noise.SetPixel(x, y, Color.black);
             }
@@ -105,91 +104,67 @@ public class TerrainGeneration : MonoBehaviour
         noise.Apply();
     }
 
-    // Метод для приховування (вимикання) нижньої частини терену
-    public void HideLowerTerrain()
-    {
-        foreach (var obj in lowerTerrainObjects)
-        {
-            obj.SetActive(false); // Приховуємо нижні блоки
-        }
-    }
-
+    // Функція, що перевіряє, чи `(x, y)` на межі терену
     private bool IsTerrainEdge(int x, int y)
     {
-        return (x == 0 || x == WORLD_SIZE - 1 || (x <= 19 && y == DUNGEON_HEIGHT + 4));
+        return (x == 0 || x == WORLD_SIZE || y == 0) || (x <= 19 && y == TOTAL_HEIGHT);
+    }
+
+    // Функція, що перевіряє, чи `(x, y)` на рівні тунелю
+    private bool IsTunnel(int x, int y)
+    {
+        return y == DUNGEON_HEIGHT && x >= 10 && x <= MAX_X_OFFSET;
     }
 
     private Sprite DetermineTileType(int x, int y)
     {
-        //Генерація меж терену
+        // Генерація меж терену
         if (IsTerrainEdge(x, y))
         {
             return tileAtlas.stone.tileSprite;
         }
 
-        //Генерація тунелю
-        if (y == DUNGEON_HEIGHT)
+        // Генерація тунелю
+        if (IsTunnel(x, y))
         {
-            if (x == 0)
-            {
-                return tileAtlas.stone.tileSprite;
-            }
-            if (x >= 10 && x <= MAX_X_OFFSET)
-            {
-                return tileAtlas.tunnel.tileSprite;
-            }
-            if (x > MAX_X_OFFSET)
-            {
-                return null;
-            }
+            return tileAtlas.tunnel.tileSprite;
         }
-
-        //Генерація найвищої межі терену
-        //if (y >= DUNGEON_HEIGHT && y < TOTAL_HEIGHT)
-        //{
-        //    if (x == 0 || (x <= 19 && y == DUNGEON_HEIGHT + 4))
-        //    {
-        //        return tileAtlas.stone.tileSprite;
-        //    }
-        //}
 
         if (y < TOTAL_HEIGHT && x < WORLD_SIZE)
         {
-            if (y > DUNGEON_HEIGHT + 1 && x > MAX_X_OFFSET - 1) return null;
-            if (y > DUNGEON_HEIGHT && x > MAX_X_OFFSET) return null;
-
-            if (ores[0].spreadTexture.GetPixel(x, y).r > 0.5f && y < ores[0].maxSpawnHeight && y > ores[0].minSpawnHeight)
+            for (int i = 0; i < ores.Length; i++)
             {
-                return tileAtlas.coal.tileSprite;
-            }
-            if (ores[1].spreadTexture.GetPixel(x, y).r > 0.5f && y < ores[1].maxSpawnHeight && y > ores[1].minSpawnHeight)
-            {
-                return tileAtlas.iron.tileSprite;
-            }
-            if (ores[2].spreadTexture.GetPixel(x, y).r > 0.5f && y < ores[2].maxSpawnHeight && y > ores[2].minSpawnHeight)
-            {
-                return tileAtlas.gold.tileSprite;
-            }
-            if (ores[3].spreadTexture.GetPixel(x, y).r > 0.5f && y < ores[3].maxSpawnHeight && y > ores[3].minSpawnHeight)
-            {
-                return tileAtlas.diamond.tileSprite;
+                if (ores[i].spreadTexture.GetPixel(x, y).r > 0.5f && y < ores[i].maxSpawnHeight && y > ores[i].minSpawnHeight)
+                {
+                    return GetOreSprite(i);
+                }
             }
 
             // Рандомна генерація каменів на інших частинах терену
-            if (Random.Range(0f, 1f) < STONE_PROBABILITY)
-            {
-                if (y == DUNGEON_HEIGHT + 1) return tileAtlas.dirt.tileSprite;
+            if (y != DUNGEON_HEIGHT + 1 && Random.Range(0.0f, 1.0f) < STONE_PROBABILITY)
                 return tileAtlas.stone.tileSprite;
-            }
         }
 
         return tileAtlas.dirt.tileSprite;
     }
 
+    private Sprite GetOreSprite(int oreIndex)
+    {
+        // Визначаємо спрайт для типу руди за індексом
+        return oreIndex switch
+        {
+            0 => tileAtlas.coal.tileSprite,
+            1 => tileAtlas.iron.tileSprite,
+            2 => tileAtlas.gold.tileSprite,
+            3 => tileAtlas.diamond.tileSprite,
+            _ => null, // Обробляємо невідомий індекс руди
+        };
+    }
+
     // Метод для розміщення плитки на сцені
     public GameObject PlaceTile(Sprite tileSprite, float x, float y, bool backgroundElement)
     {
-        newTile = new GameObject();
+        GameObject newTile = new GameObject();
         newTile.transform.parent = transform;
         newTile.AddComponent<SpriteRenderer>();
 

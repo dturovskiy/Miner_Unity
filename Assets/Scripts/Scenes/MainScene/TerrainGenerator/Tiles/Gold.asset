@@ -13,4 +13,5 @@ MonoBehaviour:
   m_Name: Gold
   m_EditorClassIdentifier: 
   tileName: Gold
-  tileSprite: {fileID: -137330311, guid: 6f0a1765be5afe146a4aa63920229acf, type: 3}
+  tileSprite: {fileID: -1645555299, guid: 2c24cf31f1193454aabf04b887c12308, type: 3}
+  inBackground: 0

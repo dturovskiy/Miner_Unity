@@ -5,19 +5,35 @@ public class HeroController : MonoBehaviour
     private Animator animator;
     public float speed = 5f;
     private bool isWalking = false;
+    public bool inCave;
+    public bool isMining;
+    Rigidbody2D heroRigidbody;
 
     private void Awake()
     {
         animator = GetComponent<Animator>();
+        heroRigidbody = GetComponent<Rigidbody2D>();
+    }
+
+    private void OnTriggerExit2D(Collider2D collision)
+    {
+        if(collision.CompareTag("Cave"))
+            inCave = false;
+    }
+
+    private void OnTriggerStay2D(Collider2D collision)
+    {
+        if(collision.CompareTag("Cave"))
+            inCave = true;
     }
 
     private void Update()
     {
         float moveHorizontal = Input.GetAxis("Horizontal");
+        isMining = Input.GetKey(KeyCode.Space);
 
         // Рух героя
-        Vector3 movement = new Vector3(moveHorizontal, 0, 0) * speed * Time.deltaTime;
-        transform.Translate(movement);
+        heroRigidbody.velocity = new Vector2(moveHorizontal * speed, heroRigidbody.velocity.y);
 
         // Зміна напрямку героя
         if (moveHorizontal > 0)
@@ -39,6 +55,14 @@ public class HeroController : MonoBehaviour
         {
             isWalking = false;
             animator.SetBool("IsWalking", false);
+        }
+        if (isMining)
+        {
+            animator.SetBool("IsMining", true);
+        }
+        if (!isMining)
+        {
+            animator.SetBool("IsMining", false);
         }
     }
 }

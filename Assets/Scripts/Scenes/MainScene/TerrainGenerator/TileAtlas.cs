@@ -16,4 +16,16 @@ public class TileAtlas : ScriptableObject
     public TileClass iron;
     public TileClass gold;
     public TileClass diamond;
+    public TileClass silver;
+    public TileClass platinum;
+    public TileClass uranus;
+    public TileClass lazurite;
+    public TileClass topaz;
+    public TileClass emerald;
+    public TileClass nephritis;
+    public TileClass ruby;
+    public TileClass amethyst;
+    public TileClass opal;
+    public TileClass map;
+    public TileClass artifact;
 }

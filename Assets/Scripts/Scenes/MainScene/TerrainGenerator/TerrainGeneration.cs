@@ -157,6 +157,18 @@ public class TerrainGeneration : MonoBehaviour
             1 => tileAtlas.iron.tileSprite,
             2 => tileAtlas.gold.tileSprite,
             3 => tileAtlas.diamond.tileSprite,
+            4 => tileAtlas.uranus.tileSprite,
+            5 => tileAtlas.topaz.tileSprite,
+            6 => tileAtlas.silver.tileSprite,
+            7 => tileAtlas.ruby.tileSprite,
+            8 => tileAtlas.platinum.tileSprite,
+            9 => tileAtlas.opal.tileSprite,
+            10 => tileAtlas.nephritis.tileSprite,
+            11 => tileAtlas.map.tileSprite,
+            12 => tileAtlas.lazurite.tileSprite,
+            13 => tileAtlas.emerald.tileSprite,
+            14 => tileAtlas.artifact.tileSprite,
+            15 => tileAtlas.amethyst.tileSprite,
             _ => null, // Обробляємо невідомий індекс руди
         };
     }

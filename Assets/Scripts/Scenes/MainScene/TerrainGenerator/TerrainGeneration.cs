@@ -176,7 +176,7 @@ public class TerrainGeneration : MonoBehaviour
     // Метод для розміщення плитки на сцені
     public GameObject PlaceTile(Sprite tileSprite, float x, float y, bool backgroundElement)
     {
-        GameObject newTile = new GameObject();
+        GameObject newTile = new();
         newTile.transform.parent = transform;
         newTile.AddComponent<SpriteRenderer>();
 

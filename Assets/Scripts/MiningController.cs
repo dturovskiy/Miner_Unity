@@ -2,30 +2,21 @@ using UnityEngine;
 
 public class MiningController : MonoBehaviour
 {
-    public float raycastDistance = 1f;
+    public float raycastDistance = 0.5f;
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            if (Input.GetKey(KeyCode.DownArrow))
-                BreakTiles(Vector2.down);
-        }
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            if (Input.GetKey(KeyCode.UpArrow))
-                BreakTiles(Vector2.up);
-        }
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            if (Input.GetKey(KeyCode.LeftArrow))
-                BreakTiles(Vector2.left);
-        }
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            if (Input.GetKey(KeyCode.RightArrow))
-                BreakTiles(Vector2.right);
-        }
+        if (Input.GetKeyDown(KeyCode.DownArrow))
+            BreakTiles(Vector2.down);
+
+        if (Input.GetKeyDown(KeyCode.UpArrow))
+            BreakTiles(Vector2.up);
+
+        if (Input.GetKeyDown(KeyCode.LeftArrow))
+            BreakTiles(Vector2.left);
+
+        if (Input.GetKeyDown(KeyCode.RightArrow))
+            BreakTiles(Vector2.right);
     }
 
     private void BreakTiles(Vector2 direction)
@@ -38,11 +29,11 @@ public class MiningController : MonoBehaviour
         if (hit.collider != null)
         {
             GameObject tile = hit.collider.gameObject;
-            if (tile.CompareTag("Ground"))
+            if (!tile.CompareTag("Player"))
             {
                 Destroy(tile);
 
-                // Дебаг вивід для відстеження знищення плитки
+                //Дебаг вивід для відстеження знищення плитки
                 Debug.Log("Destroyed a Ground tile!");
             }
         }

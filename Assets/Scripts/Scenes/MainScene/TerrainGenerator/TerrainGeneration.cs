@@ -185,10 +185,17 @@ public class TerrainGeneration : MonoBehaviour
             newTile.AddComponent<BoxCollider2D>();
             newTile.GetComponent<BoxCollider2D>().size = Vector2.one;
             newTile.tag = "Ground";
+            
         }
 
         newTile.GetComponent<SpriteRenderer>().sprite = tileSprite;
         newTile.name = tileSprite.name;
+
+        if (newTile.name == "Stone")
+        {
+            newTile.tag = "Stone";
+        }
+
         newTile.transform.position = new Vector2(x + 0.5f, y + 0.5f);
         return newTile;
     }

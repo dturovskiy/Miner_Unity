@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Cave
   - Ground
+  - Stone
   layers:
   - Default
   - TransparentFX

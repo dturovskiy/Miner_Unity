@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class TerrainGeneration : MonoBehaviour
@@ -23,6 +24,8 @@ public class TerrainGeneration : MonoBehaviour
     [Header("Ore Settings")]
     public OreClass[] ores;
 
+    [SerializeField]private List<GameObject> lowerTiles = new();
+
     // ћетод, €кий викликаЇтьс€ при запуску гри
     private void Start()
     {
@@ -34,7 +37,15 @@ public class TerrainGeneration : MonoBehaviour
 
         // √енеруЇмо терен
         GenerateTerrain();
-        //HideLowerTerrain(); // якщо ц€ функц≥€ потр≥бна, розкоментуйте
+        HideLowerTerrain(); // якщо ц€ функц≥€ потр≥бна, розкоментуйте
+    }
+
+    private void HideLowerTerrain()
+    {
+        foreach (GameObject lowerTile in lowerTiles)
+        {
+            lowerTile.SetActive(false);
+        }
     }
 
     private void InitializeOreSpreadTextures()
@@ -185,7 +196,7 @@ public class TerrainGeneration : MonoBehaviour
             newTile.AddComponent<BoxCollider2D>();
             newTile.GetComponent<BoxCollider2D>().size = Vector2.one;
             newTile.tag = "Ground";
-            
+
         }
 
         newTile.GetComponent<SpriteRenderer>().sprite = tileSprite;
@@ -196,7 +207,18 @@ public class TerrainGeneration : MonoBehaviour
             newTile.tag = "Stone";
         }
 
+
         newTile.transform.position = new Vector2(x + 0.5f, y + 0.5f);
+
+        if (newTile.transform.position.y < DUNGEON_HEIGHT)
+        {
+            lowerTiles.Add(newTile);
+        }
         return newTile;
+    }
+
+    public List<GameObject> GetTiles()
+    {
+        return lowerTiles;
     }
 }

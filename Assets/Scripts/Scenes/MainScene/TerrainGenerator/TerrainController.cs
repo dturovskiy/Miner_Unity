@@ -5,38 +5,38 @@ public class TerrainController : MonoBehaviour
 {
     [SerializeField] private GameObject hero;
     [SerializeField] float activationDistance = 1.0f;
-    [SerializeField] int previousTileY;
+    [SerializeField] float sideActivationDistance = 3.0f;
 
     public TerrainGeneration terrainGeneration;
 
+    private List<GameObject> tiles; // —писок плиток
 
+    private void Start()
+    {
+        tiles = terrainGeneration.GetTiles(); // ќтримуЇмо список плиток з TerrainGeneration
+    }
 
     private void Update()
     {
-        List<GameObject> tiles = terrainGeneration.GetTiles();
-
         Vector2 heroPosition = hero.transform.position;
         int currentTileX = Mathf.FloorToInt(heroPosition.x);
         int currentTileY = Mathf.FloorToInt(heroPosition.y);
 
-        ActivateTilesInRow(tiles, currentTileX, currentTileY);
+        ActivateTilesInRow(currentTileX, currentTileY, activationDistance);
+        ActivateTilesInRow(currentTileX, currentTileY, sideActivationDistance);
     }
 
-    public void ActivateTilesInRow(List<GameObject> tiles, int startX, int y)
+    public void ActivateTilesInRow(int x, int y, float distance)
     {
-        for (int x = startX - 3; x <= startX + 3; x++)
+        foreach (GameObject tile in tiles)
         {
-            foreach (GameObject tile in tiles)
+            if (tile != null)
             {
-                if (tile != null)
+                Vector2 tilePosition = tile.transform.position;
+                float tileDistance = Mathf.Abs(tilePosition.x - x); // ¬изначаЇмо в≥дстань до плитки
+                if (tileDistance <= distance && Mathf.Abs(tilePosition.y - y) <= 1) // ѕерев≥рка на в≥дстань ≥ позиц≥ю за Y
                 {
-                    Vector2 tilePosition = tile.transform.position;
-                    int tileX = Mathf.FloorToInt(tilePosition.x);
-
-                    if (tileX == x && Mathf.FloorToInt(tilePosition.y) == y - 1)
-                    {
-                        tile.SetActive(true);
-                    }
+                    tile.SetActive(true);
                 }
             }
         }

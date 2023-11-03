@@ -78,19 +78,8 @@ public class TerrainGeneration : MonoBehaviour
                 if (tileSprite == null)
                     break;
 
-                // Встановлюємо чи плитка належить до фону
-                if (tileSprite == tileAtlas.tunnel.tileSprite)
-                {
-                    isBackground = true;
-                }
-
-                if (tileSprite != tileAtlas.tunnel.tileSprite)
-                {
-                    isBackground = false;
-                }
-
                 // Розміщуємо плитку на сцені
-                PlaceTile(tileSprite, x, y, isBackground);
+                PlaceTile(tileSprite, x, y);
             }
         }
     }
@@ -185,13 +174,13 @@ public class TerrainGeneration : MonoBehaviour
     }
 
     // Метод для розміщення плитки на сцені
-    public GameObject PlaceTile(Sprite tileSprite, float x, float y, bool backgroundElement)
+    public GameObject PlaceTile(Sprite tileSprite, float x, float y)
     {
         GameObject newTile = new();
         newTile.transform.parent = transform;
         newTile.AddComponent<SpriteRenderer>();
-
-        if (!backgroundElement)
+        
+        if (tileSprite.name != "Tunnel")
         {
             newTile.AddComponent<BoxCollider2D>();
             newTile.GetComponent<BoxCollider2D>().size = Vector2.one;
@@ -205,6 +194,7 @@ public class TerrainGeneration : MonoBehaviour
         if (newTile.name == "Stone")
         {
             newTile.tag = "Stone";
+            newTile.AddComponent<Rigidbody2D>().isKinematic = true;
         }
 
 

@@ -5,7 +5,6 @@ public class MiningController : MonoBehaviour
 {
     public float raycastDistance = 0.9f;
     private Animator animator;
-    public bool isMining;
 
     private void Awake()
     {
@@ -32,15 +31,6 @@ public class MiningController : MonoBehaviour
         {
             BreakTiles(Vector2.right);
         }
-
-        if (isMining)
-        {
-            animator.SetBool("IsMining", true);
-        }
-        if (!isMining)
-        {
-            animator.SetBool("IsMining", false);
-        }
     }
 
     private void BreakTiles(Vector2 direction)
@@ -50,7 +40,10 @@ public class MiningController : MonoBehaviour
         RaycastHit2D hit = Physics2D.Raycast(startPos, direction, raycastDistance, LayerMask.GetMask("Default"));
 
         Debug.DrawRay(startPos, direction * raycastDistance, Color.green);
-
+        if (hit.collider == null || !hit.collider.CompareTag("Ground"))
+        {
+            animator.SetTrigger("IsIdle");
+        }
 
         if (hit.collider != null)
         {
@@ -59,7 +52,7 @@ public class MiningController : MonoBehaviour
             if (tile.CompareTag("Player")) return;
             if (tile.CompareTag("Stone")) return;
 
-            isMining = true;
+            animator.SetTrigger("IsMining");
             Destroy(tile);
 
             //Дебаг вивід для відстеження знищення плитки

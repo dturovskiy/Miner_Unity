@@ -51,6 +51,10 @@ public class MiningController : MonoBehaviour
 
             if (tile.CompareTag("Player")) return;
             if (tile.CompareTag("Stone")) return;
+            if (tile.CompareTag("Cave"))
+            {
+                return;
+            }
 
             animator.SetTrigger("IsMining");
             Destroy(tile);

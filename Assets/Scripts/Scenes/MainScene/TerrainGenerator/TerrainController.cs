@@ -11,21 +11,31 @@ public class TerrainController : MonoBehaviour
 
     [SerializeField] Tilemap hiddenArea;
 
+    private Vector2Int tileDestroyRadius;
+
+    private void Start()
+    {
+        tileDestroyRadius = new Vector2Int(sideActivationDistance, activationDistance);
+    }
+
     private void Update()
     {
         
-        DestroyHiddenTiles();
-    }
+        Vector3 heroPosition = hero.position;
+        Vector3Int heroCellPosition = hiddenArea.WorldToCell(heroPosition);
 
-    public void DestroyHiddenTiles()
-    {
-        Vector2Int heroPosition = (Vector2Int)hiddenArea.WorldToCell(hero.position);
-        int currentTileX = Mathf.FloorToInt(heroPosition.x); // Знаходимо номер плитки, на якій стоїть герой за координатою X.
-        int currentTileY = Mathf.FloorToInt(heroPosition.y); // Знаходимо номер плитки, на якій стоїть герой за координатою Y.
-
-        for (int x = currentTileX - sideActivationDistance; x  <= currentTileX + sideActivationDistance; x++)
+        for (int x = -tileDestroyRadius.x; x <= tileDestroyRadius.x; x++)
         {
-            hiddenArea.DeleteCells(new Vector3Int(x, heroPosition.y - activationDistance), new Vector3Int(x, heroPosition.y - activationDistance));
+            for(int y = -tileDestroyRadius.y; y <= tileDestroyRadius.y; y++)
+            {
+                Vector3Int cellPosition = new Vector3Int(heroCellPosition.x + x, heroCellPosition.y + y, heroCellPosition.z);
+                TileBase tile = hiddenArea.GetTile(cellPosition);
+
+                if( tile != null)
+                {
+                    hiddenArea.SetTile(cellPosition, null);
+                }
+            }
         }
     }
 }

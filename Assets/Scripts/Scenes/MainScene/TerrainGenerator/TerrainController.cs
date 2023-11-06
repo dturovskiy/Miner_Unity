@@ -1,47 +1,31 @@
+using DG.Tweening;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 public class TerrainController : MonoBehaviour
 {
-    [SerializeField] private GameObject hero; // Публічне поле для призначення героя з інтерфейсу Unity.
-    [SerializeField] float activationDistance = 1.0f; // Відстань для активації плиток.
-    [SerializeField] float sideActivationDistance = 1.0f; // Відстань для активації плиток з боків героя.
+    [SerializeField] Transform hero; // Публічне поле для призначення героя з інтерфейсу Unity.
+    [SerializeField] int activationDistance = 1; // Відстань для активації плиток.
+    [SerializeField] int sideActivationDistance = 3; // Відстань для активації плиток з боків героя.
 
-    public TerrainGeneration terrainGeneration; // Посилання на іншу скрипту "TerrainGeneration".
-
-    private List<GameObject> tiles; // Список плиток на мапі.
-
-    private void Start()
-    {
-        tiles = terrainGeneration.GetTiles(); // Отримуємо список плиток з іншого скрипту "TerrainGeneration" при запуску гри.
-    }
+    [SerializeField] Tilemap hiddenArea;
 
     private void Update()
     {
-        Vector2 heroPosition = hero.transform.position; // Отримуємо позицію героя.
+        
+        DestroyHiddenTiles();
+    }
+
+    public void DestroyHiddenTiles()
+    {
+        Vector2Int heroPosition = (Vector2Int)hiddenArea.WorldToCell(hero.position);
         int currentTileX = Mathf.FloorToInt(heroPosition.x); // Знаходимо номер плитки, на якій стоїть герой за координатою X.
         int currentTileY = Mathf.FloorToInt(heroPosition.y); // Знаходимо номер плитки, на якій стоїть герой за координатою Y.
 
-        ActivateTilesInRow(currentTileX, currentTileY, sideActivationDistance); // Активуємо плитки в ряду біля героя.
-        //ActivateTilesInRow(currentTileX, currentTileY, sideActivationDistance); // (Закоментований рядок, що не впливає на код).
-    }
-
-    public void ActivateTilesInRow(int x, int y, float distance)
-    {
-        foreach (GameObject tile in tiles) // Перебираємо всі плитки на мапі.
+        for (int x = currentTileX - sideActivationDistance; x  <= currentTileX + sideActivationDistance; x++)
         {
-            if (tile != null) // Перевіряємо, чи плитка існує.
-            {
-                Vector2 tilePosition = tile.transform.position; // Отримуємо позицію плитки.
-                float tileDistance = Mathf.Abs(tilePosition.x - x); // Розраховуємо відстань між плиткою та позицією героя за координатою X.
-                if (tileDistance <= distance && Mathf.Abs(tilePosition.y - y) <= 1 && tilePosition.x != x)
-                {
-                    // Якщо плитка знаходиться на відстані, заданій параметром "distance", від героя (по X),
-                    // і відстань по Y не більше 1, і плитка не є тією, на якій стоїть герой,
-                    // то активуємо цю плитку.
-                    tile.SetActive(true);
-                }
-            }
+            hiddenArea.DeleteCells(new Vector3Int(x, heroPosition.y - activationDistance), new Vector3Int(x, heroPosition.y - activationDistance));
         }
     }
 }

@@ -37,7 +37,7 @@ public class TerrainGeneration : MonoBehaviour
 
         // Генеруємо терен
         GenerateTerrain();
-        HideLowerTerrain(); // Якщо ця функція потрібна, розкоментуйте
+        //HideLowerTerrain(); // Якщо ця функція потрібна, розкоментуйте
     }
 
     private void HideLowerTerrain()

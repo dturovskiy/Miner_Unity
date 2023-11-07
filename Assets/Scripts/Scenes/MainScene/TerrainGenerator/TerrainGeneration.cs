@@ -14,7 +14,6 @@ public class TerrainGeneration : MonoBehaviour
     public const int TOTAL_HEIGHT = 254;
     public const float STONE_PROBABILITY = 0.07f;
     private const int MAX_X_OFFSET = 22;
-    bool isBackground = false;
 
     [Header("Noise Settings")]
     public float terrainFreq = 0.05f;

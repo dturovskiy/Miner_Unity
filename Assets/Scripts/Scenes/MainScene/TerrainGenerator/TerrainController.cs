@@ -1,17 +1,16 @@
-using DG.Tweening;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
 public class TerrainController : MonoBehaviour
 {
-    [SerializeField] Transform hero; // Публічне поле для призначення героя з інтерфейсу Unity.
+    [SerializeField] GameObject hero; // Публічне поле для призначення героя з інтерфейсу Unity.
     [SerializeField] int activationDistance = 1; // Відстань для активації плиток.
     [SerializeField] int sideActivationDistance = 3; // Відстань для активації плиток з боків героя.
 
     [SerializeField] Tilemap hiddenArea;
 
     private Vector2Int tileDestroyRadius;
+    bool inCave = false;
 
     private void Start()
     {
@@ -20,22 +19,41 @@ public class TerrainController : MonoBehaviour
 
     private void Update()
     {
-        
-        Vector3 heroPosition = hero.position;
-        Vector3Int heroCellPosition = hiddenArea.WorldToCell(heroPosition);
+        inCave = CheckIsPlayerInCave();
 
-        for (int x = -tileDestroyRadius.x; x <= tileDestroyRadius.x; x++)
+        if (!inCave)
         {
-            for(int y = -tileDestroyRadius.y; y <= tileDestroyRadius.y; y++)
-            {
-                Vector3Int cellPosition = new Vector3Int(heroCellPosition.x + x, heroCellPosition.y + y, heroCellPosition.z);
-                TileBase tile = hiddenArea.GetTile(cellPosition);
+            Vector3 heroPosition = hero.transform.position;
+            Vector3Int heroCellPosition = hiddenArea.WorldToCell(heroPosition);
 
-                if( tile != null)
+            for (int x = -tileDestroyRadius.x; x <= tileDestroyRadius.x; x++)
+            {
+                for (int y = -tileDestroyRadius.y; y <= tileDestroyRadius.y; y++)
                 {
-                    hiddenArea.SetTile(cellPosition, null);
+                    Vector3Int cellPosition = new Vector3Int(heroCellPosition.x + x, heroCellPosition.y + y, heroCellPosition.z);
+                    TileBase tile = hiddenArea.GetTile(cellPosition);
+
+                    if (tile != null)
+                    {
+                        hiddenArea.SetTile(cellPosition, null);
+                    }
                 }
             }
         }
+    }
+
+    private bool CheckIsPlayerInCave()
+    {
+        Collider2D[] colliders = Physics2D.OverlapCircleAll(hero.transform.position, 1f);
+
+        foreach (Collider2D collider in colliders)
+        {
+            if (collider.CompareTag("Cave"))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -5,7 +5,6 @@ public class HeroController : MonoBehaviour
     private Animator animator;
     public float speed = 5f;
     private bool isWalking = false;
-    public bool inCave;
     
     Rigidbody2D heroRigidbody;
 
@@ -13,19 +12,7 @@ public class HeroController : MonoBehaviour
     {
         animator = GetComponent<Animator>();
         heroRigidbody = GetComponent<Rigidbody2D>();
-    }
-
-    private void OnTriggerExit2D(Collider2D collision)
-    {
-        if(collision.CompareTag("Cave"))
-            inCave = false;
-    }
-
-    private void OnTriggerStay2D(Collider2D collision)
-    {
-        if(collision.CompareTag("Cave"))
-            inCave = true;
-    }
+    }    
 
     private void Update()
     {

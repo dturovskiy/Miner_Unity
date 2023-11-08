@@ -25,9 +25,14 @@ public class TerrainGeneration : MonoBehaviour
 
     [SerializeField]private List<GameObject> lowerTiles = new();
 
+    public TileClass tileClass;
+
     // ћетод, €кий викликаЇтьс€ при запуску гри
     private void Start()
     {
+        Debug.Log(tileClass.tileName);
+        
+
         // √енеруЇмо випадковий seed дл€ шуму
         seed = Random.Range(-10000, 10000);
 
@@ -36,15 +41,6 @@ public class TerrainGeneration : MonoBehaviour
 
         // √енеруЇмо терен
         GenerateTerrain();
-        //HideLowerTerrain(); // якщо ц€ функц≥€ потр≥бна, розкоментуйте
-    }
-
-    private void HideLowerTerrain()
-    {
-        foreach (GameObject lowerTile in lowerTiles)
-        {
-            lowerTile.SetActive(false);
-        }
     }
 
     private void InitializeOreSpreadTextures()
@@ -184,7 +180,6 @@ public class TerrainGeneration : MonoBehaviour
             newTile.AddComponent<BoxCollider2D>();
             newTile.GetComponent<BoxCollider2D>().size = Vector2.one;
             newTile.tag = "Ground";
-
         }
 
         newTile.GetComponent<SpriteRenderer>().sprite = tileSprite;
@@ -196,18 +191,8 @@ public class TerrainGeneration : MonoBehaviour
             newTile.AddComponent<Rigidbody2D>().isKinematic = true;
         }
 
-
         newTile.transform.position = new Vector2(x + 0.5f, y + 0.5f);
 
-        if (newTile.transform.position.y < DUNGEON_HEIGHT)
-        {
-            lowerTiles.Add(newTile);
-        }
         return newTile;
-    }
-
-    public List<GameObject> GetTiles()
-    {
-        return lowerTiles;
     }
 }

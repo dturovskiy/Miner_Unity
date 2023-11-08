@@ -44,7 +44,7 @@ public class TerrainController : MonoBehaviour
 
     private bool CheckIsPlayerInCave()
     {
-        Collider2D[] colliders = Physics2D.OverlapCircleAll(hero.transform.position, 1f);
+        Collider2D[] colliders = Physics2D.OverlapCircleAll(hero.transform.position, 0.5f);
 
         foreach (Collider2D collider in colliders)
         {

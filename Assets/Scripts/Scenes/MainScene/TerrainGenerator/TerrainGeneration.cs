@@ -191,6 +191,7 @@ public class TerrainGeneration : MonoBehaviour
             newTile.AddComponent<Rigidbody2D>().isKinematic = true;
         }
 
+        newTile.AddComponent<TileBehaviour>();
         newTile.transform.position = new Vector2(x + 0.5f, y + 0.5f);
 
         return newTile;

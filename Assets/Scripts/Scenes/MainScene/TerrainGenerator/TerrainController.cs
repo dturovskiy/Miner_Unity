@@ -30,7 +30,7 @@ public class TerrainController : MonoBehaviour
             {
                 for (int y = -tileDestroyRadius.y; y <= tileDestroyRadius.y; y++)
                 {
-                    Vector3Int cellPosition = new Vector3Int(heroCellPosition.x + x, heroCellPosition.y + y, heroCellPosition.z);
+                    Vector3Int cellPosition = new(heroCellPosition.x + x, heroCellPosition.y + y, heroCellPosition.z);
                     TileBase tile = hiddenArea.GetTile(cellPosition);
 
                     if (tile != null)
@@ -44,7 +44,7 @@ public class TerrainController : MonoBehaviour
 
     private bool CheckIsPlayerInCave()
     {
-        Collider2D[] colliders = Physics2D.OverlapCircleAll(hero.transform.position, 0.5f);
+        Collider2D[] colliders = Physics2D.OverlapCircleAll(hero.transform.position, 0.4f);
 
         foreach (Collider2D collider in colliders)
         {

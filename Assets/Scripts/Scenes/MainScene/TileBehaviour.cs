@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 public class TileBehaviour : MonoBehaviour
@@ -20,8 +19,8 @@ public class TileBehaviour : MonoBehaviour
         Destroy(gameObject);
     }
 
-    public int GetHitsRemaining()
+    public bool IsTileBroken()
     {
-        return hitsRemaining;
+        return hitsRemaining <= 0;
     }
 }

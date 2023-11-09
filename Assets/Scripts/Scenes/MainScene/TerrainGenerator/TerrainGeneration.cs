@@ -23,7 +23,7 @@ public class TerrainGeneration : MonoBehaviour
     [Header("Ore Settings")]
     public OreClass[] ores;
 
-    [SerializeField]private List<GameObject> lowerTiles = new();
+    [SerializeField] private List<GameObject> lowerTiles = new();
 
     public TileClass tileClass;
 
@@ -31,7 +31,7 @@ public class TerrainGeneration : MonoBehaviour
     private void Start()
     {
         Debug.Log(tileClass.tileName);
-        
+
 
         // Генеруємо випадковий seed для шуму
         seed = Random.Range(-10000, 10000);
@@ -174,7 +174,7 @@ public class TerrainGeneration : MonoBehaviour
         GameObject newTile = new();
         newTile.transform.parent = transform;
         newTile.AddComponent<SpriteRenderer>();
-        
+
         if (tileSprite.name != "Tunnel")
         {
             newTile.AddComponent<BoxCollider2D>();

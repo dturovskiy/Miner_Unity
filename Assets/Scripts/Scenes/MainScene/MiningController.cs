@@ -5,7 +5,7 @@ public class MiningController : MonoBehaviour
     public float raycastDistance = 0.9f;
     private Animator animator;
 
-    public float timeBetweenHits = 0.1f; // Час між ударом (в секундах)
+    public float timeBetweenHits = 0.5f; // Час між ударом (в секундах)
     private float timeSinceLastHit = 0.0f;
 
     private void Awake()
@@ -21,7 +21,7 @@ public class MiningController : MonoBehaviour
 
     private void Update()
     {
-        timeSinceLastHit += Time.fixedDeltaTime;
+        timeSinceLastHit += Time.deltaTime;
 
         CheckInput(Vector2.down);
         CheckInput(Vector2.up);
@@ -48,8 +48,6 @@ public class MiningController : MonoBehaviour
 
     private void BreakTiles(Vector2 direction)
     {
-        
-
         Vector2 startPos = (Vector2)transform.position;
 
         RaycastHit2D hit = Physics2D.Raycast(startPos, direction, raycastDistance, LayerMask.GetMask("Default"));
@@ -68,11 +66,6 @@ public class MiningController : MonoBehaviour
             {
                 animator.SetTrigger("IsMining");
                 tileBehaviour.HitTile();
-                if (tileBehaviour.GetHitsRemaining() <= 0)
-                {
-                    animator.SetTrigger("IsIdle");
-                    timeSinceLastHit = 0.0f; // Скидання лічильника часу при ударі
-                }
             }
         }
     }

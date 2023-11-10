@@ -23,16 +23,9 @@ public class TerrainGeneration : MonoBehaviour
     [Header("Ore Settings")]
     public OreClass[] ores;
 
-    [SerializeField] private List<GameObject> lowerTiles = new();
-
-    public TileClass tileClass;
-
     // Метод, який викликається при запуску гри
     private void Start()
     {
-        Debug.Log(tileClass.tileName);
-
-
         // Генеруємо випадковий seed для шуму
         seed = Random.Range(-10000, 10000);
 

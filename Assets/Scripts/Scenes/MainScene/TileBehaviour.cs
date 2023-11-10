@@ -2,25 +2,33 @@ using UnityEngine;
 
 public class TileBehaviour : MonoBehaviour
 {
-    private int hitsRemaining = 3;
+    private bool isBroken;
+    private bool interacted;
+    private float interactionStartTime;
+    private float interactionEndTime;
 
-    public void HitTile()
+    public bool IsBroken { get { return isBroken; } }
+    public bool Interacted { get {  return interacted; } }
+    public float InteractionStartTime { get { return interactionStartTime; } }
+    public float InteractionEndTime { get { return interactionEndTime; } }
+
+    public void Interact()
     {
-        hitsRemaining--;
-
-        if (hitsRemaining <= 0)
-        {
-            BreakTile();
-        }
+        interacted = true;
+        interactionStartTime = Time.time;
     }
 
-    private void BreakTile()
+    public void EndInteraction()
+    {
+        interactionEndTime = Time.time;
+    }
+    public void BreakTile()
     {
         Destroy(gameObject);
+        isBroken = true;
+
+        Debug.Log("Tile is broken!");
     }
 
-    public bool IsTileBroken()
-    {
-        return hitsRemaining <= 0;
-    }
+
 }

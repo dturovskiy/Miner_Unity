@@ -13,7 +13,7 @@
 - Налаштування
 - Старт гри
 
-## [ВІДГУКИ ПРО ПРОБЛЕМИ](/Miner_Unity/ReadmeContent/Problems.markdown)
+## [ВІДГУКИ ПРО ПРОБЛЕМИ](/ReadmeContent/Problems.markdown)
 
 ## Концепція
 

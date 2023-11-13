@@ -13,7 +13,7 @@
 - Налаштування
 - Старт гри
 
-## [ВІДГУКИ ПРО ПРОБЛЕМИ](/ReadmeContent/Problems.markdown#проблеми)
+## [ВІДГУКИ ПРО ПРОБЛЕМИ](/ReadmeContent/Problems.markdown)
 
 ## Концепція
 

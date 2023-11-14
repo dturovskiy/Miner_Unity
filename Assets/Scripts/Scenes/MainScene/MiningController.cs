@@ -9,13 +9,13 @@ public class MiningController : MonoBehaviour
     private Animator animator;
 
     // Інтервал часу між ударами
-    public float timeBetweenHits = 0.5f;
+    public float timeBetweenHits = 0.1f;
 
     // Час останнього удару
     private float lastHitTime = 0.0f;
 
     // Кількість доступних ударів перед скиданням
-    private int hitsRemaining = 4;
+    private int hitsRemaining = 3;
 
     private void Awake()
     {
@@ -31,49 +31,40 @@ public class MiningController : MonoBehaviour
 
     private void Update()
     {
-        // Перевірка введення для різних напрямків
-        CheckInput(Vector2.down);
-        CheckInput(Vector2.up);
-        CheckInput(Vector2.left);
-        CheckInput(Vector2.right);
-    }
-
-    private void CheckInput(Vector2 direction)
-    {
-        // Перевірка введення та можливості удару
-        if (Input.GetKey(GetKeyCodeForDirection(direction)) && CanHit())
+        if (Input.touchCount > 0 || Input.GetMouseButton(0))
         {
-            // Визивання методу для розбивання плиток
-            BreakTiles(direction);
+            // Отримання позиції дотику або кліку мишкою
+            Vector2 touchPosition = Input.touchCount > 0 ? Input.GetTouch(0).position : (Vector2)Input.mousePosition;
+            Vector2 worldPosition = Camera.main.ScreenToWorldPoint(touchPosition);
+            
+            animator.SetBool("IsMining", true);
+            if(CanHit() )
+            {
+                BreakTiles(worldPosition);
+                Debug.Log("Touch Position: " + worldPosition);
+            }
+        }
+        else
+        {
+            animator.SetBool("IsMining", false);
         }
     }
 
-    private KeyCode GetKeyCodeForDirection(Vector2 direction)
-    {
-        // Визначення коду клавіші для конкретного напрямку
-        if (direction == Vector2.down) return KeyCode.DownArrow;
-        if (direction == Vector2.up) return KeyCode.UpArrow;
-        if (direction == Vector2.left) return KeyCode.LeftArrow;
-        if (direction == Vector2.right) return KeyCode.RightArrow;
-        return KeyCode.None;
-    }
-
-    private void BreakTiles(Vector2 direction)
+    private void BreakTiles(Vector2 targetPosition)
     {
         // Оновлення часу останнього удару
         lastHitTime = Time.time;
 
-        // Визначення початкової позиції променя та визначення цілі
-        Vector2 startPos = (Vector2)transform.position;
-        RaycastHit2D hit = Physics2D.Raycast(startPos, direction, raycastDistance, LayerMask.GetMask("Default"));
+        Collider2D hitCollider = Physics2D.OverlapPoint(targetPosition);
 
-        // Візуалізація променя у сцені
-        Debug.DrawRay(startPos, direction * raycastDistance, Color.green);
+        
 
         // Перевірка наявності цілі
-        if (hit.collider != null)
+        if (hitCollider != null)
         {
-            GameObject tile = hit.collider.gameObject;
+            Debug.Log("Collided with: " + hitCollider.name);
+
+            GameObject tile = hitCollider.gameObject;
 
             // Отримання компонента TileBehaviour
             TileBehaviour tileBehaviour = tile.GetComponent<TileBehaviour>();
@@ -85,7 +76,7 @@ public class MiningController : MonoBehaviour
             if (tileBehaviour != null && !tileBehaviour.IsBroken && !tileBehaviour.Interacted)
             {
                 // Запуск анімації розбиття та виклик методу обробки удару
-                animator.SetTrigger("IsMining");
+                
                 HitTile(tileBehaviour);
                 tileBehaviour.EndInteraction();
             }
@@ -94,6 +85,7 @@ public class MiningController : MonoBehaviour
 
     public void HitTile(TileBehaviour tile)
     {
+        Debug.Log("Hit: " + hitsRemaining);
         // Зменшення кількості залишених ударів
         hitsRemaining--;
 
@@ -101,8 +93,8 @@ public class MiningController : MonoBehaviour
         if (hitsRemaining <= 0)
         {
             tile.BreakTile();
-            animator.ResetTrigger("IsMining");
-            hitsRemaining = 3;
+            
+            hitsRemaining = 4;
         }
     }
 }

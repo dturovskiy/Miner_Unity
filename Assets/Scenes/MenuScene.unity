@@ -2895,6 +2895,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _scenesInfo:
   - {fileID: 11400000, guid: 2f1a13ecff3e41c428105196ba89f9ac, type: 2}
+  - {fileID: 11400000, guid: aa734a34d200a474a8f3fbea07c95d39, type: 2}
   _fadeSccreenPanel: {fileID: 1995632018}
   _isFadeScreenPanelEnable: 1
 --- !u!4 &1132523768
@@ -3184,7 +3185,7 @@ MonoBehaviour:
   _appearDuration: 0
   _appearPosition: {fileID: 0}
   _sceneData:
-    sceneKey: MainScene
+    sceneKey: TestScene
   _sceneLoader: {fileID: 1132523767}
 --- !u!1 &1233594238
 GameObject:

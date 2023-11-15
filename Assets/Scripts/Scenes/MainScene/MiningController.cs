@@ -2,20 +2,21 @@ using UnityEngine;
 
 public class MiningController : MonoBehaviour
 {
-    // Відстань, на яку викидається промінь для визначення цілі
-    public float raycastDistance = 0.9f;
-
     // Аніматор для управління анімацією
     private Animator animator;
 
     // Інтервал часу між ударами
-    public float timeBetweenHits = 0.1f;
+    public float timeBetweenHits = 0.05f;
 
     // Час останнього удару
     private float lastHitTime = 0.0f;
 
     // Кількість доступних ударів перед скиданням
     private int hitsRemaining = 3;
+
+    private float maxMiningDistance = 1f;
+
+    public Joystick miningJoystick;
 
     private void Awake()
     {
@@ -31,17 +32,19 @@ public class MiningController : MonoBehaviour
 
     private void Update()
     {
-        if (Input.touchCount > 0 || Input.GetMouseButton(0))
+        float horizontalInput = miningJoystick.Horizontal;
+        float verticalInput = miningJoystick.Vertical;
+
+        if (horizontalInput != 0 || verticalInput != 0)
         {
-            // Отримання позиції дотику або кліку мишкою
-            Vector2 touchPosition = Input.touchCount > 0 ? Input.GetTouch(0).position : (Vector2)Input.mousePosition;
-            Vector2 worldPosition = Camera.main.ScreenToWorldPoint(touchPosition);
+            Vector2 miningDirection = new Vector2(horizontalInput, verticalInput).normalized;
+            Vector2 miningPosition = (Vector2)transform.position + miningDirection * maxMiningDistance;
             
-            animator.SetBool("IsMining", true);
-            if(CanHit() )
+            
+            if (CanHit())
             {
-                BreakTiles(worldPosition);
-                Debug.Log("Touch Position: " + worldPosition);
+                Debug.Log("Mining position: " + miningPosition);
+                BreakTiles(miningPosition);
             }
         }
         else
@@ -57,11 +60,11 @@ public class MiningController : MonoBehaviour
 
         Collider2D hitCollider = Physics2D.OverlapPoint(targetPosition);
 
-        
-
         // Перевірка наявності цілі
         if (hitCollider != null)
         {
+            animator.SetBool("IsMining", true);
+
             Debug.Log("Collided with: " + hitCollider.name);
 
             GameObject tile = hitCollider.gameObject;
@@ -76,7 +79,7 @@ public class MiningController : MonoBehaviour
             if (tileBehaviour != null && !tileBehaviour.IsBroken && !tileBehaviour.Interacted)
             {
                 // Запуск анімації розбиття та виклик методу обробки удару
-                
+
                 HitTile(tileBehaviour);
                 tileBehaviour.EndInteraction();
             }
@@ -93,8 +96,8 @@ public class MiningController : MonoBehaviour
         if (hitsRemaining <= 0)
         {
             tile.BreakTile();
-            
-            hitsRemaining = 4;
+
+            hitsRemaining = 3;
         }
     }
 }

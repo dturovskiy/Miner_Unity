@@ -11,9 +11,6 @@ public class MiningController : MonoBehaviour
     // Час останнього удару
     private float lastHitTime = 0.0f;
 
-    // Кількість доступних ударів перед скиданням
-    private int hitsRemaining = 3;
-
     private float maxMiningDistance = 1f;
 
     public Joystick miningJoystick;
@@ -43,7 +40,6 @@ public class MiningController : MonoBehaviour
             
             if (CanHit())
             {
-                Debug.Log("Mining position: " + miningPosition);
                 BreakTiles(miningPosition);
             }
         }
@@ -65,8 +61,6 @@ public class MiningController : MonoBehaviour
         {
             animator.SetBool("IsMining", true);
 
-            Debug.Log("Collided with: " + hitCollider.name);
-
             GameObject tile = hitCollider.gameObject;
 
             // Отримання компонента TileBehaviour
@@ -80,24 +74,9 @@ public class MiningController : MonoBehaviour
             {
                 // Запуск анімації розбиття та виклик методу обробки удару
 
-                HitTile(tileBehaviour);
+                tileBehaviour.HitTile(tileBehaviour);
                 tileBehaviour.EndInteraction();
             }
         }
-    }
-
-    public void HitTile(TileBehaviour tile)
-    {
-        Debug.Log("Hit: " + hitsRemaining);
-        // Зменшення кількості залишених ударів
-        hitsRemaining--;
-
-        // Перевірка, чи необхідно скинути тригер та вивід інформації у консоль
-        if (hitsRemaining <= 0)
-        {
-            tile.BreakTile();
-
-            hitsRemaining = 3;
-        }
-    }
+    }  
 }

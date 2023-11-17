@@ -4,9 +4,10 @@ public class MiningController : MonoBehaviour
 {
     // Аніматор для управління анімацією
     private Animator animator;
+    private HeroController heroController;
 
     // Інтервал часу між ударами
-    public float timeBetweenHits = 0.05f;
+    public float timeBetweenHits = 0.01f;
 
     // Час останнього удару
     private float lastHitTime = 0.0f;
@@ -19,6 +20,7 @@ public class MiningController : MonoBehaviour
     {
         // Ініціалізація аніматора
         animator = GetComponent<Animator>();
+        heroController = GetComponent<HeroController>();
     }
 
     private bool CanHit()
@@ -27,7 +29,7 @@ public class MiningController : MonoBehaviour
         return Time.time - lastHitTime >= timeBetweenHits;
     }
 
-    private void Update()
+    private void FixedUpdate()
     {
         float horizontalInput = miningJoystick.Horizontal;
         float verticalInput = miningJoystick.Vertical;
@@ -36,8 +38,8 @@ public class MiningController : MonoBehaviour
         {
             Vector2 miningDirection = new Vector2(horizontalInput, verticalInput).normalized;
             Vector2 miningPosition = (Vector2)transform.position + miningDirection * maxMiningDistance;
-            
-            
+
+
             if (CanHit())
             {
                 BreakTiles(miningPosition);
@@ -47,6 +49,12 @@ public class MiningController : MonoBehaviour
         {
             animator.SetBool("IsMining", false);
         }
+    }
+
+    private void StartMiningAnimation()
+    {
+        animator.SetBool("IsMining", true);
+        heroController.animator.SetBool("IsWalking", false);
     }
 
     private void BreakTiles(Vector2 targetPosition)
@@ -59,7 +67,7 @@ public class MiningController : MonoBehaviour
         // Перевірка наявності цілі
         if (hitCollider != null)
         {
-            animator.SetBool("IsMining", true);
+            StartMiningAnimation();
 
             GameObject tile = hitCollider.gameObject;
 
@@ -78,5 +86,5 @@ public class MiningController : MonoBehaviour
                 tileBehaviour.EndInteraction();
             }
         }
-    }  
+    }
 }

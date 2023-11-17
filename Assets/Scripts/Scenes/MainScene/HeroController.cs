@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class HeroController : MonoBehaviour
 {
-    private Animator animator;
+    public Animator animator;
     public float speed = 5f;
     private bool isWalking = false;
     [SerializeField] Joystick joystick;

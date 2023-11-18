@@ -95,6 +95,7 @@ public class MiningController : MonoBehaviour
         {
             heroController.SetCanMove(true);
             animator.SetBool("IsMining", false);
+            animator.SetBool("ISWalking", true);
         }
     }
 }

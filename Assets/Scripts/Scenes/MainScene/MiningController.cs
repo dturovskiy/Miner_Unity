@@ -38,16 +38,18 @@ public class MiningController : MonoBehaviour
         {
             Vector2 miningDirection = new Vector2(horizontalInput, verticalInput).normalized;
             Vector2 miningPosition = (Vector2)transform.position + miningDirection * maxMiningDistance;
-
+           
 
             if (CanHit())
             {
                 BreakTiles(miningPosition);
+                
             }
         }
         else
         {
             animator.SetBool("IsMining", false);
+            heroController.SetCanMove(true);
         }
     }
 
@@ -55,6 +57,7 @@ public class MiningController : MonoBehaviour
     {
         animator.SetBool("IsMining", true);
         heroController.animator.SetBool("IsWalking", false);
+
     }
 
     private void BreakTiles(Vector2 targetPosition)
@@ -67,6 +70,8 @@ public class MiningController : MonoBehaviour
         // Перевірка наявності цілі
         if (hitCollider != null)
         {
+
+            heroController.SetCanMove(false);
             StartMiningAnimation();
 
             GameObject tile = hitCollider.gameObject;
@@ -85,6 +90,11 @@ public class MiningController : MonoBehaviour
                 tileBehaviour.HitTile(tileBehaviour);
                 tileBehaviour.EndInteraction();
             }
+        }
+        else
+        {
+            heroController.SetCanMove(true);
+            animator.SetBool("IsMining", false);
         }
     }
 }

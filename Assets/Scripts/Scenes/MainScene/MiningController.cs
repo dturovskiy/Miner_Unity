@@ -7,7 +7,7 @@ public class MiningController : MonoBehaviour
     private HeroController heroController;
 
     // Інтервал часу між ударами
-    public float timeBetweenHits = 0.01f;
+    public float timeBetweenHits = 0.005f;
 
     // Час останнього удару
     private float lastHitTime = 0.0f;
@@ -56,7 +56,7 @@ public class MiningController : MonoBehaviour
     private void StartMiningAnimation()
     {
         animator.SetBool("IsMining", true);
-        heroController.animator.SetBool("IsWalking", false);
+        animator.SetBool("IsWalking", false);
 
     }
 
@@ -83,19 +83,18 @@ public class MiningController : MonoBehaviour
             if (tile.CompareTag("Player") || tile.CompareTag("Stone") || tile.CompareTag("Cave")) return;
 
             // Перевірка чи плитка не розбита
-            if (tileBehaviour != null && !tileBehaviour.IsBroken && !tileBehaviour.Interacted)
+            if (tileBehaviour != null && !tileBehaviour.IsBroken)
             {
                 // Запуск анімації розбиття та виклик методу обробки удару
 
                 tileBehaviour.HitTile(tileBehaviour);
-                tileBehaviour.EndInteraction();
             }
-        }
-        else
-        {
-            heroController.SetCanMove(true);
-            animator.SetBool("IsMining", false);
-            animator.SetBool("ISWalking", true);
+            if (tileBehaviour.IsBroken)
+            {
+                heroController.SetCanMove(true);
+                animator.SetBool("IsMining", false);
+                animator.SetBool("IsWalking", true);
+            }
         }
     }
 }

@@ -3,16 +3,9 @@ using UnityEngine;
 public class TileBehaviour : MonoBehaviour
 {
     private bool isBroken;
-    private bool interacted;
-    private float interactionStartTime;
-    private float interactionEndTime;
-    // Кількість доступних ударів перед скиданням
     private int hitsRemaining = 4;
 
     public bool IsBroken { get { return isBroken; } }
-    public bool Interacted { get { return interacted; } }
-    public float InteractionStartTime { get { return interactionStartTime; } }
-    public float InteractionEndTime { get { return interactionEndTime; } }
 
     public GameObject crackPrefab;
     public Crack crackClass;
@@ -22,16 +15,6 @@ public class TileBehaviour : MonoBehaviour
         crackPrefab = Resources.Load<GameObject>("Crack");
     }
 
-    public void Interact()
-    {
-        interacted = true;
-        interactionStartTime = Time.time;
-    }
-
-    public void EndInteraction()
-    {
-        interactionEndTime = Time.time;
-    }
     public void BreakTile()
     {
         Destroy(gameObject);
@@ -51,10 +34,10 @@ public class TileBehaviour : MonoBehaviour
         // Зменшення кількості залишених ударів
         hitsRemaining--;
 
-        
+
 
         HitAndCrack(hitsRemaining);
-        
+
         // Перевірка, чи необхідно скинути тригер та вивід інформації у консоль
         if (hitsRemaining <= 0)
         {
@@ -79,6 +62,6 @@ public class TileBehaviour : MonoBehaviour
         {
             Debug.LogError("CrackPrefab not found in Resources!");
         }
-        
+
     }
 }

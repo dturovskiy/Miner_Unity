@@ -72,7 +72,7 @@ public class MiningController : MonoBehaviour
         {
 
             heroController.SetCanMove(false);
-            StartMiningAnimation();
+            Invoke("StartMiningAnimation", 0.2f);
 
             GameObject tile = hitCollider.gameObject;
 

@@ -43,7 +43,6 @@ public class MiningController : MonoBehaviour
             if (CanHit())
             {
                 BreakTiles(miningPosition);
-                
             }
         }
         else
@@ -72,7 +71,7 @@ public class MiningController : MonoBehaviour
         {
 
             heroController.SetCanMove(false);
-            Invoke("StartMiningAnimation", 0.2f);
+            StartMiningAnimation();
 
             GameObject tile = hitCollider.gameObject;
 

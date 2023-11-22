@@ -5,6 +5,9 @@ public class TileBehaviour : MonoBehaviour
     private bool isBroken;
     private int hitsRemaining = 4;
 
+    private float lastHitTime = 0f;
+    private float timeBetweenHits = .5f;
+
     public bool IsBroken { get { return isBroken; } }
 
     public GameObject crackPrefab;
@@ -15,16 +18,22 @@ public class TileBehaviour : MonoBehaviour
         crackPrefab = Resources.Load<GameObject>("Crack");
     }
 
+    private bool CanHit()
+    {
+        return Time.time - lastHitTime >= timeBetweenHits;
+    }
+
     public void BreakTile()
     {
         Destroy(gameObject);
         isBroken = true;
-
-        Debug.Log("Tile is broken!");
     }
 
     public void HitTile(TileBehaviour tile)
     {
+        lastHitTime = Time.time;
+
+
         if (hitsRemaining == 4)
         {
             CreateCrack();
@@ -34,14 +43,15 @@ public class TileBehaviour : MonoBehaviour
         // Зменшення кількості залишених ударів
         hitsRemaining--;
 
-
-
-        HitAndCrack(hitsRemaining);
-
-        // Перевірка, чи необхідно скинути тригер та вивід інформації у консоль
-        if (hitsRemaining <= 0)
+        if (CanHit())
         {
-            tile.BreakTile();
+            HitAndCrack(hitsRemaining);
+
+            // Перевірка, чи необхідно скинути тригер та вивід інформації у консоль
+            if (hitsRemaining <= 0)
+            {
+                tile.BreakTile();
+            }
         }
     }
 

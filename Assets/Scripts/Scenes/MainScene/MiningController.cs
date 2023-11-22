@@ -6,13 +6,7 @@ public class MiningController : MonoBehaviour
     private Animator animator;
     private HeroController heroController;
 
-    // Інтервал часу між ударами
-    public float timeBetweenHits = 0.005f;
-
-    // Час останнього удару
-    private float lastHitTime = 0.0f;
-
-    private float maxMiningDistance = 1f;
+    private float maxMiningDistance = 0.8f;
 
     public Joystick miningJoystick;
 
@@ -21,12 +15,6 @@ public class MiningController : MonoBehaviour
         // Ініціалізація аніматора
         animator = GetComponent<Animator>();
         heroController = GetComponent<HeroController>();
-    }
-
-    private bool CanHit()
-    {
-        // Перевірка, чи пройшов достатній час між ударами
-        return Time.time - lastHitTime >= timeBetweenHits;
     }
 
     private void FixedUpdate()
@@ -38,15 +26,12 @@ public class MiningController : MonoBehaviour
         {
             Vector2 miningDirection = new Vector2(horizontalInput, verticalInput).normalized;
             Vector2 miningPosition = (Vector2)transform.position + miningDirection * maxMiningDistance;
-           
 
-            if (CanHit())
-            {
-                BreakTiles(miningPosition);
-            }
+            CheckTile(miningPosition);
         }
         else
         {
+            // Зупинка анімації майнінгу, якщо вона вже почалася
             animator.SetBool("IsMining", false);
             heroController.SetCanMove(true);
         }
@@ -56,26 +41,19 @@ public class MiningController : MonoBehaviour
     {
         animator.SetBool("IsMining", true);
         animator.SetBool("IsWalking", false);
-
+        heroController.SetCanMove(false);
     }
 
-    private void BreakTiles(Vector2 targetPosition)
+    private void CheckTile(Vector2 targetPosition)
     {
-        // Оновлення часу останнього удару
-        lastHitTime = Time.time;
-
         Collider2D hitCollider = Physics2D.OverlapPoint(targetPosition);
 
         // Перевірка наявності цілі
         if (hitCollider != null)
         {
-
-            heroController.SetCanMove(false);
             StartMiningAnimation();
 
             GameObject tile = hitCollider.gameObject;
-
-            // Отримання компонента TileBehaviour
             TileBehaviour tileBehaviour = tile.GetComponent<TileBehaviour>();
 
             // Перевірка тегів та стану плитки
@@ -84,10 +62,9 @@ public class MiningController : MonoBehaviour
             // Перевірка чи плитка не розбита
             if (tileBehaviour != null && !tileBehaviour.IsBroken)
             {
-                // Запуск анімації розбиття та виклик методу обробки удару
-
                 tileBehaviour.HitTile(tileBehaviour);
             }
+
             if (tileBehaviour.IsBroken)
             {
                 heroController.SetCanMove(true);

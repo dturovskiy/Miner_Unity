@@ -6,7 +6,7 @@ public class TileBehaviour : MonoBehaviour
     private int hitsRemaining = 4;
 
     private float lastHitTime = 0f;
-    private float timeBetweenHits = .5f;
+    private float timeBetweenHits = 1f;
 
     public bool IsBroken { get { return isBroken; } }
 
@@ -31,20 +31,19 @@ public class TileBehaviour : MonoBehaviour
 
     public void HitTile(TileBehaviour tile)
     {
-        lastHitTime = Time.time;
-
-
-        if (hitsRemaining == 4)
-        {
-            CreateCrack();
-        }
-
-        Debug.Log("Hit: " + hitsRemaining);
-        // Зменшення кількості залишених ударів
-        hitsRemaining--;
-
         if (CanHit())
         {
+            Debug.Log("Hit: " + hitsRemaining);
+
+            if (hitsRemaining == 4)
+            {
+                CreateCrack();
+            }
+
+            Debug.Log("Can hit? - " + CanHit());
+
+            hitsRemaining--;
+
             HitAndCrack(hitsRemaining);
 
             // Перевірка, чи необхідно скинути тригер та вивід інформації у консоль
@@ -58,6 +57,7 @@ public class TileBehaviour : MonoBehaviour
     private void HitAndCrack(int hits)
     {
         crackClass.HitCrack(hits);
+        lastHitTime = Time.time;
     }
 
     private void CreateCrack()

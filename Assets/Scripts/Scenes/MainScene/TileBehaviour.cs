@@ -40,8 +40,6 @@ public class TileBehaviour : MonoBehaviour
                 CreateCrack();
             }
 
-            Debug.Log("Can hit? - " + CanHit());
-
             hitsRemaining--;
 
             HitAndCrack(hitsRemaining);
@@ -72,6 +70,5 @@ public class TileBehaviour : MonoBehaviour
         {
             Debug.LogError("CrackPrefab not found in Resources!");
         }
-
     }
 }

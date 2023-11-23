@@ -19,7 +19,7 @@ public class HeroController : MonoBehaviour
 
     private void Update()
     {
-        Debug.Log("canMove is: " + canMove);
+        Debug.Log("Can move is: " + canMove);
 
         if (canMove)
         {

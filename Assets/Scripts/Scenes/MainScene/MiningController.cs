@@ -5,14 +5,18 @@ public class MiningController : MonoBehaviour
     // Аніматор для управління анімацією
     private Animator animator;
     private HeroController heroController;
+    private TileBehaviour tileBehaviour;
 
-    private float maxMiningDistance = 0.8f;
+    private float maxMiningDistance = 0.5f;
 
     public Joystick miningJoystick;
 
+    private float miningDelay = 1.0f;
+
+    private bool canHit;
+
     private void Awake()
     {
-        // Ініціалізація аніматора
         animator = GetComponent<Animator>();
         heroController = GetComponent<HeroController>();
     }
@@ -34,6 +38,7 @@ public class MiningController : MonoBehaviour
             // Зупинка анімації майнінгу, якщо вона вже почалася
             animator.SetBool("IsMining", false);
             heroController.SetCanMove(true);
+            canHit = false;
         }
     }
 
@@ -42,6 +47,20 @@ public class MiningController : MonoBehaviour
         animator.SetBool("IsMining", true);
         animator.SetBool("IsWalking", false);
         heroController.SetCanMove(false);
+        Invoke(nameof(CanHit), 1f);
+    }
+
+    private void StopMiningAnimation()
+    {
+        animator.SetBool("IsMining", false);
+        animator.SetBool("IsWalking", true);
+        heroController.SetCanMove(true);
+        canHit = false;
+    }
+
+    public void CanHit()
+    {
+        canHit = true;
     }
 
     private void CheckTile(Vector2 targetPosition)
@@ -51,25 +70,28 @@ public class MiningController : MonoBehaviour
         // Перевірка наявності цілі
         if (hitCollider != null)
         {
-            StartMiningAnimation();
-
             GameObject tile = hitCollider.gameObject;
-            TileBehaviour tileBehaviour = tile.GetComponent<TileBehaviour>();
+            tileBehaviour = tile.GetComponent<TileBehaviour>();
 
             // Перевірка тегів та стану плитки
             if (tile.CompareTag("Player") || tile.CompareTag("Stone") || tile.CompareTag("Cave")) return;
 
-            // Перевірка чи плитка не розбита
-            if (tileBehaviour != null && !tileBehaviour.IsBroken)
-            {
-                tileBehaviour.HitTile(tileBehaviour);
-            }
+            StartMiningAnimation();
 
-            if (tileBehaviour.IsBroken)
+            if (canHit)
             {
-                heroController.SetCanMove(true);
-                animator.SetBool("IsMining", false);
-                animator.SetBool("IsWalking", true);
+                if (tileBehaviour != null && !tileBehaviour.IsBroken)
+                {
+                    tileBehaviour.HitTile(tileBehaviour);
+                }
+                if (tileBehaviour != null && tileBehaviour.IsBroken)
+                {
+                    StopMiningAnimation();
+                }
+            }
+            if (tileBehaviour == null)
+            {
+                StopMiningAnimation();
             }
         }
     }

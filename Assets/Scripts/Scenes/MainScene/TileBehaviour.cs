@@ -6,7 +6,7 @@ public class TileBehaviour : MonoBehaviour
     private int hitsRemaining = 4;
 
     private float lastHitTime = 0f;
-    private float timeBetweenHits = 1f;
+    private float timeBetweenHits = 0.8f;
 
     public bool IsBroken { get { return isBroken; } }
 

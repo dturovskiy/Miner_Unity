@@ -11,9 +11,10 @@ public class MiningController : MonoBehaviour
 
     public Joystick miningJoystick;
 
-    private float miningDelay = 1.0f;
+    private float miningDelay = 0.4f;
+    private float startTime;
 
-    private bool canHit;
+    private bool isMiningStarted = false;
 
     private void Awake()
     {
@@ -21,7 +22,7 @@ public class MiningController : MonoBehaviour
         heroController = GetComponent<HeroController>();
     }
 
-    private void FixedUpdate()
+    private void Update()
     {
         float horizontalInput = miningJoystick.Horizontal;
         float verticalInput = miningJoystick.Vertical;
@@ -29,38 +30,51 @@ public class MiningController : MonoBehaviour
         if (horizontalInput != 0 || verticalInput != 0)
         {
             Vector2 miningDirection = new Vector2(horizontalInput, verticalInput).normalized;
+            if(verticalInput >= 0.5f && (horizontalInput <= 0.2f && horizontalInput >= -0.2f))
+            {
+                maxMiningDistance = 1f;
+            }
+            else
+            {
+                maxMiningDistance = 0.4f;
+            }
             Vector2 miningPosition = (Vector2)transform.position + miningDirection * maxMiningDistance;
 
+
+            Debug.Log("Distance " + maxMiningDistance);
             CheckTile(miningPosition);
         }
         else
         {
             // Зупинка анімації майнінгу, якщо вона вже почалася
-            animator.SetBool("IsMining", false);
-            heroController.SetCanMove(true);
-            canHit = false;
+            StopMiningAnimation();
         }
     }
 
     private void StartMiningAnimation()
     {
+        if (!isMiningStarted)
+        {
+            isMiningStarted = true;
+            startTime = Time.time;
+        }
+
         animator.SetBool("IsMining", true);
         animator.SetBool("IsWalking", false);
         heroController.SetCanMove(false);
-        Invoke(nameof(CanHit), 1f);
     }
 
     private void StopMiningAnimation()
     {
-        animator.SetBool("IsMining", false);
-        animator.SetBool("IsWalking", true);
-        heroController.SetCanMove(true);
-        canHit = false;
-    }
+        if (isMiningStarted)
+        {
+            isMiningStarted= false;
+            startTime = 0f;
+        }
 
-    public void CanHit()
-    {
-        canHit = true;
+        animator.SetBool("IsMining", false);
+        
+        heroController.SetCanMove(true);
     }
 
     private void CheckTile(Vector2 targetPosition)
@@ -78,7 +92,7 @@ public class MiningController : MonoBehaviour
 
             StartMiningAnimation();
 
-            if (canHit)
+            if (Time.time - startTime >= miningDelay)
             {
                 if (tileBehaviour != null && !tileBehaviour.IsBroken)
                 {
@@ -87,11 +101,8 @@ public class MiningController : MonoBehaviour
                 if (tileBehaviour != null && tileBehaviour.IsBroken)
                 {
                     StopMiningAnimation();
+                    animator.SetBool("IsWalking", true);
                 }
-            }
-            if (tileBehaviour == null)
-            {
-                StopMiningAnimation();
             }
         }
     }

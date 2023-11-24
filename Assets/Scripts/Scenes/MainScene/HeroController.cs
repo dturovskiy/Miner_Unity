@@ -33,7 +33,7 @@ public class HeroController : MonoBehaviour
             {
                 transform.localScale = new Vector3(-Mathf.Abs(transform.localScale.x), transform.localScale.y, transform.localScale.z);
             }
-            else if (moveHorizontal < 0)
+            if (moveHorizontal < 0)
             {
                 transform.localScale = new Vector3(Mathf.Abs(transform.localScale.x), transform.localScale.y, transform.localScale.z);
             }
@@ -44,7 +44,7 @@ public class HeroController : MonoBehaviour
                 isWalking = true;
                 animator.SetBool("IsWalking", true);
             }
-            else if (moveHorizontal == 0 && isWalking)
+            if (moveHorizontal == 0 && isWalking)
             {
                 isWalking = false;
                 animator.SetBool("IsWalking", false);

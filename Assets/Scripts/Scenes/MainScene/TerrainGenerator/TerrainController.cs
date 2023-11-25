@@ -26,6 +26,11 @@ public class TerrainController : MonoBehaviour
             Vector3 heroPosition = hero.transform.position;
             Vector3Int heroCellPosition = hiddenArea.WorldToCell(heroPosition);
 
+            int CHUNK_SIZE = 10;
+            int chunkIndex = Mathf.FloorToInt(heroPosition.y / CHUNK_SIZE);
+
+            Debug.Log("Hero is in Chunk: " + chunkIndex);
+
             for (int x = -tileDestroyRadius.x; x <= tileDestroyRadius.x; x++)
             {
                 for (int y = -tileDestroyRadius.y; y <= tileDestroyRadius.y; y++)

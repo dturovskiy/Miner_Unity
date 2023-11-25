@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
@@ -8,6 +9,8 @@ public class TerrainController : MonoBehaviour
     [SerializeField] int sideActivationDistance = 3; // Відстань для активації плиток з боків героя.
 
     [SerializeField] Tilemap hiddenArea;
+
+    [SerializeField] TerrainGeneration terrainGeneration;
 
     private Vector2Int tileDestroyRadius;
     bool inCave = false;
@@ -25,6 +28,18 @@ public class TerrainController : MonoBehaviour
         {
             Vector3 heroPosition = hero.transform.position;
             Vector3Int heroCellPosition = hiddenArea.WorldToCell(heroPosition);
+
+            int CHUNK_SIZE = 10;
+            int chunkIndex = Mathf.FloorToInt(heroPosition.y / CHUNK_SIZE);
+
+            Debug.Log("Hero is in Chunk: " + chunkIndex);
+
+            List<Transform> chunks = terrainGeneration.GetChunks();
+
+            if (chunkIndex < chunks.Count)
+            {
+                chunks[chunkIndex - 1].gameObject.SetActive(true);
+            }
 
             for (int x = -tileDestroyRadius.x; x <= tileDestroyRadius.x; x++)
             {

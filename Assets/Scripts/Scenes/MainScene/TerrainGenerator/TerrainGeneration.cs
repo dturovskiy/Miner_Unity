@@ -23,9 +23,14 @@ public class TerrainGeneration : MonoBehaviour
     [Header("Ore Settings")]
     public OreClass[] ores;
 
+    private int CHUNK_SIZE = 10;
+    private List<Transform> chunks = new List<Transform>();
+
     // Метод, який викликається при запуску гри
     private void Start()
     {
+        CreateChunk();
+
         // Генеруємо випадковий seed для шуму
         seed = Random.Range(-10000, 10000);
 
@@ -53,6 +58,10 @@ public class TerrainGeneration : MonoBehaviour
         {
             for (int x = 0; x <= WORLD_SIZE; x++)
             {
+                if (y % CHUNK_SIZE == 0 && y > 0)
+                {
+                    CreateChunk();
+                }
                 // Визначаємо тип плитки для поточних координат
                 Sprite tileSprite = DetermineTileType(x, y);
 
@@ -69,6 +78,22 @@ public class TerrainGeneration : MonoBehaviour
                 // Розміщуємо плитку на сцені
                 PlaceTile(tileSprite, x, y);
             }
+        }
+
+        for (int i = 0; i < 24; i++)
+        {
+            if (chunks[i] != null)
+                chunks[i].gameObject.SetActive(false);
+        }
+    }
+
+    private void CreateChunk()
+    {
+        if (chunks.Count < 26)
+        {
+            GameObject chunkObject = new GameObject("Chunk");
+            chunkObject.transform.parent = transform;
+            chunks.Add(chunkObject.transform);
         }
     }
 
@@ -164,8 +189,10 @@ public class TerrainGeneration : MonoBehaviour
     // Метод для розміщення плитки на сцені
     public GameObject PlaceTile(Sprite tileSprite, float x, float y)
     {
+        int chunkIndex = Mathf.FloorToInt(y / CHUNK_SIZE);
+        Transform chunk = GetOrCreateChunk(chunkIndex);
         GameObject newTile = new();
-        newTile.transform.parent = transform;
+        newTile.transform.parent = chunk;
         newTile.AddComponent<SpriteRenderer>();
 
         if (tileSprite.name != "Tunnel")
@@ -188,5 +215,23 @@ public class TerrainGeneration : MonoBehaviour
         newTile.transform.position = new Vector2(x + 0.5f, y + 0.5f);
 
         return newTile;
+    }
+
+    private Transform GetOrCreateChunk(int chunkIndex)
+    {
+        if (chunkIndex < chunks.Count)
+        {
+            return chunks[chunkIndex];
+        }
+        else
+        {
+            CreateChunk();
+            return chunks[chunkIndex - 1];
+        }
+    }
+
+    public List<Transform> GetChunks()
+    {
+        return chunks;
     }
 }

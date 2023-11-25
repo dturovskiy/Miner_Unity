@@ -229,4 +229,9 @@ public class TerrainGeneration : MonoBehaviour
             return chunks[chunkIndex - 1];
         }
     }
+
+    public List<Transform> GetChunks()
+    {
+        return chunks;
+    }
 }

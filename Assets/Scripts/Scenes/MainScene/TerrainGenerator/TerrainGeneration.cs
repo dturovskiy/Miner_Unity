@@ -223,6 +223,7 @@ public class TerrainGeneration : MonoBehaviour
         {
             return chunks[chunkIndex];
         }
+
         else
         {
             CreateChunk();

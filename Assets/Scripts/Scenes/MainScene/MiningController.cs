@@ -43,8 +43,6 @@ public class MiningController : MonoBehaviour
             }
             Vector2 miningPosition = (Vector2)transform.position + miningDirection * maxMiningDistance;
 
-
-            Debug.Log("Distance " + maxMiningDistance);
             CheckTile(miningPosition);
         }
         else

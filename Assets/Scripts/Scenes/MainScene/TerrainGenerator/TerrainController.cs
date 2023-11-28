@@ -32,8 +32,6 @@ public class TerrainController : MonoBehaviour
             int CHUNK_SIZE = 10;
             int chunkIndex = Mathf.FloorToInt(heroPosition.y / CHUNK_SIZE);
 
-            Debug.Log("Hero is in Chunk: " + chunkIndex);
-
             List<Transform> chunks = terrainGeneration.GetChunks();
 
             if (chunkIndex < chunks.Count)

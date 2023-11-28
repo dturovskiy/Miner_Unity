@@ -33,8 +33,6 @@ public class TileBehaviour : MonoBehaviour
     {
         if (CanHit())
         {
-            Debug.Log("Hit: " + hitsRemaining);
-
             if (hitsRemaining == 4)
             {
                 CreateCrack();

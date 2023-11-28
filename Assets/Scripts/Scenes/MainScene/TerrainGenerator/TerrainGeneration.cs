@@ -31,24 +31,8 @@ public class TerrainGeneration : MonoBehaviour
     {
         CreateChunk();
 
-        // Генеруємо випадковий seed для шуму
-        seed = Random.Range(-10000, 10000);
-
-        // Ініціалізуємо текстури розповсюдження руд
-        InitializeOreSpreadTextures();
-
         // Генеруємо терен
         GenerateTerrain();
-    }
-
-    private void InitializeOreSpreadTextures()
-    {
-        // Ініціалізуємо текстури розповсюдження руд для кожного типу руди
-        foreach (OreClass ore in ores)
-        {
-            ore.spreadTexture = new Texture2D(WORLD_SIZE, DUNGEON_HEIGHT);
-            GenerateNoiseTexture(seed, ore.frequency, ore.size, ore.spreadTexture);
-        }
     }
 
     // Метод для генерації терену
@@ -97,26 +81,6 @@ public class TerrainGeneration : MonoBehaviour
         }
     }
 
-    public void GenerateNoiseTexture(float seed, float frequency, float limit, Texture2D noise)
-    {
-        for (int x = 0; x < noise.width; x++)
-        {
-            for (int y = 0; y < noise.height; y++)
-            {
-                // Генеруємо шум за допомогою Perlin Noise
-                float v = Mathf.PerlinNoise((x + seed) * frequency, (y + seed) * frequency);
-
-                // Встановлюємо колір пікселя на основі шуму
-                if (v > limit)
-                    noise.SetPixel(x, y, Color.white);
-                else
-                    noise.SetPixel(x, y, Color.black);
-            }
-        }
-
-        noise.Apply();
-    }
-
     // Функція, що перевіряє, чи `(x, y)` на межі терену
     private bool IsTerrainEdge(int x, int y)
     {
@@ -145,17 +109,17 @@ public class TerrainGeneration : MonoBehaviour
 
         if (y < TOTAL_HEIGHT && x < WORLD_SIZE)
         {
+            // Рандомна генерація каменів на інших частинах терену
+            if (y != DUNGEON_HEIGHT + 1 && Random.Range(0.0f, 1.0f) < STONE_PROBABILITY)
+                return tileAtlas.stone.tileSprite;
+
             for (int i = 0; i < ores.Length; i++)
             {
-                if (ores[i].spreadTexture.GetPixel(x, y).r > 0.5f && y < ores[i].maxSpawnHeight && y > ores[i].minSpawnHeight)
+                if (Random.Range(0.0f, 1.0f) < ores[i].frequency && y > ores[i].minSpawnHeight && y < ores[i].maxSpawnHeight)
                 {
                     return GetOreSprite(i);
                 }
             }
-
-            // Рандомна генерація каменів на інших частинах терену
-            if (y != DUNGEON_HEIGHT + 1 && Random.Range(0.0f, 1.0f) < STONE_PROBABILITY)
-                return tileAtlas.stone.tileSprite;
         }
 
         return tileAtlas.dirt.tileSprite;

@@ -27,12 +27,15 @@ public class MiningController : MonoBehaviour
         float horizontalInput = miningJoystick.Horizontal;
         float verticalInput = miningJoystick.Vertical;
 
+        int roundedHorizontalInput = Mathf.RoundToInt(horizontalInput);
+        int roundedVerticalInput = Mathf.RoundToInt(verticalInput);
+
         if (horizontalInput != 0 || verticalInput != 0)
         {
-            Vector2 miningDirection = new Vector2(horizontalInput, verticalInput).normalized;
-            if(verticalInput >= 0.5f && (horizontalInput <= 0.2f && horizontalInput >= -0.2f))
+            Vector2 miningDirection = new Vector2(roundedHorizontalInput, roundedVerticalInput).normalized;
+            if(roundedVerticalInput == 1)
             {
-                maxMiningDistance = 1f;
+                maxMiningDistance = 0.7f;
             }
             else
             {
@@ -104,6 +107,11 @@ public class MiningController : MonoBehaviour
                     animator.SetBool("IsWalking", true);
                 }
             }
+        }
+        else
+        {
+            StopMiningAnimation();
+            animator.SetBool("IsWalking", true);
         }
     }
 }

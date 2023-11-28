@@ -24,7 +24,7 @@ public class TerrainGeneration : MonoBehaviour
     public OreClass[] ores;
 
     private int CHUNK_SIZE = 10;
-    private List<Transform> chunks = new List<Transform>();
+    private List<Transform> chunks = new();
 
     // Метод, який викликається при запуску гри
     private void Start()
@@ -91,7 +91,7 @@ public class TerrainGeneration : MonoBehaviour
     {
         if (chunks.Count < 26)
         {
-            GameObject chunkObject = new GameObject("Chunk");
+            GameObject chunkObject = new("Chunk");
             chunkObject.transform.parent = transform;
             chunks.Add(chunkObject.transform);
         }

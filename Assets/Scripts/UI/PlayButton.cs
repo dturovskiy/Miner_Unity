@@ -30,6 +30,10 @@ namespace AwesomeTools.MainScene
             //Disappear();
             StartCoroutine(LoadScene(_sceneData));
         }
+        public void LoadGame()
+        {
+            LoadScene();
+        }
 
         public void InvokeOnButtonIsPressed()
         {
@@ -45,6 +49,11 @@ namespace AwesomeTools.MainScene
             yield return new WaitForSeconds(1);
             Debug.Log(type.Key);
             _sceneLoader.LoadScene(_sceneData.Key);
+        }
+        private IEnumerator LoadScene()
+        {
+            yield return new WaitForSeconds(1);
+            SavingService.LoadGame("SaveGame.json");
         }
     }
 }

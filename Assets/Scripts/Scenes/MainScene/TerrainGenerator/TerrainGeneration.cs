@@ -9,22 +9,19 @@ public class TerrainGeneration : MonoBehaviour
 
     // Налаштування генерації терену
     [Header("Generation Settings")]
-    public const int WORLD_SIZE = 99; // Розмір світу
+    public const int WORLD_SIZE = 99;
     public const int DUNGEON_HEIGHT = 250;
     public const int TOTAL_HEIGHT = 254;
     public const float STONE_PROBABILITY = 0.07f;
     private const int MAX_X_OFFSET = 22;
-
-    [Header("Noise Settings")]
-    public float terrainFreq = 0.05f;
-    public float caveFreq = 0.05f;
-    public float seed;
 
     [Header("Ore Settings")]
     public OreClass[] ores;
 
     private int CHUNK_SIZE = 10;
     private List<Transform> chunks = new();
+
+    private bool isEdge;
 
     // Метод, який викликається при запуску гри
     private void Start()
@@ -84,6 +81,7 @@ public class TerrainGeneration : MonoBehaviour
     // Функція, що перевіряє, чи `(x, y)` на межі терену
     private bool IsTerrainEdge(int x, int y)
     {
+
         return (x == 0 || x == WORLD_SIZE || y == 0) || (x <= 19 && y == TOTAL_HEIGHT);
     }
 
@@ -98,7 +96,12 @@ public class TerrainGeneration : MonoBehaviour
         // Генерація меж терену
         if (IsTerrainEdge(x, y))
         {
+            isEdge = true;
             return tileAtlas.stone.tileSprite;
+        }
+        else
+        {
+            isEdge = false;
         }
 
         // Генерація тунелю
@@ -159,6 +162,11 @@ public class TerrainGeneration : MonoBehaviour
         newTile.transform.parent = chunk;
         newTile.AddComponent<SpriteRenderer>();
 
+        if (isEdge)
+        {
+            newTile.tag = "Edge";
+        }
+
         if (tileSprite.name != "Tunnel")
         {
             newTile.AddComponent<BoxCollider2D>();
@@ -169,13 +177,17 @@ public class TerrainGeneration : MonoBehaviour
         newTile.GetComponent<SpriteRenderer>().sprite = tileSprite;
         newTile.name = tileSprite.name;
 
-        if (newTile.name == "Stone")
+        if (newTile.name == "Stone" && !isEdge)
         {
             newTile.tag = "Stone";
             newTile.AddComponent<Rigidbody2D>().isKinematic = true;
         }
-
-        newTile.AddComponent<TileBehaviour>();
+        
+        if (!isEdge)
+        {
+            newTile.AddComponent<TileBehaviour>();
+        }
+        
         newTile.transform.position = new Vector2(x + 0.5f, y + 0.5f);
 
         return newTile;

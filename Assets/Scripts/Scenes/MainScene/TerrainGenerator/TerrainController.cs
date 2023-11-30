@@ -13,7 +13,7 @@ public class TerrainController : MonoBehaviour
     [SerializeField] TerrainGeneration terrainGeneration;
 
     private Vector2Int tileDestroyRadius;
-    bool inCave = false;
+    public bool inCave = false;
 
     private void Start()
     {

@@ -2,7 +2,9 @@ using UnityEngine;
 
 public class MiningController : MonoBehaviour
 {
-    // Аніматор для управління анімацією
+    [SerializeField] TerrainController terrainController;
+    
+    
     private Animator animator;
     private HeroController heroController;
     private TileBehaviour tileBehaviour;
@@ -43,7 +45,10 @@ public class MiningController : MonoBehaviour
             }
             Vector2 miningPosition = (Vector2)transform.position + miningDirection * maxMiningDistance;
 
-            CheckTile(miningPosition);
+            if (!terrainController.inCave)
+            {
+                CheckTile(miningPosition);
+            }
         }
         else
         {
@@ -89,7 +94,7 @@ public class MiningController : MonoBehaviour
             tileBehaviour = tile.GetComponent<TileBehaviour>();
 
             // Перевірка тегів та стану плитки
-            if (tile.CompareTag("Player") || tile.CompareTag("Stone") || tile.CompareTag("Cave")) return;
+            if (tile.CompareTag("Edge") || tile.CompareTag("Stone") || tile.CompareTag("Cave")) return;
 
             StartMiningAnimation();
 

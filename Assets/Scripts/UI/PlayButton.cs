@@ -14,25 +14,20 @@ namespace AwesomeTools.MainScene
 
         public event Action OnButtonIsPressed;
 
-        /// <summary>
-        /// Показує кнопку для початку гри
-        /// </summary>
-        //private void Start()
-        //{
-        //    //Appear();
-        //}
+        private void Awake()
+        {
+            SavingService.UpdateActiveSceneInfo("SaveGame.json");
+        }
 
-        /// <summary>
-        /// Запускає процес переходу у сцену "QuestScene"
-        /// </summary>
         public void GoToMainScene()
         {
             //Disappear();
             StartCoroutine(LoadScene(_sceneData));
         }
-        public void LoadGame()
+        public void ContinueGame()
         {
-            LoadScene();
+            
+            SavingService.LoadGame("SaveGame.json");
         }
 
         public void InvokeOnButtonIsPressed()
@@ -49,11 +44,13 @@ namespace AwesomeTools.MainScene
             yield return new WaitForSeconds(1);
             Debug.Log(type.Key);
             _sceneLoader.LoadScene(_sceneData.Key);
+            SavingService.UpdateActiveSceneInfo("SaveGame.json");
         }
+
         private IEnumerator LoadScene()
         {
             yield return new WaitForSeconds(1);
-            SavingService.LoadGame("SaveGame.json");
+            
         }
     }
 }

@@ -66,6 +66,8 @@ public class TerrainGeneration : MonoBehaviour
             if (chunks[i] != null)
                 chunks[i].gameObject.SetActive(false);
         }
+
+        System.GC.Collect();
     }
 
     private void CreateChunk()
@@ -186,7 +188,9 @@ public class TerrainGeneration : MonoBehaviour
         if (!isEdge)
         {
             newTile.AddComponent<TileBehaviour>();
+            newTile.AddComponent<TransformSaver>();
         }
+        
         
         newTile.transform.position = new Vector2(x + 0.5f, y + 0.5f);
 

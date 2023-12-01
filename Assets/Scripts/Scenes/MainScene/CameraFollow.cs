@@ -7,12 +7,16 @@ public class CameraFollow : MonoBehaviour
 
     private Vector3 offset; // Відстань між камерою і героєм
 
-    private void Start()
+    private void Awake()
     {
         if (target != null)
         {
             offset = transform.position - target.position;
         }
+    }
+    private void Start()
+    {
+        
     }
 
     private void LateUpdate()

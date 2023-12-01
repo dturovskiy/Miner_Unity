@@ -19,8 +19,6 @@ public class HeroController : MonoBehaviour
 
     private void Update()
     {
-        Debug.Log("Can move is: " + canMove);
-
         if (canMove)
         {
             float moveHorizontal = joystick.Horizontal;

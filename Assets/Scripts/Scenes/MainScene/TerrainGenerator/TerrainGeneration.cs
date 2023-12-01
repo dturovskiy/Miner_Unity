@@ -9,16 +9,11 @@ public class TerrainGeneration : MonoBehaviour
 
     // Налаштування генерації терену
     [Header("Generation Settings")]
-    public const int WORLD_SIZE = 99; // Розмір світу
+    public const int WORLD_SIZE = 99;
     public const int DUNGEON_HEIGHT = 250;
     public const int TOTAL_HEIGHT = 254;
     public const float STONE_PROBABILITY = 0.07f;
     private const int MAX_X_OFFSET = 22;
-
-    [Header("Noise Settings")]
-    public float terrainFreq = 0.05f;
-    public float caveFreq = 0.05f;
-    public float seed;
 
     [Header("Ore Settings")]
     public OreClass[] ores;
@@ -26,29 +21,15 @@ public class TerrainGeneration : MonoBehaviour
     private int CHUNK_SIZE = 10;
     private List<Transform> chunks = new();
 
+    private bool isEdge;
+
     // Метод, який викликається при запуску гри
     private void Start()
     {
         CreateChunk();
 
-        // Генеруємо випадковий seed для шуму
-        seed = Random.Range(-10000, 10000);
-
-        // Ініціалізуємо текстури розповсюдження руд
-        InitializeOreSpreadTextures();
-
         // Генеруємо терен
         GenerateTerrain();
-    }
-
-    private void InitializeOreSpreadTextures()
-    {
-        // Ініціалізуємо текстури розповсюдження руд для кожного типу руди
-        foreach (OreClass ore in ores)
-        {
-            ore.spreadTexture = new Texture2D(WORLD_SIZE, DUNGEON_HEIGHT);
-            GenerateNoiseTexture(seed, ore.frequency, ore.size, ore.spreadTexture);
-        }
     }
 
     // Метод для генерації терену
@@ -85,6 +66,8 @@ public class TerrainGeneration : MonoBehaviour
             if (chunks[i] != null)
                 chunks[i].gameObject.SetActive(false);
         }
+
+        System.GC.Collect();
     }
 
     private void CreateChunk()
@@ -97,29 +80,10 @@ public class TerrainGeneration : MonoBehaviour
         }
     }
 
-    public void GenerateNoiseTexture(float seed, float frequency, float limit, Texture2D noise)
-    {
-        for (int x = 0; x < noise.width; x++)
-        {
-            for (int y = 0; y < noise.height; y++)
-            {
-                // Генеруємо шум за допомогою Perlin Noise
-                float v = Mathf.PerlinNoise((x + seed) * frequency, (y + seed) * frequency);
-
-                // Встановлюємо колір пікселя на основі шуму
-                if (v > limit)
-                    noise.SetPixel(x, y, Color.white);
-                else
-                    noise.SetPixel(x, y, Color.black);
-            }
-        }
-
-        noise.Apply();
-    }
-
     // Функція, що перевіряє, чи `(x, y)` на межі терену
     private bool IsTerrainEdge(int x, int y)
     {
+
         return (x == 0 || x == WORLD_SIZE || y == 0) || (x <= 19 && y == TOTAL_HEIGHT);
     }
 
@@ -134,7 +98,12 @@ public class TerrainGeneration : MonoBehaviour
         // Генерація меж терену
         if (IsTerrainEdge(x, y))
         {
+            isEdge = true;
             return tileAtlas.stone.tileSprite;
+        }
+        else
+        {
+            isEdge = false;
         }
 
         // Генерація тунелю
@@ -145,17 +114,17 @@ public class TerrainGeneration : MonoBehaviour
 
         if (y < TOTAL_HEIGHT && x < WORLD_SIZE)
         {
+            // Рандомна генерація каменів на інших частинах терену
+            if (y != DUNGEON_HEIGHT + 1 && Random.Range(0.0f, 1.0f) < STONE_PROBABILITY)
+                return tileAtlas.stone.tileSprite;
+
             for (int i = 0; i < ores.Length; i++)
             {
-                if (ores[i].spreadTexture.GetPixel(x, y).r > 0.5f && y < ores[i].maxSpawnHeight && y > ores[i].minSpawnHeight)
+                if (Random.Range(0.0f, 1.0f) < ores[i].frequency && y > ores[i].minSpawnHeight && y < ores[i].maxSpawnHeight)
                 {
                     return GetOreSprite(i);
                 }
             }
-
-            // Рандомна генерація каменів на інших частинах терену
-            if (y != DUNGEON_HEIGHT + 1 && Random.Range(0.0f, 1.0f) < STONE_PROBABILITY)
-                return tileAtlas.stone.tileSprite;
         }
 
         return tileAtlas.dirt.tileSprite;
@@ -195,6 +164,11 @@ public class TerrainGeneration : MonoBehaviour
         newTile.transform.parent = chunk;
         newTile.AddComponent<SpriteRenderer>();
 
+        if (isEdge)
+        {
+            newTile.tag = "Edge";
+        }
+
         if (tileSprite.name != "Tunnel")
         {
             newTile.AddComponent<BoxCollider2D>();
@@ -205,13 +179,19 @@ public class TerrainGeneration : MonoBehaviour
         newTile.GetComponent<SpriteRenderer>().sprite = tileSprite;
         newTile.name = tileSprite.name;
 
-        if (newTile.name == "Stone")
+        if (newTile.name == "Stone" && !isEdge)
         {
             newTile.tag = "Stone";
             newTile.AddComponent<Rigidbody2D>().isKinematic = true;
         }
-
-        newTile.AddComponent<TileBehaviour>();
+        
+        if (!isEdge)
+        {
+            newTile.AddComponent<TileBehaviour>();
+            newTile.AddComponent<TransformSaver>();
+        }
+        
+        
         newTile.transform.position = new Vector2(x + 0.5f, y + 0.5f);
 
         return newTile;

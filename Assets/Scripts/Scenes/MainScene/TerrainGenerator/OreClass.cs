@@ -5,9 +5,8 @@ public class OreClass
 {
     public string name;
 
-    [Range(0f, 1f)] public float frequency;
-    [Range(0f, 1f)] public float size;
+    [Range(0f, 0.5f)] public float frequency;
+
     public int maxSpawnHeight;
     public int minSpawnHeight;
-    public Texture2D spreadTexture;
 }

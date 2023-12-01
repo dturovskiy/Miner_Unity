@@ -13,7 +13,7 @@ public class TerrainController : MonoBehaviour
     [SerializeField] TerrainGeneration terrainGeneration;
 
     private Vector2Int tileDestroyRadius;
-    bool inCave = false;
+    public bool inCave = false;
 
     private void Start()
     {
@@ -31,8 +31,6 @@ public class TerrainController : MonoBehaviour
 
             int CHUNK_SIZE = 10;
             int chunkIndex = Mathf.FloorToInt(heroPosition.y / CHUNK_SIZE);
-
-            Debug.Log("Hero is in Chunk: " + chunkIndex);
 
             List<Transform> chunks = terrainGeneration.GetChunks();
 

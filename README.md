@@ -1,4 +1,4 @@
-# Miner_Scnenario
+# Miner Scnenario
 
 ## [ВІДГУКИ ПРО ПРОБЛЕМИ](ReadmeContent/Problems.markdown)
 

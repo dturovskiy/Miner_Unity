@@ -251,4 +251,11 @@ public static class SavingService
             Debug.LogWarningFormat("File does not exist at {0}. Cannot update active scene info.", outputPath);
         }
     }
+
+    // Метод для перевірки існування файлу збереження гри
+    public static bool CheckForSavedGame(string fileName)
+    {
+        string filePath = Path.Combine(Application.persistentDataPath, fileName);
+        return File.Exists(filePath);
+    }
 }

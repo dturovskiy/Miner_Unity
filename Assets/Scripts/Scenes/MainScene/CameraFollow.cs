@@ -14,10 +14,6 @@ public class CameraFollow : MonoBehaviour
             offset = transform.position - target.position;
         }
     }
-    private void Start()
-    {
-        
-    }
 
     private void LateUpdate()
     {

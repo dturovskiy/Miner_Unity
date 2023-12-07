@@ -37,7 +37,7 @@ public class TerrainController : MonoBehaviour
             if (chunkIndex < chunks.Count)
             {
                 if (chunkIndex != 0)
-                chunks[chunkIndex - 1].gameObject.SetActive(true);
+                    chunks[chunkIndex - 1].gameObject.SetActive(true);
             }
 
             for (int x = -tileDestroyRadius.x; x <= tileDestroyRadius.x; x++)
@@ -56,7 +56,7 @@ public class TerrainController : MonoBehaviour
         }
     }
 
-    public bool CheckIsPlayerInCave()
+    private bool CheckIsPlayerInCave()
     {
         Collider2D[] colliders = Physics2D.OverlapCircleAll(hero.transform.position, 0.4f);
 

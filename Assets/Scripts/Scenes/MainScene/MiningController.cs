@@ -4,8 +4,8 @@ using UnityEngine;
 public class MiningController : MonoBehaviour
 {
     [SerializeField] TerrainController terrainController;
-    
-    
+
+
     private Animator animator;
     private HeroController heroController;
     private TileBehaviour tileBehaviour;
@@ -36,7 +36,7 @@ public class MiningController : MonoBehaviour
         if (Math.Abs(horizontalInput) >= 0.5 || Math.Abs(verticalInput) >= 0.5)
         {
             Vector2 miningDirection = new Vector2(roundedHorizontalInput, roundedVerticalInput).normalized;
-            if(roundedVerticalInput == 1)
+            if (roundedVerticalInput == 1)
             {
                 maxMiningDistance = 0.7f;
             }
@@ -75,12 +75,12 @@ public class MiningController : MonoBehaviour
     {
         if (isMiningStarted)
         {
-            isMiningStarted= false;
+            isMiningStarted = false;
             startTime = 0f;
         }
 
         animator.SetBool("IsMining", false);
-        
+
         heroController.SetCanMove(true);
     }
 

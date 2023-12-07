@@ -10,6 +10,7 @@ public class GameController : MonoBehaviour
 
     private void Start()
     {
+        SavingService.UpdateActiveSceneInfo("SaveGame.json");
         hero.transform.position = transformSaver.transform.position;
     }
 
@@ -22,7 +23,6 @@ public class GameController : MonoBehaviour
     public void LoadMenu()
     {
         SceneManager.LoadScene("MenuScene");
-        SavingService.UpdateActiveSceneInfo("SaveGame.json");
     }
 
     public void LoadGame()

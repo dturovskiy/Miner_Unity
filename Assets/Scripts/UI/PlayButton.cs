@@ -26,7 +26,7 @@ namespace AwesomeTools.MainScene
         }
         public void ContinueGame()
         {
-            
+            SavingService.UpdateActiveSceneInfo("SaveGame.json");
             SavingService.LoadGame("SaveGame.json");
         }
 

@@ -188,8 +188,7 @@ public static class SavingService
                         // Get the Save ID from that data
                         var saveID = (string)objectData[SAVEID_KEY];
 
-                        // Attempt to find the object in the scene(s) that has
-                        // that Save ID
+                        // Attempt to find the object in the scene(s) that has that Save ID
                         if (allLoadableObjects.ContainsKey(saveID))
                         {
                             var loadableObject = allLoadableObjects[saveID];
@@ -250,12 +249,5 @@ public static class SavingService
             // Якщо файл не існує, вивести відповідне повідомлення
             Debug.LogWarningFormat("File does not exist at {0}. Cannot update active scene info.", outputPath);
         }
-    }
-
-    // Метод для перевірки існування файлу збереження гри
-    public static bool CheckForSavedGame(string fileName)
-    {
-        string filePath = Path.Combine(Application.persistentDataPath, fileName);
-        return File.Exists(filePath);
     }
 }

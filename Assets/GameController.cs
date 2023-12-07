@@ -10,29 +10,7 @@ public class GameController : MonoBehaviour
 
     private void Start()
     {
-        // Перевірте, чи існує файл збереження гри
-        bool isLoadGame = SavingService.CheckForSavedGame("SaveGame.json");
-
-        if (isLoadGame)
-        {
-            // Завантажте гру з файлу JSON
-            SavingService.LoadGame("SaveGame.json");
-
-            // Відновлення позиції героя після завантаження гри
-            if (hero != null && transformSaver != null)
-            {
-                hero.transform.position = transformSaver.transform.position;
-            }
-            else
-            {
-                Debug.LogWarning("Hero or TransformSaver is null. Make sure to assign them in the inspector.");
-            }
-        }
-        else
-        {
-            // Генеруйте новий терен, якщо це нова гра
-            GenerateTerrain();
-        }
+        hero.transform.position = transformSaver.transform.position;
     }
 
     public void SaveGame()
@@ -43,21 +21,12 @@ public class GameController : MonoBehaviour
 
     public void LoadMenu()
     {
-        // Завантажити меню
         SceneManager.LoadScene("MenuScene");
+        SavingService.UpdateActiveSceneInfo("SaveGame.json");
     }
 
-    // Генерувати новий терен
-    private void GenerateTerrain()
+    public void LoadGame()
     {
-        TerrainGeneration terrainGeneration = FindObjectOfType<TerrainGeneration>();
-        if (terrainGeneration != null)
-        {
-            terrainGeneration.GenerateTerrain();
-        }
-        else
-        {
-            Debug.LogError("TerrainGeneration script not found in the scene.");
-        }
+        SavingService.LoadGame("SaveGame.json");
     }
 }

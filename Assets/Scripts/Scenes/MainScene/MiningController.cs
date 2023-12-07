@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class MiningController : MonoBehaviour
@@ -32,7 +33,7 @@ public class MiningController : MonoBehaviour
         int roundedHorizontalInput = Mathf.RoundToInt(horizontalInput);
         int roundedVerticalInput = Mathf.RoundToInt(verticalInput);
 
-        if (horizontalInput != 0 || verticalInput != 0)
+        if (Math.Abs(horizontalInput) >= 0.5 || Math.Abs(verticalInput) >= 0.5)
         {
             Vector2 miningDirection = new Vector2(roundedHorizontalInput, roundedVerticalInput).normalized;
             if(roundedVerticalInput == 1)

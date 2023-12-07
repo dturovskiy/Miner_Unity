@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.37311926, g: 0.38073996, b: 0.35872698, a: 1}
+  m_IndirectSpecularColor: {r: 0.3708985, g: 0.37837005, b: 0.3572253, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -269,6 +269,116 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!1 &705365661
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 705365663}
+  - component: {fileID: 705365662}
+  m_Layer: 0
+  m_Name: TerrainGeneration
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &705365662
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 705365661}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd4f0fd8a38f7e540952fc8169e734dc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ores:
+  - name: Coal
+    frequency: 0.085
+    maxSpawnHeight: 255
+    minSpawnHeight: 190
+  - name: Iron
+    frequency: 0.06
+    maxSpawnHeight: 250
+    minSpawnHeight: 150
+  - name: Gold
+    frequency: 0.04
+    maxSpawnHeight: 150
+    minSpawnHeight: 50
+  - name: Diamond
+    frequency: 0.026
+    maxSpawnHeight: 70
+    minSpawnHeight: 0
+  - name: Uranus
+    frequency: 0.026
+    maxSpawnHeight: 100
+    minSpawnHeight: 0
+  - name: Topaz
+    frequency: 0.026
+    maxSpawnHeight: 200
+    minSpawnHeight: 0
+  - name: Silver
+    frequency: 0.026
+    maxSpawnHeight: 230
+    minSpawnHeight: 200
+  - name: Ruby
+    frequency: 0.026
+    maxSpawnHeight: 150
+    minSpawnHeight: 0
+  - name: Platinum
+    frequency: 0.026
+    maxSpawnHeight: 155
+    minSpawnHeight: 55
+  - name: Opal
+    frequency: 0.026
+    maxSpawnHeight: 200
+    minSpawnHeight: 50
+  - name: Nephritis
+    frequency: 0.026
+    maxSpawnHeight: 200
+    minSpawnHeight: 100
+  - name: Map
+    frequency: 0.02
+    maxSpawnHeight: 254
+    minSpawnHeight: 0
+  - name: Lazurite
+    frequency: 0.026
+    maxSpawnHeight: 220
+    minSpawnHeight: 150
+  - name: Emerald
+    frequency: 0.026
+    maxSpawnHeight: 230
+    minSpawnHeight: 100
+  - name: Artifact
+    frequency: 0.02
+    maxSpawnHeight: 250
+    minSpawnHeight: 0
+  - name: Amethyst
+    frequency: 0.026
+    maxSpawnHeight: 150
+    minSpawnHeight: 50
+  tileAtlas: {fileID: 11400000, guid: 80cbe3662e5415b439c0e61bc2867df5, type: 2}
+--- !u!4 &705365663
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 705365661}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 16.212963, y: 252.79018, z: 0.4811191}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 5
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &745716924
 GameObject:
   m_ObjectHideFlags: 0
@@ -2968,7 +3078,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2095287622}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 705365662}
+        m_TargetAssemblyTypeName: TerrainTextWriter, Assembly-CSharp
+        m_MethodName: CreateTerrainTextFile
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!95 &2095287625
 Animator:
   serializedVersion: 5

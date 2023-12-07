@@ -83,7 +83,6 @@ public class TerrainGeneration : MonoBehaviour
     // Функція, що перевіряє, чи `(x, y)` на межі терену
     private bool IsTerrainEdge(int x, int y)
     {
-
         return (x == 0 || x == WORLD_SIZE || y == 0) || (x <= 19 && y == TOTAL_HEIGHT);
     }
 
@@ -184,14 +183,14 @@ public class TerrainGeneration : MonoBehaviour
             newTile.tag = "Stone";
             newTile.AddComponent<Rigidbody2D>().isKinematic = true;
         }
-        
+
         if (!isEdge)
         {
             newTile.AddComponent<TileBehaviour>();
             newTile.AddComponent<TransformSaver>();
         }
-        
-        
+
+
         newTile.transform.position = new Vector2(x + 0.5f, y + 0.5f);
 
         return newTile;

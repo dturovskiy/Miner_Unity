@@ -29,7 +29,6 @@ public class TerrainGeneration : MonoBehaviour
         CreateChunk();
 
         // Генеруємо терен
-        GenerateTerrain();
     }
 
     // Метод для генерації терену
@@ -213,5 +212,62 @@ public class TerrainGeneration : MonoBehaviour
     public List<Transform> GetChunks()
     {
         return chunks;
+    }
+
+    internal GameObject PlaceTileByType(string tileType, int x, int y)
+    {
+        Sprite tileSprite = DetermineTileTypeByString(tileType);
+        GameObject newTile = PlaceTile(tileSprite, x, y);
+
+        return newTile;
+    }
+
+    private Sprite DetermineTileTypeByString(string tileType)
+    {
+        switch (tileType)
+        {
+            case "CO":
+                return tileAtlas.coal.tileSprite;
+            case "IR":
+                return tileAtlas.iron.tileSprite;
+            case "GO":
+                return tileAtlas.gold.tileSprite;
+            case "DI":
+                return tileAtlas.diamond.tileSprite;
+            case "UR":
+                return tileAtlas.uranus.tileSprite;
+            case "TO":
+                return tileAtlas.topaz.tileSprite;
+            case "SI":
+                return tileAtlas.silver.tileSprite;
+            case "RU":
+                return tileAtlas.ruby.tileSprite;
+            case "PL":
+                return tileAtlas.platinum.tileSprite;
+            case "OP":
+                return tileAtlas.opal.tileSprite;
+            case "NE":
+                return tileAtlas.nephritis.tileSprite;
+            case "MA":
+                return tileAtlas.map.tileSprite;
+            case "LA":
+                return tileAtlas.lazurite.tileSprite;
+            case "EM":
+                return tileAtlas.emerald.tileSprite;
+            case "AR":
+                return tileAtlas.artifact.tileSprite;
+            case "AM":
+                return tileAtlas.amethyst.tileSprite;
+            case "DR":
+                return tileAtlas.dirt.tileSprite;
+            case "ST":
+                return tileAtlas.stone.tileSprite;
+            case "ED":
+                return tileAtlas.stone.tileSprite;
+            case "TU":
+                return tileAtlas.tunnel.tileSprite;
+
+            default: return tileAtlas.dirt.tileSprite;
+        }
     }
 }

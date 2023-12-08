@@ -73,7 +73,7 @@ public class TerrainTextWriter : MonoBehaviour
             }
         }
 
-        return "DI";
+        return "DR";
     }
 
     private string GetOreID(int oreIndex)

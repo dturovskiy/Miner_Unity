@@ -1,4 +1,5 @@
 using System.IO;
+using System.Text;
 using UnityEngine;
 
 public class TerrainTextWriter : MonoBehaviour
@@ -18,8 +19,12 @@ public class TerrainTextWriter : MonoBehaviour
 
         using (StreamWriter writer = new StreamWriter(filePath))
         {
+            StringBuilder lineBuilder = new StringBuilder();
+
             for (int y = 0; y <= TOTAL_HEIGHT; y++)
             {
+                lineBuilder.Clear();
+
                 for (int x = 0; x <= WORLD_SIZE; x++)
                 {
 
@@ -31,11 +36,11 @@ public class TerrainTextWriter : MonoBehaviour
 
                     string tileType = DetermineTileType(x, y);
 
-                    writer.Write(tileType);
-                    writer.Write("|");
+                    lineBuilder.Append(tileType);
+                    lineBuilder.Append("|");
                 }
 
-                writer.WriteLine();
+                writer.WriteLine(lineBuilder.ToString());
             }
         }
 

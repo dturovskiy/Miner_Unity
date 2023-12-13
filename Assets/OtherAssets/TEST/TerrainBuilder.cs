@@ -2,7 +2,6 @@ using LitJson;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class TerrainBuilder : MonoBehaviour
 {
@@ -48,6 +47,11 @@ public class TerrainBuilder : MonoBehaviour
             }
         }
 
+        WriteTileData(tileDataList, outputPath);
+    }
+
+    private void WriteTileData(List<TileData> tileDataList, string outputPath)
+    {
         // Write all tile data to the file after the loops
         if (File.Exists(outputPath))
         {
@@ -61,11 +65,12 @@ public class TerrainBuilder : MonoBehaviour
             // Записати оновлений JSON-текст назад в файл
             existingData.ToJson(writer);
             File.WriteAllText(outputPath, writer.ToString());
+            Debug.Log("Terrain layout has been rewritten to " + outputPath);
         }
         else
         {
             var writer = new JsonWriter();
-            writer .PrettyPrint = true;
+            writer.PrettyPrint = true;
 
             JsonMapper.ToJson(tileDataList, writer);
             File.WriteAllText(outputPath, writer.ToString());

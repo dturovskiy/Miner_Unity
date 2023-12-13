@@ -2,6 +2,7 @@ using LitJson;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class TerrainBuilder : MonoBehaviour
 {
@@ -24,7 +25,7 @@ public class TerrainBuilder : MonoBehaviour
         string outputPath = Path.Combine(Application.persistentDataPath, fileName);
 
         // Create a list to store tile data
-        List<JsonData> tileDataList = new List<JsonData>();
+        List<TileData> tileDataList = new List<TileData>();
 
         for (int y = 0; y <= TOTAL_HEIGHT; y++)
         {
@@ -39,10 +40,7 @@ public class TerrainBuilder : MonoBehaviour
                 string tileType = DetermineTileType(x, y);
 
                 // Add tile data to the list
-                JsonData tileData = new JsonData();
-                tileData["X"] = x;
-                tileData["Y"] = y;
-                tileData["TileType"] = tileType;
+                TileData tileData = new TileData { X = x, Y = y, TileType = tileType };
                 tileDataList.Add(tileData);
 
                 // Add debug log for each tile
@@ -51,15 +49,29 @@ public class TerrainBuilder : MonoBehaviour
         }
 
         // Write all tile data to the file after the loops
-        using (StreamWriter writer = new StreamWriter(outputPath, false))
+        if (File.Exists(outputPath))
         {
-            foreach (var tileData in tileDataList)
-            {
-                writer.WriteLine(tileData.ToJson());
-            }
-        }
+            // Прочитати існуючий JSON з файлу
+            var existingData = JsonMapper.ToObject(File.ReadAllText(outputPath));
 
-        Debug.Log("Terrain layout has been written to " + outputPath);
+            // Створити JsonWriter з параметром PrettyPrint
+            var writer = new JsonWriter();
+            writer.PrettyPrint = true;
+
+            // Записати оновлений JSON-текст назад в файл
+            existingData.ToJson(writer);
+            File.WriteAllText(outputPath, writer.ToString());
+        }
+        else
+        {
+            var writer = new JsonWriter();
+            writer .PrettyPrint = true;
+
+            JsonMapper.ToJson(tileDataList, writer);
+            File.WriteAllText(outputPath, writer.ToString());
+            Debug.Log("Terrain layout has been written to " + outputPath);
+        }
+        System.GC.Collect();
     }
 
     private string DetermineTileType(int x, int y)

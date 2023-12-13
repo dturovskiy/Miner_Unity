@@ -862,6 +862,7 @@ GameObject:
   - component: {fileID: 2095287622}
   - component: {fileID: 2095287624}
   - component: {fileID: 2095287625}
+  - component: {fileID: 2095287626}
   m_Layer: 0
   m_Name: BackButton
   m_TagString: Untagged
@@ -971,9 +972,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 705365664}
-        m_TargetAssemblyTypeName: TerrainBuilder, Assembly-CSharp
-        m_MethodName: CreateTerrainJsonFile
+      - m_Target: {fileID: 2095287626}
+        m_TargetAssemblyTypeName: AwesomeTools.UI.ExitButton, Assembly-CSharp
+        m_MethodName: GoToOtherScene
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -1004,3 +1005,20 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &2095287626
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2095287620}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 442fdad5ee152244fa4fd9427baf6a56, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _appearDuration: 0
+  _appearPosition: {fileID: 0}
+  _data:
+    sceneKey: 
+  _sceneLoader: {fileID: 0}

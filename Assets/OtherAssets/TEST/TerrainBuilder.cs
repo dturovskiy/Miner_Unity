@@ -41,9 +41,6 @@ public class TerrainBuilder : MonoBehaviour
                 // Add tile data to the list
                 TileData tileData = new TileData { X = x, Y = y, TileType = tileType };
                 tileDataList.Add(tileData);
-
-                // Add debug log for each tile
-                Debug.Log($"Tile at X:{x}, Y:{y}, Type:{tileType}");
             }
         }
 

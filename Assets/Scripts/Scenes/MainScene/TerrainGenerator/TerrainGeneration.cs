@@ -1,4 +1,6 @@
+using LitJson;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 
 public class TerrainGeneration : MonoBehaviour
@@ -9,15 +11,16 @@ public class TerrainGeneration : MonoBehaviour
 
     private int CHUNK_SIZE = 10;
     private List<Transform> chunks = new();
-
+    private List<TileData> tileDataList;
     private bool isEdge;
 
     // Метод, який викликається при запуску гри
     private void Start()
     {
         CreateChunk();
-
+        tileDataList = GenerateTerrainFromJson(Path.Combine(Application.persistentDataPath));
         // Генеруємо терен
+        GenerateTerrain(tileDataList);
     }
 
     private void CreateChunk()
@@ -146,5 +149,48 @@ public class TerrainGeneration : MonoBehaviour
 
             default: return tileAtlas.dirt.tileSprite;
         }
+    }
+
+    public void GenerateTerrain(List<TileData> tileDataList)
+    {
+
+        foreach (var tileData in tileDataList)
+        {
+            GameObject newTile = PlaceTileByType(tileData.TileType, tileData.X, tileData.Y);
+        }
+    }
+
+    public List<TileData> GenerateTerrainFromJson(string filePath)
+    {
+        List<TileData> tileDataList = new List<TileData>();
+
+        if (File.Exists(filePath))
+        {
+            var jsonData = JsonMapper.ToObject(File.ReadAllText(filePath));
+
+            foreach (var tileData in jsonData)
+            {
+                JsonData jsonDataItem = tileData as JsonData;
+
+                if (jsonDataItem != null)
+                {
+                    TileData tileDataObject = new TileData
+                    {
+                        X = (int)jsonDataItem["X"],
+                        Y = (int)jsonDataItem["Y"],
+                        TileType = (string)jsonDataItem["TileType"]
+                    };
+
+                    tileDataList.Add(tileDataObject);
+                }
+            }
+        }
+
+        else
+        {
+            Debug.LogError("Terrain layout file not found!");
+        }
+
+        return tileDataList;
     }
 }

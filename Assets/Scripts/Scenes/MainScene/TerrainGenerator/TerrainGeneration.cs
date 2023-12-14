@@ -3,24 +3,27 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
+[System.Serializable]
 public class TerrainGeneration : MonoBehaviour
 {
     // Змінні для спрайтів плиток (трава, грязь, камінь)
     [Header("Tile Atlas")]
     public TileAtlas tileAtlas;
 
+    private List<TileData> tileDataList = new();
+    private const string fileName = "terrain_layout.json";
     private int CHUNK_SIZE = 10;
     private List<Transform> chunks = new();
-    private List<TileData> tileDataList;
     private bool isEdge;
 
     // Метод, який викликається при запуску гри
     private void Start()
     {
         CreateChunk();
-        tileDataList = GenerateTerrainFromJson(Path.Combine(Application.persistentDataPath));
+        tileDataList = GenerateTerrainFromJson(Path.Combine(Application.persistentDataPath, fileName));
         // Генеруємо терен
         GenerateTerrain(tileDataList);
+        
     }
 
     private void CreateChunk()
@@ -106,48 +109,46 @@ public class TerrainGeneration : MonoBehaviour
     {
         switch (tileType)
         {
-            case "CO":
+            case "Coal":
                 return tileAtlas.coal.tileSprite;
-            case "IR":
+            case "Iron":
                 return tileAtlas.iron.tileSprite;
-            case "GO":
+            case "Gold":
                 return tileAtlas.gold.tileSprite;
-            case "DI":
+            case "Diamond":
                 return tileAtlas.diamond.tileSprite;
-            case "UR":
+            case "Uranus":
                 return tileAtlas.uranus.tileSprite;
-            case "TO":
+            case "Topaz":
                 return tileAtlas.topaz.tileSprite;
-            case "SI":
+            case "Silver":
                 return tileAtlas.silver.tileSprite;
-            case "RU":
+            case "Ruby":
                 return tileAtlas.ruby.tileSprite;
-            case "PL":
+            case "Platinum":
                 return tileAtlas.platinum.tileSprite;
-            case "OP":
+            case "Opal":
                 return tileAtlas.opal.tileSprite;
-            case "NE":
+            case "Nephritis":
                 return tileAtlas.nephritis.tileSprite;
-            case "MA":
+            case "Map":
                 return tileAtlas.map.tileSprite;
-            case "LA":
+            case "Lazurite":
                 return tileAtlas.lazurite.tileSprite;
-            case "EM":
+            case "Emerald":
                 return tileAtlas.emerald.tileSprite;
-            case "AR":
+            case "Artifact":
                 return tileAtlas.artifact.tileSprite;
-            case "AM":
+            case "Amethyst":
                 return tileAtlas.amethyst.tileSprite;
-            case "DR":
+            case "Dirt":
                 return tileAtlas.dirt.tileSprite;
-            case "ST":
+            case "Stone":
                 return tileAtlas.stone.tileSprite;
-            case "ED":
-                return tileAtlas.stone.tileSprite;
-            case "TU":
+            case "Tunnel":
                 return tileAtlas.tunnel.tileSprite;
 
-            default: return tileAtlas.dirt.tileSprite;
+            default: return tileAtlas.stone.tileSprite;
         }
     }
 
@@ -168,21 +169,16 @@ public class TerrainGeneration : MonoBehaviour
         {
             var jsonData = JsonMapper.ToObject(File.ReadAllText(filePath));
 
-            foreach (var tileData in jsonData)
+            foreach (JsonData jsonDataItem in jsonData)
             {
-                JsonData jsonDataItem = tileData as JsonData;
-
-                if (jsonDataItem != null)
+                TileData tileDataObject = new TileData
                 {
-                    TileData tileDataObject = new TileData
-                    {
-                        X = (int)jsonDataItem["X"],
-                        Y = (int)jsonDataItem["Y"],
-                        TileType = (string)jsonDataItem["TileType"]
-                    };
+                    X = (int)jsonDataItem["X"],
+                    Y = (int)jsonDataItem["Y"],
+                    TileType = (string)jsonDataItem["TileType"]
+                };
 
-                    tileDataList.Add(tileDataObject);
-                }
+                tileDataList.Add(tileDataObject);
             }
         }
 

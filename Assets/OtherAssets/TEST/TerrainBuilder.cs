@@ -18,7 +18,7 @@ public class TerrainBuilder : MonoBehaviour
     {
         CreateTerrainJsonFile();
     }
-
+    
     public void CreateTerrainJsonFile()
     {
         string outputPath = Path.Combine(Application.persistentDataPath, fileName);

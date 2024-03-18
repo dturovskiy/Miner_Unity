@@ -1,15 +1,17 @@
+using LitJson;
 using System;
+using System.IO;
 using UnityEngine;
 
 public class MiningController : MonoBehaviour
 {
-    [SerializeField] TerrainController terrainController;
+    //[SerializeField] TerrainController terrainController;
 
 
     private Animator animator;
     private HeroController heroController;
     private TileBehaviour tileBehaviour;
-
+    private SaveLoadSystem saveLoadSystem;
     private float maxMiningDistance = 0.5f;
 
     public Joystick miningJoystick;
@@ -18,6 +20,7 @@ public class MiningController : MonoBehaviour
     private float startTime;
 
     private bool isMiningStarted = false;
+    
 
     private void Awake()
     {
@@ -46,7 +49,7 @@ public class MiningController : MonoBehaviour
             }
             Vector2 miningPosition = (Vector2)transform.position + miningDirection * maxMiningDistance;
 
-            if (!terrainController.inCave)
+            //if (!terrainController.inCave)
             {
                 CheckTile(miningPosition);
             }
@@ -109,6 +112,9 @@ public class MiningController : MonoBehaviour
                 {
                     StopMiningAnimation();
                     animator.SetBool("IsWalking", true);
+                    Vector2Int tileCoordinates = new Vector2Int(Mathf.RoundToInt(tile.transform.position.x), Mathf.RoundToInt(tile.transform.position.y));
+                    saveLoadSystem.SaveDestroyedBlock(tileCoordinates);
+
                 }
             }
         }

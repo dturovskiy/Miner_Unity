@@ -146,6 +146,10 @@ PrefabInstance:
       propertyPath: miningJoystick
       value: 
       objectReference: {fileID: 699543746}
+    - target: {fileID: 4708900309069914521, guid: 196ad7aa55d78ac42a42ca5c91685e6f, type: 3}
+      propertyPath: saveLoadSystem
+      value: 
+      objectReference: {fileID: 2076826956}
     - target: {fileID: 4708900309331890126, guid: 196ad7aa55d78ac42a42ca5c91685e6f, type: 3}
       propertyPath: m_RootOrder
       value: 1
@@ -296,6 +300,11 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!1 &682472998 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4708900309069914515, guid: 196ad7aa55d78ac42a42ca5c91685e6f, type: 3}
+  m_PrefabInstance: {fileID: 85668227}
+  m_PrefabAsset: {fileID: 0}
 --- !u!224 &699543745 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 1394581763415225282, guid: ef6d8bff9bec2114b821a1fe4cf51be6, type: 3}
@@ -432,6 +441,7 @@ GameObject:
   m_Component:
   - component: {fileID: 850967803}
   - component: {fileID: 850967804}
+  - component: {fileID: 850967805}
   m_Layer: 0
   m_Name: Terrain
   m_TagString: Untagged
@@ -467,6 +477,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   tileAtlas: {fileID: 11400000, guid: 80cbe3662e5415b439c0e61bc2867df5, type: 2}
+--- !u!114 &850967805
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 850967801}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa4eeb53f3bb7d74b8088b67b25e5651, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hero: {fileID: 682472998}
+  activationDistance: 1
+  sideActivationDistance: 3
+  terrainGeneration: {fileID: 0}
+  inCave: 0
 --- !u!1 &963194225
 GameObject:
   m_ObjectHideFlags: 0
@@ -1523,6 +1550,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8483bf3359615824fa4dbc970b412a73, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  destroyedBlockCoordinates: []
 --- !u!4 &2076826957
 Transform:
   m_ObjectHideFlags: 0

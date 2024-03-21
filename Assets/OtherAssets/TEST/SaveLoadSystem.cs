@@ -1,5 +1,4 @@
 using LitJson;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
@@ -7,11 +6,11 @@ using UnityEngine;
 public class SaveLoadSystem : MonoBehaviour
 {
     // Зберігаємо координати знищених блоків
-    [SerializeField] private List<Vector2Int> destroyedBlockCoordinates = new List<Vector2Int>();
+    [SerializeField] private List<Vector2> destroyedBlockCoordinates = new List<Vector2>();
     private const string fileName = "terrain_layout.json";
 
     // Метод для збереження координати знищеного блоку
-    public void SaveDestroyedBlock(Vector2Int coordinates)
+    public void SaveDestroyedBlock(Vector2 coordinates)
     {
         destroyedBlockCoordinates.Add(coordinates);
     }
@@ -32,7 +31,7 @@ public class SaveLoadSystem : MonoBehaviour
                 // Знайти та видалити блок із списку
                 foreach (JsonData jsonDataItem in jsonData)
                 {
-                    if ((int)jsonDataItem["X"] == coordinate.x && ((int)jsonDataItem["Y"] + 1) == coordinate.y)
+                    if ((int)jsonDataItem["X"] == (int)coordinate.x && ((int)jsonDataItem["Y"]) == (int)coordinate.y)
                     {
                         jsonData.Remove(jsonDataItem);
                         break; // Виходимо з циклу після видалення блоку

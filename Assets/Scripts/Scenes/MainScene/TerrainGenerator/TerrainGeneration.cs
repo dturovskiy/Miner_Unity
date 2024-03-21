@@ -10,20 +10,26 @@ public class TerrainGeneration : MonoBehaviour
     [Header("Tile Atlas")]
     public TileAtlas tileAtlas;
 
-    private List<TileData> tileDataList = new();
     private const string fileName = "terrain_layout.json";
     private int CHUNK_SIZE = 10;
     private List<Transform> chunks = new();
+    private Dictionary<Vector2, TileData> tileDataDictionary = new Dictionary<Vector2, TileData>();
     private bool isEdge;
 
     // Метод, який викликається при запуску гри
     private void Start()
     {
         CreateChunk();
-        tileDataList = GenerateTerrainFromJson(Path.Combine(Application.persistentDataPath, fileName));
+        tileDataDictionary = GenerateTerrainFromJson(Path.Combine(Application.persistentDataPath, fileName));
+       
         // Генеруємо терен
-        GenerateTerrain(tileDataList);
-        
+        GenerateTerrain(tileDataDictionary); 
+    }
+
+    public Dictionary<Vector2, TileData> GetTileDataDictionary()
+    {
+        tileDataDictionary = GenerateTerrainFromJson(Path.Combine(Application.persistentDataPath, fileName));
+        return tileDataDictionary;
     }
 
     private void CreateChunk()
@@ -80,16 +86,11 @@ public class TerrainGeneration : MonoBehaviour
 
     private Transform GetOrCreateChunk(int chunkIndex)
     {
-        if (chunkIndex < chunks.Count)
-        {
-            return chunks[chunkIndex];
-        }
-
-        else
+        while (chunkIndex >= chunks.Count)
         {
             CreateChunk();
-            return chunks[chunkIndex - 1];
         }
+        return chunks[chunkIndex];
     }
 
     public List<Transform> GetChunks()
@@ -152,18 +153,23 @@ public class TerrainGeneration : MonoBehaviour
         }
     }
 
-    public void GenerateTerrain(List<TileData> tileDataList)
+    public void GenerateTerrain(Dictionary<Vector2, TileData> tileDataDictionary)
     {
-
-        foreach (var tileData in tileDataList)
+        foreach (var tileDataEntry in tileDataDictionary)
         {
-            GameObject newTile = PlaceTileByType(tileData.TileType, tileData.X, tileData.Y);
+            TileData tileData = tileDataEntry.Value;
+            Vector2 position = tileDataEntry.Key;
+
+            if (position.y >= 249)
+            {
+                GameObject newTile = PlaceTileByType(tileData.TileType, tileData.X, tileData.Y);
+            }
         }
     }
 
-    public List<TileData> GenerateTerrainFromJson(string filePath)
+    public Dictionary<Vector2, TileData> GenerateTerrainFromJson(string filePath)
     {
-        List<TileData> tileDataList = new List<TileData>();
+        Dictionary<Vector2, TileData> tileDataDictionary = new Dictionary<Vector2, TileData>();
 
         if (File.Exists(filePath))
         {
@@ -178,7 +184,8 @@ public class TerrainGeneration : MonoBehaviour
                     TileType = (string)jsonDataItem["TileType"]
                 };
 
-                tileDataList.Add(tileDataObject);
+                Vector2 position = new Vector2(tileDataObject.X, tileDataObject.Y);
+                tileDataDictionary[position] = tileDataObject;
             }
         }
 
@@ -187,6 +194,6 @@ public class TerrainGeneration : MonoBehaviour
             Debug.LogError("Terrain layout file not found!");
         }
 
-        return tileDataList;
+        return tileDataDictionary;
     }
 }

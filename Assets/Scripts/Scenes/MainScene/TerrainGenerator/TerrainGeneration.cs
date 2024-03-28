@@ -13,23 +13,17 @@ public class TerrainGeneration : MonoBehaviour
     private const string fileName = "terrain_layout.json";
     private int CHUNK_SIZE = 10;
     private List<Transform> chunks = new();
-    private Dictionary<Vector2, TileData> tileDataDictionary = new Dictionary<Vector2, TileData>();
     private bool isEdge;
 
     // Метод, який викликається при запуску гри
     private void Start()
     {
         CreateChunk();
-        tileDataDictionary = GenerateTerrainFromJson(Path.Combine(Application.persistentDataPath, fileName));
-       
-        // Генеруємо терен
-        GenerateTerrain(tileDataDictionary); 
     }
 
     public Dictionary<Vector2, TileData> GetTileDataDictionary()
     {
-        tileDataDictionary = GenerateTerrainFromJson(Path.Combine(Application.persistentDataPath, fileName));
-        return tileDataDictionary;
+        return LoadTerrainFromJson(Path.Combine(Application.persistentDataPath, fileName));
     }
 
     private void CreateChunk()
@@ -153,21 +147,7 @@ public class TerrainGeneration : MonoBehaviour
         }
     }
 
-    public void GenerateTerrain(Dictionary<Vector2, TileData> tileDataDictionary)
-    {
-        foreach (var tileDataEntry in tileDataDictionary)
-        {
-            TileData tileData = tileDataEntry.Value;
-            Vector2 position = tileDataEntry.Key;
-
-            if (position.y >= 249)
-            {
-                GameObject newTile = PlaceTileByType(tileData.TileType, tileData.X, tileData.Y);
-            }
-        }
-    }
-
-    public Dictionary<Vector2, TileData> GenerateTerrainFromJson(string filePath)
+    public Dictionary<Vector2, TileData> LoadTerrainFromJson(string filePath)
     {
         Dictionary<Vector2, TileData> tileDataDictionary = new Dictionary<Vector2, TileData>();
 

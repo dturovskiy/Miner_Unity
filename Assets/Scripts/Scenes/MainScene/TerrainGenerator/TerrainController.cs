@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -13,6 +14,7 @@ public class TerrainController : MonoBehaviour
 
     private Vector2Int tileDestroyRadius;
     public bool inCave = false;
+    public bool firstContact = true;
 
     private void Awake()
     {
@@ -23,7 +25,7 @@ public class TerrainController : MonoBehaviour
     {
         tileData = terrainGeneration.GetTileDataDictionary();
         tileDestroyRadius = new Vector2Int(sideActivationDistance, activationDistance);
-        Debug.Log($"Count of tileData: {terrainGeneration.GetTileDataDictionary().Count}");
+        GenerateStartingTerrain(tileData);
     }
 
     private void Update()
@@ -60,7 +62,7 @@ public class TerrainController : MonoBehaviour
         int playerY = Mathf.FloorToInt(playerPosition.y);
 
         Debug.Log("Player position: " + playerPosition + "intX = " + playerX + "intY = " + playerY);
-        for (int x = -tileDestroyRadius.x; x <= tileDestroyRadius.y + 2; x++)
+        for (int x = -tileDestroyRadius.x; x <= tileDestroyRadius.x; x++)
         {
             for (int y = -tileDestroyRadius.y; y <= tileDestroyRadius.y; y++)
             {
@@ -69,12 +71,29 @@ public class TerrainController : MonoBehaviour
 
                 Vector2 tilePosition = new Vector2(tileX, tileY);
                 Debug.Log("Checking tile at position: " + tilePosition);
-                GenerateTileIfExitsts(tilePosition);
+                GenerateTileIfExist(tilePosition);
             }
         }
     }
 
-    private void GenerateTileIfExitsts(Vector2 position)
+    public void GenerateStartingTerrain(Dictionary<Vector2, TileData> tileDataDictionary)
+    {
+
+        for (int y = 249; y <= 254; y++)
+        {
+            for (int x = 0; x <= 100; x++)
+            {
+                Vector2 key = new Vector2(x, y);
+                if (tileDataDictionary.ContainsKey(key))
+                {
+                    terrainGeneration.PlaceTileByType(tileDataDictionary[key].TileType, tileDataDictionary[key].X, tileDataDictionary[key].Y);
+                    tileData.Remove(key);
+                }
+            }
+        }
+    }
+
+    private void GenerateTileIfExist(Vector2 position)
     {
         if (tileData.ContainsKey(position))
         {

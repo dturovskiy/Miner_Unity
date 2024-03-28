@@ -131,6 +131,10 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 4708900309069914500, guid: 196ad7aa55d78ac42a42ca5c91685e6f, type: 3}
+      propertyPath: speed
+      value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 4708900309069914500, guid: 196ad7aa55d78ac42a42ca5c91685e6f, type: 3}
       propertyPath: joystick
       value: 
       objectReference: {fileID: 699543746}
@@ -494,6 +498,7 @@ MonoBehaviour:
   sideActivationDistance: 3
   terrainGeneration: {fileID: 0}
   inCave: 0
+  firstContact: 1
 --- !u!1 &963194225
 GameObject:
   m_ObjectHideFlags: 0

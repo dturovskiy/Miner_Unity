@@ -1,16 +1,17 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class TerrainController : MonoBehaviour
 {
     [SerializeField] GameObject hero; // Публічне поле для призначення героя з інтерфейсу Unity.
-    [SerializeField] int activationDistance = 1; // Відстань для активації плиток.
+    [SerializeField] int activationDistance = 1; // Відстань для активації плиток зверху.
     [SerializeField] int sideActivationDistance = 3; // Відстань для активації плиток з боків героя.
 
     //[SerializeField] TileMap hiddenArea;
     [SerializeField] Dictionary<Vector2, TileData> tileData = new Dictionary<Vector2, TileData>();
+
     [SerializeField] TerrainGeneration terrainGeneration;
+    [SerializeField] SaveLoadSystem saveLoadSystem;
 
     private Vector2Int tileDestroyRadius;
     public bool inCave = false;
@@ -58,10 +59,11 @@ public class TerrainController : MonoBehaviour
 
     private void GenerateTilesAroundPlayer(Vector3 playerPosition)
     {
+        
+
         int playerX = Mathf.FloorToInt(playerPosition.x);
         int playerY = Mathf.FloorToInt(playerPosition.y);
 
-        Debug.Log("Player position: " + playerPosition + "intX = " + playerX + "intY = " + playerY);
         for (int x = -tileDestroyRadius.x; x <= tileDestroyRadius.x; x++)
         {
             for (int y = -tileDestroyRadius.y; y <= tileDestroyRadius.y; y++)
@@ -70,7 +72,7 @@ public class TerrainController : MonoBehaviour
                 int tileY = playerY + y;
 
                 Vector2 tilePosition = new Vector2(tileX, tileY);
-                Debug.Log("Checking tile at position: " + tilePosition);
+                
                 GenerateTileIfExist(tilePosition);
             }
         }
@@ -78,7 +80,6 @@ public class TerrainController : MonoBehaviour
 
     public void GenerateStartingTerrain(Dictionary<Vector2, TileData> tileDataDictionary)
     {
-
         for (int y = 249; y <= 254; y++)
         {
             for (int x = 0; x <= 100; x++)
@@ -86,29 +87,38 @@ public class TerrainController : MonoBehaviour
                 Vector2 key = new Vector2(x, y);
                 if (tileDataDictionary.ContainsKey(key))
                 {
-                    terrainGeneration.PlaceTileByType(tileDataDictionary[key].TileType, tileDataDictionary[key].X, tileDataDictionary[key].Y);
-                    tileData.Remove(key);
+                    TileData value = tileDataDictionary[key];
+                    terrainGeneration.PlaceTileByType(value.TileType, value.X, value.Y);
+                    tileDataDictionary.Remove(key);
                 }
+                
+            }
+        }
+
+        foreach(Vector2 tile in saveLoadSystem.LoadSpawnedTilesFromBinary())
+        {
+            if (tileDataDictionary.ContainsKey(tile))
+            {
+                TileData value = tileDataDictionary[tile];
+                terrainGeneration.PlaceTileByType(value.TileType, value.X, value.Y);
+                tileDataDictionary.Remove(tile);
             }
         }
     }
 
     private void GenerateTileIfExist(Vector2 position)
     {
-        if (tileData.ContainsKey(position))
+        // Перевірка наявності ключа в словнику
+        if (tileData.TryGetValue(position, out TileData tile))
         {
-            TileData tile = tileData[position];
-            Debug.Log("Tile exists at position " + position + " with type: " + tile.TileType);
+            // Розміщення блоку за типом та його позицією
+            terrainGeneration.PlaceTileByType(tile.TileType, position.x, position.y);
 
-            terrainGeneration.PlaceTileByType(tile.TileType, (int)position.x, (int)position.y);
+            // Видалення блоку зі словника
             tileData.Remove(position);
 
-            Debug.Log("Placed tile of type " + tile.TileType + " at position " + position);
-        }
-
-        else
-        {
-            Debug.Log("No tile at position " + position);
+            // Збереження позиції блоку в бінарний файл
+            saveLoadSystem.SaveSpawnedTiles(position);
         }
     }
 

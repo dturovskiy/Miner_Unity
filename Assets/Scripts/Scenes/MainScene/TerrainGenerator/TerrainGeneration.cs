@@ -1,16 +1,15 @@
-using LitJson;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 using UnityEngine;
 
 [System.Serializable]
 public class TerrainGeneration : MonoBehaviour
 {
-    // Змінні для спрайтів плиток (трава, грязь, камінь)
     [Header("Tile Atlas")]
     public TileAtlas tileAtlas;
 
-    private const string fileName = "terrain_layout.json";
+    private const string fileName = "terrain_layout.bin";
     private int CHUNK_SIZE = 10;
     private List<Transform> chunks = new();
     private bool isEdge;
@@ -23,7 +22,7 @@ public class TerrainGeneration : MonoBehaviour
 
     public Dictionary<Vector2, TileData> GetTileDataDictionary()
     {
-        return LoadTerrainFromJson(Path.Combine(Application.persistentDataPath, fileName));
+        return LoadTerrainFromBinary(Path.Combine(Application.persistentDataPath, fileName));
     }
 
     private void CreateChunk()
@@ -92,7 +91,7 @@ public class TerrainGeneration : MonoBehaviour
         return chunks;
     }
 
-    internal GameObject PlaceTileByType(string tileType, int x, int y)
+    internal GameObject PlaceTileByType(string tileType, float x, float y)
     {
         Sprite tileSprite = DetermineTileTypeByString(tileType);
         GameObject newTile = PlaceTile(tileSprite, x, y);
@@ -147,28 +146,34 @@ public class TerrainGeneration : MonoBehaviour
         }
     }
 
-    public Dictionary<Vector2, TileData> LoadTerrainFromJson(string filePath)
+    public Dictionary<Vector2, TileData> LoadTerrainFromBinary(string filePath)
     {
         Dictionary<Vector2, TileData> tileDataDictionary = new Dictionary<Vector2, TileData>();
 
         if (File.Exists(filePath))
         {
-            var jsonData = JsonMapper.ToObject(File.ReadAllText(filePath));
+            // Використовуємо BinaryFormatter для десеріалізації об'єктів TileData з файлу
+            BinaryFormatter binaryFormatter = new BinaryFormatter();
 
-            foreach (JsonData jsonDataItem in jsonData)
+            // Відкриваємо файловий потік для читання з бінарного файлу
+            using (FileStream fileStream = new FileStream(filePath, FileMode.Open))
             {
-                TileData tileDataObject = new TileData
+                // Десеріалізуємо дані з файлу із використанням BinaryFormatter
+                List<TileData> tileDataList = (List<TileData>)binaryFormatter.Deserialize(fileStream);
+
+                // Заповнюємо словник з даними про блоки
+                foreach (var tileData in tileDataList)
                 {
-                    X = (int)jsonDataItem["X"],
-                    Y = (int)jsonDataItem["Y"],
-                    TileType = (string)jsonDataItem["TileType"]
-                };
+                    Vector2 tileCoordinates = new Vector2();
+                    tileCoordinates.x = tileData.X;
+                    tileCoordinates.y = tileData.Y;
 
-                Vector2 position = new Vector2(tileDataObject.X, tileDataObject.Y);
-                tileDataDictionary[position] = tileDataObject;
+                    tileDataDictionary.Add(tileCoordinates, tileData);
+                }
             }
-        }
 
+            System.GC.Collect();
+        }
         else
         {
             Debug.LogError("Terrain layout file not found!");

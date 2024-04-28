@@ -1,11 +1,11 @@
-using LitJson;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 using UnityEngine;
 
-public class TerrainBuilder : MonoBehaviour
+public class TerrainLayoutBuilder : MonoBehaviour
 {
-    private const string fileName = "terrain_layout.json";
+    private const string fileName = "terrain_layout.bin";
     private const int WORLD_SIZE = 99;
     private const int TOTAL_HEIGHT = 254;
     private const int DUNGEON_HEIGHT = 250;
@@ -16,12 +16,20 @@ public class TerrainBuilder : MonoBehaviour
 
     private void Awake()
     {
-        CreateTerrainJsonFile();
+        GenerateTerrainLayout();
     }
-    
-    public void CreateTerrainJsonFile()
+
+    // Визначаємо позиції розміщення і тип блоків, які мають бути записані у файл
+    public void GenerateTerrainLayout()
     {
         string outputPath = Path.Combine(Application.persistentDataPath, fileName);
+
+        // Перевіряємо, чи існує вже файл за вказаним шляхом
+        if (File.Exists(outputPath))
+        {
+            Debug.LogWarning("Terrain layout file already exists at " + outputPath + ". Skipping writing.");
+            return; // Якщо файл вже існує, не перезаписуємо його
+        }
 
         // Create a list to store tile data
         List<TileData> tileDataList = new List<TileData>();
@@ -47,31 +55,28 @@ public class TerrainBuilder : MonoBehaviour
         WriteTileData(tileDataList, outputPath);
     }
 
-    private void WriteTileData(List<TileData> tileDataList, string outputPath)
+
+    // Створення бінарного файлу у якому будуть записані дані блоків
+    public void WriteTileData(List<TileData> tileDataList, string outputPath)
     {
-        // Write all tile data to the file after the loops
-        if (File.Exists(outputPath))
+        try
         {
-            // Прочитати існуючий JSON з файлу
-            var existingData = JsonMapper.ToObject(File.ReadAllText(outputPath));
+            // Використовуємо BinaryFormatter для серіалізації об'єктів TileData
+            BinaryFormatter binaryFormatter = new BinaryFormatter();
 
-            // Створити JsonWriter з параметром PrettyPrint
-            var writer = new JsonWriter();
-            writer.PrettyPrint = true;
+            // Відкриваємо файловий потік для запису у бінарний файл
+            using (FileStream fileStream = new FileStream(outputPath, FileMode.Create))
+            {
+                // Серіалізуємо список об'єктів TileData у файловий потік
+                binaryFormatter.Serialize(fileStream, tileDataList);
+            }
 
-            // Записати оновлений JSON-текст назад в файл
-            existingData.ToJson(writer);
-            File.WriteAllText(outputPath, writer.ToString());
-            Debug.Log("Terrain layout has been rewritten to " + outputPath);
-        }
-        else
-        {
-            var writer = new JsonWriter();
-            writer.PrettyPrint = true;
-
-            JsonMapper.ToJson(tileDataList, writer);
-            File.WriteAllText(outputPath, writer.ToString());
             Debug.Log("Terrain layout has been written to " + outputPath);
+        }
+        catch (IOException ex)
+        {
+            Debug.LogError("Failed to write terrain layout to file: " + ex.Message);
+            // Додайте відповідний код для обробки помилки
         }
         System.GC.Collect();
     }

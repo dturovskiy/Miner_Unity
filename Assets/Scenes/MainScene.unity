@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.37311926, g: 0.38073996, b: 0.35872698, a: 1}
+  m_IndirectSpecularColor: {r: 0.37089851, g: 0.3783701, b: 0.3572253, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -130,9 +130,33 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 4708900309069914500, guid: 196ad7aa55d78ac42a42ca5c91685e6f, type: 3}
-      propertyPath: speed
-      value: 100
+    - target: {fileID: 4708900308767243525, guid: 196ad7aa55d78ac42a42ca5c91685e6f, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -0.29709277
+      objectReference: {fileID: 0}
+    - target: {fileID: 4708900308767243525, guid: 196ad7aa55d78ac42a42ca5c91685e6f, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0.25593525
+      objectReference: {fileID: 0}
+    - target: {fileID: 4708900308767243525, guid: 196ad7aa55d78ac42a42ca5c91685e6f, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4708900308767243525, guid: 196ad7aa55d78ac42a42ca5c91685e6f, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4708900308767243525, guid: 196ad7aa55d78ac42a42ca5c91685e6f, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4708900308767243525, guid: 196ad7aa55d78ac42a42ca5c91685e6f, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4708900308767243525, guid: 196ad7aa55d78ac42a42ca5c91685e6f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4708900309069914500, guid: 196ad7aa55d78ac42a42ca5c91685e6f, type: 3}
       propertyPath: joystick
@@ -141,10 +165,6 @@ PrefabInstance:
     - target: {fileID: 4708900309069914515, guid: 196ad7aa55d78ac42a42ca5c91685e6f, type: 3}
       propertyPath: m_Name
       value: Hero
-      objectReference: {fileID: 0}
-    - target: {fileID: 4708900309069914515, guid: 196ad7aa55d78ac42a42ca5c91685e6f, type: 3}
-      propertyPath: m_IsActive
-      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4708900309069914521, guid: 196ad7aa55d78ac42a42ca5c91685e6f, type: 3}
       propertyPath: miningJoystick
@@ -366,74 +386,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 705365661}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0f2e6ec02453011418c608c4d7dadc81, type: 3}
+  m_Script: {fileID: 11500000, guid: eef693983bce6a94aae2b294b71c4000, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ores:
-  - name: Coal
-    frequency: 0.085
-    maxSpawnHeight: 255
-    minSpawnHeight: 190
-  - name: Iron
-    frequency: 0.06
-    maxSpawnHeight: 250
-    minSpawnHeight: 150
-  - name: Gold
-    frequency: 0.04
-    maxSpawnHeight: 150
-    minSpawnHeight: 50
-  - name: Diamond
-    frequency: 0.026
-    maxSpawnHeight: 70
-    minSpawnHeight: 0
-  - name: Uranus
-    frequency: 0.026
-    maxSpawnHeight: 100
-    minSpawnHeight: 0
-  - name: Topaz
-    frequency: 0.026
-    maxSpawnHeight: 200
-    minSpawnHeight: 0
-  - name: Silver
-    frequency: 0.026
-    maxSpawnHeight: 230
-    minSpawnHeight: 200
-  - name: Ruby
-    frequency: 0.026
-    maxSpawnHeight: 150
-    minSpawnHeight: 0
-  - name: Platinum
-    frequency: 0.026
-    maxSpawnHeight: 155
-    minSpawnHeight: 55
-  - name: Opal
-    frequency: 0.026
-    maxSpawnHeight: 200
-    minSpawnHeight: 50
-  - name: Nephritis
-    frequency: 0.026
-    maxSpawnHeight: 200
-    minSpawnHeight: 100
-  - name: Map
-    frequency: 0.02
-    maxSpawnHeight: 254
-    minSpawnHeight: 0
-  - name: Lazurite
-    frequency: 0.026
-    maxSpawnHeight: 220
-    minSpawnHeight: 150
-  - name: Emerald
-    frequency: 0.026
-    maxSpawnHeight: 230
-    minSpawnHeight: 100
-  - name: Artifact
-    frequency: 0.02
-    maxSpawnHeight: 250
-    minSpawnHeight: 0
-  - name: Amethyst
-    frequency: 0.026
-    maxSpawnHeight: 150
-    minSpawnHeight: 50
+  ores: []
   tileAtlas: {fileID: 11400000, guid: 80cbe3662e5415b439c0e61bc2867df5, type: 2}
 --- !u!1 &850967801
 GameObject:
@@ -497,6 +453,7 @@ MonoBehaviour:
   activationDistance: 1
   sideActivationDistance: 3
   terrainGeneration: {fileID: 0}
+  saveLoadSystem: {fileID: 2076826956}
   inCave: 0
   firstContact: 1
 --- !u!1 &963194225
@@ -971,7 +928,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 2076826956}
         m_TargetAssemblyTypeName: SaveLoadSystem, Assembly-CSharp
-        m_MethodName: RemoveDestroyedBlocksFromJson
+        m_MethodName: RemoveDestroyedBlocksFromBinary
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -1105,7 +1062,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 2076826956}
         m_TargetAssemblyTypeName: SaveLoadSystem, Assembly-CSharp
-        m_MethodName: DeleteTerrainJsonFile
+        m_MethodName: DeleteTerrainBinaryFile
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -1555,7 +1512,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8483bf3359615824fa4dbc970b412a73, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  destroyedBlockCoordinates: []
+  destroyedTilesCoordinates: []
+  spawnedTilesCoordinates: []
 --- !u!4 &2076826957
 Transform:
   m_ObjectHideFlags: 0

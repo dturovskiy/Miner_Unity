@@ -111,7 +111,7 @@ public class MiningController : MonoBehaviour
                     StopMiningAnimation();
                     animator.SetBool("IsWalking", true);
                     Vector2 tileCoordinates = new Vector2(tile.transform.position.x, tile.transform.position.y);
-                    saveLoadSystem.SaveDestroyedBlock(tileCoordinates);
+                    saveLoadSystem.SaveDestroyedTiles(tileCoordinates);
                 }
             }
         }

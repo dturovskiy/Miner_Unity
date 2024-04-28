@@ -1184,6 +1184,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fc68571f50c894f47a746d6eb4da22dc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  speed: 300
   joystick: {fileID: 0}
 --- !u!114 &4708900309069914521
 MonoBehaviour:
@@ -1197,7 +1198,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 03d2fc735eeeeeb409901e5a75048444, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  terrainController: {fileID: 0}
+  saveLoadSystem: {fileID: 0}
   miningJoystick: {fileID: 0}
 --- !u!50 &4708900309069914523
 Rigidbody2D:

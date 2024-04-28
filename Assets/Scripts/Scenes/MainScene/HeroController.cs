@@ -8,8 +8,7 @@ public class HeroController : MonoBehaviour
     private bool canMove = true;
 
     [SerializeField] Joystick joystick;
-
-    Rigidbody2D heroRigidbody;
+    private Rigidbody2D heroRigidbody;
 
     private void Awake()
     {

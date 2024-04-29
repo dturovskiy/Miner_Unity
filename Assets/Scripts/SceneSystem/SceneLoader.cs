@@ -14,7 +14,7 @@ namespace AwesomeTools.Scene
         public static bool IsLevelComplied = true; // bool which provide whether scene was fully finished
 
         [SerializeField] private SceneInfo[] _scenesInfo;
-        [SerializeField] private FadeScreenPanel _fadeSccreenPanel;
+        [SerializeField] private FadeScreenPanel _fadeScreenPanel;
         [SerializeField] private bool _isFadeScreenPanelEnable = true;
 
         public event Action OnFadeScreenPanelEnable;
@@ -52,8 +52,8 @@ namespace AwesomeTools.Scene
         {
             IsLevelComplied = isLevelComplied;
 
-            if (_fadeSccreenPanel != null)
-                _fadeSccreenPanel.FadeIn();
+            if (_fadeScreenPanel != null)
+                _fadeScreenPanel.FadeIn();
             else
                 Debug.LogError("FadeScreenPanel is null");
 
@@ -95,8 +95,8 @@ namespace AwesomeTools.Scene
         {
             if (IsFadeScreenPanelEnable)
             {
-                if (_fadeSccreenPanel != null)
-                    _fadeSccreenPanel.FadeIn();
+                if (_fadeScreenPanel != null)
+                    _fadeScreenPanel.FadeIn();
                 else
                     Debug.LogError("FadeScreenPanel is null");
             }

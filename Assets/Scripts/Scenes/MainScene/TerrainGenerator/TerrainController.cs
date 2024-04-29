@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 public class TerrainController : MonoBehaviour
 {
@@ -7,7 +8,7 @@ public class TerrainController : MonoBehaviour
     [SerializeField] int activationDistance = 1; // Відстань для активації плиток зверху.
     [SerializeField] int sideActivationDistance = 3; // Відстань для активації плиток з боків героя.
 
-    //[SerializeField] TileMap hiddenArea;
+    [SerializeField] Tilemap hiddenArea;
     [SerializeField] Dictionary<Vector2, TileData> tileData = new Dictionary<Vector2, TileData>();
 
     [SerializeField] TerrainGeneration terrainGeneration;
@@ -34,32 +35,39 @@ public class TerrainController : MonoBehaviour
         Vector3 heroPosition = hero.transform.position;
         inCave = CheckIsPlayerInCave();
 
-        //if (!inCave)
-        //{
+        if (!inCave)
+        {
+            Vector3Int heroCellPosition = hiddenArea.WorldToCell(heroPosition);
 
-        //    Vector3Int heroCellPosition = hiddenArea.WorldToCell(heroPosition);
+            for (int x = -tileDestroyRadius.x; x <= tileDestroyRadius.x; x++)
+            {
+                for (int y = -tileDestroyRadius.y; y <= tileDestroyRadius.y; y++)
+                {
+                    Vector3Int cellPosition = new(heroCellPosition.x + x, heroCellPosition.y + y, heroCellPosition.z);
+                    TileBase tile = hiddenArea.GetTile(cellPosition);
 
-        //    for (int x = -tileDestroyRadius.x; x <= tileDestroyRadius.x; x++)
-        //    {
-        //        for (int y = -tileDestroyRadius.y; y <= tileDestroyRadius.y; y++)
-        //        {
-        //            Vector3Int cellPosition = new(heroCellPosition.x + x, heroCellPosition.y + y, heroCellPosition.z);
-        //            TileBase tile = hiddenArea.GetTile(cellPosition);
+                    if (tile != null)
+                    {
+                        hiddenArea.SetTile(cellPosition, null);
+                        saveLoadSystem.SaveHiddenTiles(cellPosition);
+                    }
+                }
+            }
 
-        //            if (tile != null)
-        //            {
-        //                hiddenArea.SetTile(cellPosition, null);
-        //            }
-        //        }
-        //    }
-        //}
+            GenerateTilesAroundPlayer(heroPosition);
+        }
 
-        GenerateTilesAroundPlayer(heroPosition);
+        GetHeroPosition();
+    }
+
+    public void GetHeroPosition()
+    {
+        saveLoadSystem.SaveHeroPosition(hero.transform.position);
     }
 
     private void GenerateTilesAroundPlayer(Vector3 playerPosition)
     {
-        
+
 
         int playerX = Mathf.FloorToInt(playerPosition.x);
         int playerY = Mathf.FloorToInt(playerPosition.y);
@@ -72,7 +80,7 @@ public class TerrainController : MonoBehaviour
                 int tileY = playerY + y;
 
                 Vector2 tilePosition = new Vector2(tileX, tileY);
-                
+
                 GenerateTileIfExist(tilePosition);
             }
         }
@@ -91,11 +99,11 @@ public class TerrainController : MonoBehaviour
                     terrainGeneration.PlaceTileByType(value.TileType, value.X, value.Y);
                     tileDataDictionary.Remove(key);
                 }
-                
+
             }
         }
 
-        foreach(Vector2 tile in saveLoadSystem.LoadSpawnedTilesFromBinary())
+        foreach (Vector2 tile in saveLoadSystem.LoadSpawnedTilesFromBinary())
         {
             if (tileDataDictionary.ContainsKey(tile))
             {
@@ -104,6 +112,15 @@ public class TerrainController : MonoBehaviour
                 tileDataDictionary.Remove(tile);
             }
         }
+
+        foreach (Vector3Int tile in saveLoadSystem.LoadHidenTilesFromBinary())
+        {
+            Vector3Int cellPosition = new Vector3Int(tile.x, tile.y, tile.z);
+
+            hiddenArea.SetTile(cellPosition, null);
+        }
+
+        hero.transform.position = saveLoadSystem.LoadHeroPositionFromBinary();
     }
 
     private void GenerateTileIfExist(Vector2 position)

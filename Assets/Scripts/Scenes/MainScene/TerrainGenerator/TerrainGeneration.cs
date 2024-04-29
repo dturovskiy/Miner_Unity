@@ -1,73 +1,28 @@
 using System.Collections.Generic;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 using UnityEngine;
 
+[System.Serializable]
 public class TerrainGeneration : MonoBehaviour
 {
-    // Змінні для спрайтів плиток (трава, грязь, камінь)
     [Header("Tile Atlas")]
     public TileAtlas tileAtlas;
 
-    // Налаштування генерації терену
-    [Header("Generation Settings")]
-    public const int WORLD_SIZE = 99;
-    public const int DUNGEON_HEIGHT = 250;
-    public const int TOTAL_HEIGHT = 254;
-    public const float STONE_PROBABILITY = 0.07f;
-    private const int MAX_X_OFFSET = 22;
-
-    [Header("Ore Settings")]
-    public OreClass[] ores;
-
+    private const string fileName = "terrain_layout.bin";
     private int CHUNK_SIZE = 10;
     private List<Transform> chunks = new();
-
     private bool isEdge;
 
     // Метод, який викликається при запуску гри
     private void Start()
     {
         CreateChunk();
-
-        // Генеруємо терен
-        GenerateTerrain();
     }
 
-    // Метод для генерації терену
-    public void GenerateTerrain()
+    public Dictionary<Vector2, TileData> GetTileDataDictionary()
     {
-        for (int y = 0; y <= TOTAL_HEIGHT; y++)
-        {
-            for (int x = 0; x <= WORLD_SIZE; x++)
-            {
-                if (y % CHUNK_SIZE == 0 && y > 0)
-                {
-                    CreateChunk();
-                }
-                // Визначаємо тип плитки для поточних координат
-                Sprite tileSprite = DetermineTileType(x, y);
-
-                // Перевіряємо умови, щоб припинити генерацію терену
-                if (y > DUNGEON_HEIGHT + 1 && x > MAX_X_OFFSET - 1)
-                    break;
-
-                if (y >= DUNGEON_HEIGHT && x > MAX_X_OFFSET)
-                    break;
-
-                if (tileSprite == null)
-                    break;
-
-                // Розміщуємо плитку на сцені
-                PlaceTile(tileSprite, x, y);
-            }
-        }
-
-        for (int i = 0; i < 24; i++)
-        {
-            if (chunks[i] != null)
-                chunks[i].gameObject.SetActive(false);
-        }
-
-        System.GC.Collect();
+        return LoadTerrainFromBinary(Path.Combine(Application.persistentDataPath, fileName));
     }
 
     private void CreateChunk()
@@ -78,81 +33,6 @@ public class TerrainGeneration : MonoBehaviour
             chunkObject.transform.parent = transform;
             chunks.Add(chunkObject.transform);
         }
-    }
-
-    // Функція, що перевіряє, чи `(x, y)` на межі терену
-    private bool IsTerrainEdge(int x, int y)
-    {
-
-        return (x == 0 || x == WORLD_SIZE || y == 0) || (x <= 19 && y == TOTAL_HEIGHT);
-    }
-
-    // Функція, що перевіряє, чи `(x, y)` на рівні тунелю
-    private bool IsTunnel(int x, int y)
-    {
-        return y == DUNGEON_HEIGHT && x >= 10 && x <= MAX_X_OFFSET;
-    }
-
-    private Sprite DetermineTileType(int x, int y)
-    {
-        // Генерація меж терену
-        if (IsTerrainEdge(x, y))
-        {
-            isEdge = true;
-            return tileAtlas.stone.tileSprite;
-        }
-        else
-        {
-            isEdge = false;
-        }
-
-        // Генерація тунелю
-        if (IsTunnel(x, y))
-        {
-            return tileAtlas.tunnel.tileSprite;
-        }
-
-        if (y < TOTAL_HEIGHT && x < WORLD_SIZE)
-        {
-            // Рандомна генерація каменів на інших частинах терену
-            if (y != DUNGEON_HEIGHT + 1 && Random.Range(0.0f, 1.0f) < STONE_PROBABILITY)
-                return tileAtlas.stone.tileSprite;
-
-            for (int i = 0; i < ores.Length; i++)
-            {
-                if (Random.Range(0.0f, 1.0f) < ores[i].frequency && y > ores[i].minSpawnHeight && y < ores[i].maxSpawnHeight)
-                {
-                    return GetOreSprite(i);
-                }
-            }
-        }
-
-        return tileAtlas.dirt.tileSprite;
-    }
-
-    private Sprite GetOreSprite(int oreIndex)
-    {
-        // Визначаємо спрайт для типу руди за індексом
-        return oreIndex switch
-        {
-            0 => tileAtlas.coal.tileSprite,
-            1 => tileAtlas.iron.tileSprite,
-            2 => tileAtlas.gold.tileSprite,
-            3 => tileAtlas.diamond.tileSprite,
-            4 => tileAtlas.uranus.tileSprite,
-            5 => tileAtlas.topaz.tileSprite,
-            6 => tileAtlas.silver.tileSprite,
-            7 => tileAtlas.ruby.tileSprite,
-            8 => tileAtlas.platinum.tileSprite,
-            9 => tileAtlas.opal.tileSprite,
-            10 => tileAtlas.nephritis.tileSprite,
-            11 => tileAtlas.map.tileSprite,
-            12 => tileAtlas.lazurite.tileSprite,
-            13 => tileAtlas.emerald.tileSprite,
-            14 => tileAtlas.artifact.tileSprite,
-            15 => tileAtlas.amethyst.tileSprite,
-            _ => null, // Обробляємо невідомий індекс руди
-        };
     }
 
     // Метод для розміщення плитки на сцені
@@ -184,14 +64,14 @@ public class TerrainGeneration : MonoBehaviour
             newTile.tag = "Stone";
             newTile.AddComponent<Rigidbody2D>().isKinematic = true;
         }
-        
+
         if (!isEdge)
         {
             newTile.AddComponent<TileBehaviour>();
             newTile.AddComponent<TransformSaver>();
         }
-        
-        
+
+
         newTile.transform.position = new Vector2(x + 0.5f, y + 0.5f);
 
         return newTile;
@@ -199,20 +79,106 @@ public class TerrainGeneration : MonoBehaviour
 
     private Transform GetOrCreateChunk(int chunkIndex)
     {
-        if (chunkIndex < chunks.Count)
-        {
-            return chunks[chunkIndex];
-        }
-
-        else
+        while (chunkIndex >= chunks.Count)
         {
             CreateChunk();
-            return chunks[chunkIndex - 1];
         }
+        return chunks[chunkIndex];
     }
 
     public List<Transform> GetChunks()
     {
         return chunks;
+    }
+
+    internal GameObject PlaceTileByType(string tileType, float x, float y)
+    {
+        Sprite tileSprite = DetermineTileTypeByString(tileType);
+        GameObject newTile = PlaceTile(tileSprite, x, y);
+
+        return newTile;
+    }
+
+    private Sprite DetermineTileTypeByString(string tileType)
+    {
+        switch (tileType)
+        {
+            case "Coal":
+                return tileAtlas.coal.tileSprite;
+            case "Iron":
+                return tileAtlas.iron.tileSprite;
+            case "Gold":
+                return tileAtlas.gold.tileSprite;
+            case "Diamond":
+                return tileAtlas.diamond.tileSprite;
+            case "Uranus":
+                return tileAtlas.uranus.tileSprite;
+            case "Topaz":
+                return tileAtlas.topaz.tileSprite;
+            case "Silver":
+                return tileAtlas.silver.tileSprite;
+            case "Ruby":
+                return tileAtlas.ruby.tileSprite;
+            case "Platinum":
+                return tileAtlas.platinum.tileSprite;
+            case "Opal":
+                return tileAtlas.opal.tileSprite;
+            case "Nephritis":
+                return tileAtlas.nephritis.tileSprite;
+            case "Map":
+                return tileAtlas.map.tileSprite;
+            case "Lazurite":
+                return tileAtlas.lazurite.tileSprite;
+            case "Emerald":
+                return tileAtlas.emerald.tileSprite;
+            case "Artifact":
+                return tileAtlas.artifact.tileSprite;
+            case "Amethyst":
+                return tileAtlas.amethyst.tileSprite;
+            case "Dirt":
+                return tileAtlas.dirt.tileSprite;
+            case "Stone":
+                return tileAtlas.stone.tileSprite;
+            case "Tunnel":
+                return tileAtlas.tunnel.tileSprite;
+
+            default: return tileAtlas.stone.tileSprite;
+        }
+    }
+
+    public Dictionary<Vector2, TileData> LoadTerrainFromBinary(string filePath)
+    {
+        Dictionary<Vector2, TileData> tileDataDictionary = new Dictionary<Vector2, TileData>();
+
+        if (File.Exists(filePath))
+        {
+            // Використовуємо BinaryFormatter для десеріалізації об'єктів TileData з файлу
+            BinaryFormatter binaryFormatter = new BinaryFormatter();
+
+            // Відкриваємо файловий потік для читання з бінарного файлу
+            using (FileStream fileStream = new FileStream(filePath, FileMode.Open))
+            {
+                // Десеріалізуємо дані з файлу із використанням BinaryFormatter
+                List<TileData> tileDataList = (List<TileData>)binaryFormatter.Deserialize(fileStream);
+
+                // Заповнюємо словник з даними про блоки
+                foreach (var tileData in tileDataList)
+                {
+                    Vector2 tileCoordinates = new Vector2();
+                    tileCoordinates.x = tileData.X;
+                    tileCoordinates.y = tileData.Y;
+
+                    tileDataDictionary.Add(tileCoordinates, tileData);
+                }
+            }
+
+            System.GC.Collect();
+        }
+        else
+        {
+            Debug.LogError("Terrain layout file not found!");
+        }
+
+        return tileDataDictionary;
     }
 }

@@ -3,13 +3,12 @@ using UnityEngine;
 public class HeroController : MonoBehaviour
 {
     private Animator animator;
-    private float speed = 5f;
+    [SerializeField] private float speed = 200f;
     private bool isWalking = false;
     private bool canMove = true;
 
     [SerializeField] Joystick joystick;
-
-    Rigidbody2D heroRigidbody;
+    private Rigidbody2D heroRigidbody;
 
     private void Awake()
     {
@@ -24,7 +23,7 @@ public class HeroController : MonoBehaviour
             float moveHorizontal = joystick.Horizontal;
 
             // Рух героя
-            heroRigidbody.velocity = new Vector2(moveHorizontal * speed, heroRigidbody.velocity.y);
+            heroRigidbody.velocity = new Vector2(moveHorizontal * speed * Time.deltaTime, heroRigidbody.velocity.y);
 
             // Зміна напрямку героя
             if (moveHorizontal > 0)

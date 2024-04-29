@@ -11,6 +11,7 @@ namespace AwesomeTools.MainScene
         [Header("PlayButton")]
         [SerializeField] private SceneData _sceneData;
         [SerializeField] private SceneLoader _sceneLoader;
+        [SerializeField] private SaveLoadSystem _saveLoadSystem;
 
         public event Action OnButtonIsPressed;
 
@@ -22,12 +23,12 @@ namespace AwesomeTools.MainScene
         public void GoToMainScene()
         {
             //Disappear();
+            _saveLoadSystem.DeleteTerrainBinaryFile();
             StartCoroutine(LoadScene(_sceneData));
         }
         public void ContinueGame()
         {
-            SavingService.UpdateActiveSceneInfo("SaveGame.json");
-            SavingService.LoadGame("SaveGame.json");
+            StartCoroutine(LoadScene(_sceneData));
         }
 
         public void InvokeOnButtonIsPressed()

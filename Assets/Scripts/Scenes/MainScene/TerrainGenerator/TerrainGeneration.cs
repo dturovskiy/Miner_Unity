@@ -62,7 +62,8 @@ public class TerrainGeneration : MonoBehaviour
         if (newTile.name == "Stone" && !isEdge)
         {
             newTile.tag = "Stone";
-            newTile.AddComponent<Rigidbody2D>().isKinematic = true;
+            newTile.AddComponent<Rigidbody2D>();
+            newTile.AddComponent<StoneBehaviour>();
         }
 
         if (!isEdge)

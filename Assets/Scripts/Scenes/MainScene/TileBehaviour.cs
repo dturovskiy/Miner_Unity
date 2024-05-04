@@ -25,8 +25,33 @@ public class TileBehaviour : MonoBehaviour
 
     public void BreakTile()
     {
+        Vector2 rayStart = transform.position + new Vector3 (0f, 0.6f, 0f);
+        Vector2 rayDirection = Vector2.up;
+
+        float rayLength = 0.5f;
+
+        Debug.DrawRay(rayStart, rayDirection * rayLength, Color.red, 600f);
+        // ѕерев≥р€Їмо, чи Ї об'Їкт п≥д ц≥Їю плиткою
+        RaycastHit2D hit = Physics2D.Raycast(rayStart, Vector2.up, rayLength, LayerMask.GetMask("Default"));
+        if (hit.collider != null)
+        {
+            Debug.Log(hit.collider);
+            // якщо Ї об'Їкт п≥д ц≥Їю плиткою, активуЇмо пад≥нн€ каменю
+            StoneBehaviour stone = hit.collider.GetComponent<StoneBehaviour>();
+            if (stone != null)
+            {
+                Debug.Log($"Stone found: {stone}");
+                stone.StartFalling();
+            }
+        }
+        else
+        {
+            Debug.Log("Not found collider!");
+        }
+
         Destroy(gameObject);
         isBroken = true;
+        Debug.Log("Tile destroyed");
     }
 
     public void HitTile(TileBehaviour tile)

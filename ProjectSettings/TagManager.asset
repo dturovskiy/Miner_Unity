@@ -8,6 +8,7 @@ TagManager:
   - Ground
   - Stone
   - Edge
+  - Ladder
   layers:
   - Default
   - TransparentFX

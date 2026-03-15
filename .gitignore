@@ -109,3 +109,7 @@ InitTestScene*.unity*
 /Assets/MobileDependencyResolver/
 /Assets/MobileDependencyResolver.meta
 /ProjectSettings/MultiplayerManager.asset
+Assets/_Recovery/0.unity.meta
+.gitignore
+Assets/_Recovery/0.unity
+Assets/_Recovery.meta

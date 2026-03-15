@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Linq;
 using UnityEngine;
@@ -17,7 +17,6 @@ namespace AwesomeTools.Scene
         [SerializeField] private FadeScreenPanel _fadeScreenPanel;
         [SerializeField] private bool _isFadeScreenPanelEnable = true;
 
-        public event Action OnFadeScreenPanelEnable;
         public event Action<float> OnSceneLoadProgress;
 
         public bool IsFadeScreenPanelEnable => _isFadeScreenPanelEnable;

@@ -31,6 +31,9 @@ namespace MinerUnity.Terrain
         private WorldData worldData;
         private byte[] fogGrid; // For storing fog of war state (1 = explored, 0 = hidden)
         private string fogPath;
+        private bool fogDirty;
+        private float nextFogSaveTime;
+        [SerializeField] private float fogSaveInterval = 1.5f;
 
         [Header("Stone Fall Timing")]
         [SerializeField, Min(0f)] private float stoneWarningDelay = 0.7f;
@@ -125,6 +128,11 @@ namespace MinerUnity.Terrain
             }
 
             ProcessScheduledStoneFalls();
+
+            if (fogDirty && Time.time >= nextFogSaveTime)
+            {
+                SaveFogData();
+            }
         }
 
         private Vector2Int WorldToCell(Vector3 worldPosition)
@@ -299,7 +307,7 @@ namespace MinerUnity.Terrain
 
             if (fogChanged && !string.IsNullOrEmpty(fogPath))
             {
-                System.IO.File.WriteAllBytes(fogPath, fogGrid);
+                fogDirty = true;
             }
         }
 
@@ -474,6 +482,12 @@ namespace MinerUnity.Terrain
             // При наступному оновленні чанків він з’явиться одразу на новому місці.
             if (!spawnedTiles.TryGetValue(from, out GameObject stoneGo))
             {
+                // Камінь був поза спавном. Якщо тепер його нова клітинка
+                // потрапляє в активну область камери — заспавнимо його одразу.
+                if (IsCellInsideLoadedArea(to))
+                {
+                    SpawnTileGameObject(to, TileID.Stone);
+                }
                 return;
             }
 
@@ -505,6 +519,47 @@ namespace MinerUnity.Terrain
         {
             string path = System.IO.Path.Combine(Application.persistentDataPath, "world_grid.dat");
             worldData.SaveToFile(path);
+        }
+
+        private void SaveFogData()
+        {
+            if (string.IsNullOrEmpty(fogPath) || fogGrid == null || !fogDirty)
+            {
+                return;
+            }
+
+            System.IO.File.WriteAllBytes(fogPath, fogGrid);
+            fogDirty = false;
+            nextFogSaveTime = Time.time + fogSaveInterval;
+        }
+
+        private void OnApplicationPause(bool pauseStatus)
+        {
+            if (pauseStatus)
+            {
+                SaveFogData();
+                SaveWorldData();
+            }
+        }
+
+        private void OnApplicationQuit()
+        {
+            SaveFogData();
+            SaveWorldData();
+        }
+
+        private bool IsCellInsideLoadedArea(Vector2Int pos)
+        {
+            GetCameraBoundsInCells(
+                preloadBlocksX,
+                preloadBlocksY,
+                out int minX,
+                out int maxX,
+                out int minY,
+                out int maxY
+            );
+
+            return pos.x >= minX && pos.x <= maxX && pos.y >= minY && pos.y <= maxY;
         }
     }
 }

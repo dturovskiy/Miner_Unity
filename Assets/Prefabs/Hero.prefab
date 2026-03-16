@@ -1485,12 +1485,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LadderZoneDetector
   ladderCheck: {fileID: 2176956999594715348}
-  ladderCheckSize: {x: 0.35, y: 0.9}
+  ladderCheckSize: {x: 0.35, y: 1.05}
   ladderMask:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 4
   groundCheck: {fileID: 4182114272373522314}
-  groundCheckRadius: 0.08
+  groundCheckRadius: 0.12
   groundMask:
     serializedVersion: 2
     m_Bits: 5

@@ -2,13 +2,11 @@ using UnityEngine;
 
 /// <summary>
 /// Стабільна логіка драбини:
-/// 1. Герой може залазити вгору/вниз.
-/// 2. На верхньому краї драбини герой стає у Normal і стоїть як на звичайному блоці.
-/// 3. Якщо герой іде вбік у тунель із середини драбини — він просто виходить із драбини.
-/// 4. Немає залежності від OnTriggerEnter/Exit, які часто дають ривки на верхньому краї.
-/// 5. Є захист від race condition:
-///    коли герой тільки почав лізти знизу, ми короткий час ігноруємо recentlyGrounded,
-///    щоб його не викинуло назад у Normal на наступному кадрі.
+/// - Герой може почати лізти знизу, навіть якщо ще "пам'ятає" землю під ногами.
+/// - Біля верхнього краю є невелика поблажка, якщо тулуб на мить втратив контакт із драбиною.
+/// - Вихід на верхню площадку відбувається лише тоді, коли герой реально стоїть на землі,
+///   а не в перший же кадр після старту підйому.
+/// - Якщо герой відпускає джойстик посеред драбини, він має залишатися у Climbing і не падати.
 /// </summary>
 [RequireComponent(typeof(HeroStateController), typeof(HeroInputReader))]
 public class LadderZoneDetector : MonoBehaviour
@@ -16,90 +14,94 @@ public class LadderZoneDetector : MonoBehaviour
     [Header("Ladder Detection")]
     [SerializeField] private Transform ladderCheck;
 
-    // Краще ставити зону перевірки на рівні тулуба героя.
-    // Вона має бути вужчою за тунель, але достатньою, щоб ловити драбину поруч.
-    [SerializeField] private Vector2 ladderCheckSize = new Vector2(0.35f, 0.9f);
+    // Зона перевірки драбини на рівні тулуба.
+    // Трохи вища, ніж була, щоб на верхньому краї не було миттєвої втрати контакту.
+    [SerializeField] private Vector2 ladderCheckSize = new Vector2(0.35f, 1.05f);
 
-    // Layer драбин.
+    // Layer, на якому лежать усі драбини.
     [SerializeField] private LayerMask ladderMask;
 
     [Header("Ground Detection")]
     [SerializeField] private Transform groundCheck;
 
-    // Точка під ногами героя.
+    // Радіус перевірки під ногами героя.
     [SerializeField] private float groundCheckRadius = 0.12f;
 
-    // Layer твердих блоків / землі / платформ, на яких герой може стояти.
+    // Layer твердих поверхонь: блоки, земля, платформи.
     [SerializeField] private LayerMask groundMask;
 
     [Header("Input")]
-    // Мінімальне відхилення джойстика, після якого вважаємо,
-    // що гравець справді хоче почати лазіння.
+    // Поріг для початку підйому.
     [SerializeField] private float climbEnterThreshold = 0.25f;
 
-    // Якщо гравець тисне вниз сильніше за цей поріг —
-    // починаємо / продовжуємо спуск.
+    // Поріг для початку спуску.
     [SerializeField] private float climbDownThreshold = -0.25f;
 
     [Header("Stability")]
-    // Пам’ять контакту із землею.
-    // Допомагає на верхньому краї драбини, коли groundCheck
-    // може на 1 кадр втратити або знайти землю.
+    // Коротка "пам'ять" того, що герой стояв на землі.
     [SerializeField] private float groundedMemoryTime = 0.12f;
 
-    // Коротка затримка після виходу на верхню площадку,
-    // щоб герой не застрибував назад у Climbing,
-    // якщо джойстик ще трохи тисне вгору.
+    // Після виходу на верхню платформу не даємо миттєво знову зайти в Climbing,
+    // якщо гравець усе ще трохи тисне джойстик вгору.
     [SerializeField] private float topExitLockTime = 0.18f;
 
-    [Header("Climb Start Protection")]
-    // Після початку лазіння знизу ми короткий час
-    // ігноруємо recentlyGrounded.
-    // Це прибирає баг, коли герой встигає увійти в Climbing,
-    // але на наступному ж кадрі вилітає в Normal,
-    // бо ще "пам’ятає", що щойно стояв на землі.
-    [SerializeField] private float climbStartLockTime = 0.2f;
+    // Після старту лазіння короткий час ігноруємо recentlyGrounded,
+    // щоб герой не вилетів у Normal одразу з нижньої точки драбини.
+    [SerializeField] private float climbStartLockTime = 0.20f;
+
+    // Якщо біля верхнього краю тулуб на 1-2 кадри "втратив" драбину,
+    // не виходимо з Climbing миттєво.
+    [SerializeField] private float ladderLostGraceTime = 0.12f;
 
     private HeroStateController heroState;
     private HeroInputReader inputReader;
 
-    // Час останнього підтвердженого контакту із землею.
+    // Час останнього контакту із землею.
     private float lastGroundedTime = -999f;
 
     // Час останнього виходу на верхню площадку.
     private float lastTopExitTime = -999f;
 
-    // Час останнього входу у стан Climbing.
+    // Час останнього входу в Climbing.
     private float lastClimbStartTime = -999f;
+
+    // Час останнього контакту з драбиною.
+    private float lastLadderTouchTime = -999f;
 
     private void Awake()
     {
+        // Беремо компоненти з того ж об'єкта героя.
         heroState = GetComponent<HeroStateController>();
         inputReader = GetComponent<HeroInputReader>();
     }
 
     private void Update()
     {
-        bool touchingLadder = IsTouchingLadder();
+        bool touchingLadderNow = IsTouchingLadder();
         bool groundedNow = IsGrounded();
 
-        // Якщо ноги героя стоять на землі прямо зараз —
-        // запам’ятовуємо цей момент.
+        // Запам'ятовуємо, що драбина була під тулубом недавно.
+        if (touchingLadderNow)
+        {
+            lastLadderTouchTime = Time.time;
+        }
+
+        // Запам'ятовуємо, що під ногами була земля.
         if (groundedNow)
         {
             lastGroundedTime = Time.time;
         }
 
-        // "Недавно стояв на землі" — це не обов’язково цей кадр,
-        // а ще невелике вікно пам’яті після нього.
+        // Поблажка після контакту із землею.
         bool recentlyGrounded = Time.time - lastGroundedTime <= groundedMemoryTime;
 
-        // Після виходу на верхню платформу тимчасово блокуємо
-        // повторний вхід у climb від випадкового up.
+        // Поблажка після втрати драбини.
+        bool recentlyTouchedLadder = Time.time - lastLadderTouchTime <= ladderLostGraceTime;
+
+        // Захист від повторного входу в драбину відразу після виходу зверху.
         bool topExitLocked = Time.time - lastTopExitTime <= topExitLockTime;
 
-        // Перші 0.2 сек після входу в Climbing
-        // не дозволяємо логіці верхнього виходу одразу ж викинути героя назад.
+        // Захист від миттєвого виходу з драбини в перші миті після старту підйому.
         bool justStartedClimbing = Time.time - lastClimbStartTime <= climbStartLockTime;
 
         float vertical = inputReader.Vertical;
@@ -107,15 +109,15 @@ public class LadderZoneDetector : MonoBehaviour
         bool wantsUp = vertical > climbEnterThreshold;
         bool wantsDown = vertical < climbDownThreshold;
 
-        // ------------------------------------------------
-        // Якщо герой ВЖЕ у стані лазіння
-        // ------------------------------------------------
+        // ------------------------------------------------------------
+        // Якщо герой уже у стані лазіння
+        // ------------------------------------------------------------
         if (heroState.CurrentState == HeroState.Climbing)
         {
-            // Якщо герой уже торкнувся землі і не тисне вниз,
-            // значить він доліз до верхньої площадки.
-            // Але НЕ робимо цього в перші миті після старту лазіння,
-            // інакше отримаємо race condition з нижньою землею.
+            // Якщо герой реально дістався верхньої поверхні
+            // і не намагається лізти вниз — переводимо в Normal.
+            // Але НЕ робимо цього відразу після старту climb знизу,
+            // інакше отримаємо race condition із нижньою землею.
             if (recentlyGrounded && !wantsDown && !justStartedClimbing)
             {
                 lastTopExitTime = Time.time;
@@ -123,48 +125,49 @@ public class LadderZoneDetector : MonoBehaviour
                 return;
             }
 
-            // Якщо герой більше не торкається драбини тулубом,
-            // значить він зійшов убік у тунель — виходимо з climb.
-            if (!touchingLadder)
+            // Якщо драбина на мить зникла з-під тулуба біля верхнього краю,
+            // не виходимо миттєво.
+            // Виходимо тільки якщо контакт із драбиною втрачено вже не коротко
+            // і герой не стоїть на землі.
+            if (!recentlyTouchedLadder && !groundedNow)
             {
                 heroState.ChangeState(HeroState.Normal);
                 return;
             }
 
-            // Інакше просто лишаємось у Climbing.
+            // Інакше лишаємося в Climbing.
             return;
         }
 
-        // ------------------------------------------------
+        // ------------------------------------------------------------
         // Якщо герой у звичайному стані
-        // ------------------------------------------------
+        // ------------------------------------------------------------
         if (heroState.CurrentState == HeroState.Normal)
         {
-            // Без контакту з драбиною активувати climb не можна.
-            if (!touchingLadder)
+            // Якщо драбини поруч немає навіть із короткою поблажкою,
+            // зайти в climb не можна.
+            if (!recentlyTouchedLadder)
             {
                 return;
             }
 
-            // Якщо щойно вилізли на верхню площадку,
-            // блокуємо повторний вхід по up.
-            // Але вниз спускатися дозволяємо завжди.
+            // Після виходу на верхню платформу блокуємо повторний re-enter по up.
+            // Але вниз дозволяємо завжди.
             if (topExitLocked && !wantsDown)
             {
                 return;
             }
 
-            // Спуск зверху вниз дозволяємо завжди,
-            // якщо герой торкається драбини і тисне вниз.
+            // Спуск зверху вниз.
             if (wantsDown)
             {
                 StartClimbing();
                 return;
             }
 
-            // Підйом вгору теж дозволяємо,
-            // навіть якщо герой щойно стояв на землі внизу драбини.
-            // Саме це виправляє головний баг "не хоче починати лізти знизу".
+            // Підйом знизу вгору.
+            // Тут НЕ перевіряємо recentlyGrounded,
+            // бо саме це ламало старт підйому з нижньої точки.
             if (wantsUp)
             {
                 StartClimbing();
@@ -175,18 +178,17 @@ public class LadderZoneDetector : MonoBehaviour
 
     /// <summary>
     /// Єдина точка входу в Climbing.
-    /// Тут фіксуємо час початку лазіння,
-    /// щоб тимчасово ігнорувати recentlyGrounded.
+    /// Тут оновлюємо службові таймери, щоб не було смикань.
     /// </summary>
     private void StartClimbing()
     {
         lastClimbStartTime = Time.time;
+        lastLadderTouchTime = Time.time;
         heroState.ChangeState(HeroState.Climbing);
     }
 
     /// <summary>
-    /// Перевіряє, чи тулуб героя зараз торкається драбини.
-    /// Це стабільніше за OnTriggerEnter/Exit на верхньому краї.
+    /// Перевірка контакту тулуба героя з драбиною.
     /// </summary>
     private bool IsTouchingLadder()
     {
@@ -199,7 +201,7 @@ public class LadderZoneDetector : MonoBehaviour
     }
 
     /// <summary>
-    /// Перевіряє, чи ноги героя стоять на твердому блоці.
+    /// Перевірка землі під ногами героя.
     /// </summary>
     private bool IsGrounded()
     {
@@ -213,12 +215,14 @@ public class LadderZoneDetector : MonoBehaviour
 
     private void OnDrawGizmosSelected()
     {
+        // Візуалізація зони тулуба для драбини.
         if (ladderCheck != null)
         {
             Gizmos.color = Color.cyan;
             Gizmos.DrawWireCube(ladderCheck.position, ladderCheckSize);
         }
 
+        // Візуалізація перевірки землі під ногами.
         if (groundCheck != null)
         {
             Gizmos.color = Color.yellow;

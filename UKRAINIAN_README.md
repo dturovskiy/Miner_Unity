@@ -1,5 +1,7 @@
 # Miner Scnenario
 
+**Unity version: 6000.3.10f1 (Unity 6.3)**
+
 ## [ВІДГУКИ ПРО ПРОБЛЕМИ](ReadmeContent/Problems.markdown)
 
 # Етапи розробки гри

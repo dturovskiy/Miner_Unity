@@ -1,5 +1,7 @@
 # Miner Scenario
 
+**Unity version: 6000.3.10f1 (Unity 6.3)**
+
 ## [FEEDBACK ON PROBLEMS](ReadmeContent/Problems.markdown)
 
 # Game Development Stages

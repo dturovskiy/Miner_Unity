@@ -63,14 +63,18 @@ public class HeroMotor : MonoBehaviour
 
         if (currentState == HeroState.Climbing)
         {
+            // На драбині рухаємося тільки по Y.
+            // Це прибирає паразитний зсув по X від неточного джойстика.
             float speedY = inputReader.Vertical * climbSpeed;
-            rb.linearVelocity = new Vector2(speedX, speedY);
+            rb.linearVelocity = new Vector2(0f, speedY);
+
+            // Під час climb не вважаємо героя walking.
+            UpdateAnimatorWalking(false);
+            return;
         }
-        else
-        {
-            // Normal Walking
-            rb.linearVelocity = new Vector2(speedX, rb.linearVelocity.y);
-        }
+
+        // Normal Walking
+        rb.linearVelocity = new Vector2(speedX, rb.linearVelocity.y);
 
         UpdateFacingAndAnimation();
     }

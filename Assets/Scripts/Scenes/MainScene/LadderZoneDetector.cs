@@ -74,7 +74,6 @@ public class LadderZoneDetector : MonoBehaviour
         bool recentlyGrounded = Time.time - lastGroundedTime <= groundedMemoryTime;
         bool topExitLocked = Time.time - lastTopExitTime <= topExitLockTime;
 
-        float horizontal = inputReader.Horizontal;
         float vertical = inputReader.Vertical;
 
         bool wantsUp = vertical > climbEnterThreshold;
@@ -133,8 +132,8 @@ public class LadderZoneDetector : MonoBehaviour
                 return;
             }
 
-            // Підйом вгору дозволяємо лише якщо герой НЕ стоїть на верхній платформі.
-            if (wantsUp && !recentlyGrounded)
+            // Підйом вгору дозволяємо завжди, якщо ми в зоні драбини.
+            if (wantsUp)
             {
                 heroState.ChangeState(HeroState.Climbing);
             }

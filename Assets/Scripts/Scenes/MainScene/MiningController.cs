@@ -7,7 +7,7 @@ public class MiningController : MonoBehaviour
 
 
     private Animator animator;
-    private HeroController heroController;
+    private HeroStateController stateController;
     private TileBehaviour tileBehaviour;
 
     private float maxMiningDistance = 0.5f;
@@ -23,7 +23,7 @@ public class MiningController : MonoBehaviour
     private void Awake()
     {
         animator = GetComponent<Animator>();
-        heroController = GetComponent<HeroController>();
+        stateController = GetComponent<HeroStateController>();
     }
 
     private void Update()
@@ -68,7 +68,7 @@ public class MiningController : MonoBehaviour
 
         animator.SetBool("IsMining", true);
         animator.SetBool("IsWalking", false);
-        heroController.SetCanMove(false);
+        stateController.ChangeState(HeroState.Mining);
     }
 
     private void StopMiningAnimation()
@@ -81,7 +81,10 @@ public class MiningController : MonoBehaviour
 
         animator.SetBool("IsMining", false);
 
-        heroController.SetCanMove(true);
+        if (stateController != null && stateController.CurrentState == HeroState.Mining)
+        {
+            stateController.ChangeState(HeroState.Normal);
+        }
     }
 
     private void CheckTile(Vector2 targetPosition)

@@ -6,18 +6,27 @@ namespace MinerUnity.Terrain
 {
     /// <summary>
     /// Replaces TerrainController and TerrainGeneration GameObjects logic.
-    /// Dynamically spawns tiles near the hero and destroys them when out of range.
+    /// Dynamically spawns tiles near the camera and destroys them when out of range.
+    /// Fog of war is separate and revealed based on hero position.
     /// </summary>
     public class ChunkManager : MonoBehaviour
     {
         [Header("References")]
         [SerializeField] private Transform hero;
+        [SerializeField] private Camera worldCamera;
         [SerializeField] private Tilemap hiddenAreaFog; // "Fog of war" tilemap
-        
-        [Header("Settings")]
-        [SerializeField] private int viewDistanceX = 15;
-        [SerializeField] private int viewDistanceY = 10;
-        
+
+        [Header("Loaded Area Around Camera")]
+        [SerializeField, Min(0)] private int preloadBlocksX = 3;
+        [SerializeField, Min(0)] private int preloadBlocksY = 5;
+        [SerializeField, Min(0)] private int keepAliveMarginX = 2;
+        [SerializeField, Min(0)] private int keepAliveMarginY = 3;
+
+        [Header("Fog Of War Around Hero")]
+        [SerializeField, Min(0)] private int fogRevealRadiusX = 3;
+        [SerializeField, Min(0)] private int fogRevealRadiusUp = 4;
+        [SerializeField, Min(0)] private int fogRevealRadiusDown = 2;
+
         // The single source of truth for the entire map (25KB)
         private WorldData worldData;
         private byte[] fogGrid; // For storing fog of war state (1 = explored, 0 = hidden)
@@ -41,8 +50,9 @@ namespace MinerUnity.Terrain
         // Keeps track of which GameObjects are currently physically spawned in the scene
         private Dictionary<Vector2Int, GameObject> spawnedTiles = new Dictionary<Vector2Int, GameObject>();
         private List<Vector2Int> tilesToDespawn = new List<Vector2Int>();
-        
+
         private Vector2Int lastHeroPos = new Vector2Int(-999, -999);
+        private Vector2Int lastCameraPos = new Vector2Int(-999, -999);
 
         public WorldData GetWorldData() => worldData;
 
@@ -94,115 +104,202 @@ namespace MinerUnity.Terrain
 
         private void Update()
         {
-            if (hero != null)
-            {
-                Vector2Int currentHeroPos = new Vector2Int(Mathf.FloorToInt(hero.position.x), Mathf.FloorToInt(hero.position.y));
+            if (hero == null) return;
+            if (worldCamera == null) worldCamera = Camera.main;
 
-                // Only update chunks if hero moved to a new block
-                if (currentHeroPos != lastHeroPos)
-                {
-                    lastHeroPos = currentHeroPos;
-                    UpdateViewArea(currentHeroPos);
-                }
+            Vector2Int heroCell = WorldToCell(hero.position);
+            Vector2Int cameraCell = worldCamera != null ? WorldToCell(worldCamera.transform.position) : heroCell;
+
+            // 1. Підвантаження рахуємо по камері
+            if (cameraCell != lastCameraPos)
+            {
+                lastCameraPos = cameraCell;
+                UpdateLoadedTiles();
+            }
+
+            // 2. Відкриття fog рахуємо по герою
+            if (heroCell != lastHeroPos)
+            {
+                lastHeroPos = heroCell;
+                RevealFogAroundHero(heroCell);
             }
 
             ProcessScheduledStoneFalls();
         }
 
+        private Vector2Int WorldToCell(Vector3 worldPosition)
+        {
+            return new Vector2Int(
+                Mathf.FloorToInt(worldPosition.x),
+                Mathf.FloorToInt(worldPosition.y)
+            );
+        }
+
         private void ForceUpdateChunks()
         {
             if (hero == null) return;
-            Vector2Int currentHeroPos = new Vector2Int(Mathf.FloorToInt(hero.position.x), Mathf.FloorToInt(hero.position.y));
-            lastHeroPos = currentHeroPos;
-            UpdateViewArea(currentHeroPos);
+            if (worldCamera == null) worldCamera = Camera.main;
+
+            Vector2Int heroCell = WorldToCell(hero.position);
+            Vector2Int cameraCell = worldCamera != null ? WorldToCell(worldCamera.transform.position) : heroCell;
+
+            lastHeroPos = heroCell;
+            lastCameraPos = cameraCell;
+
+            RevealFogAroundHero(heroCell);
+            UpdateLoadedTiles();
         }
 
-        private void UpdateViewArea(Vector2Int center)
+        private void GetCameraBoundsInCells(int extraX, int extraY, out int minX, out int maxX, out int minY, out int maxY)
         {
-            // 1. Calculate the bounding box of what should be visible
-            int minX = Mathf.Max(0, center.x - viewDistanceX);
-            int maxX = Mathf.Min(worldData.Width - 1, center.x + viewDistanceX);
-            int minY = Mathf.Max(0, center.y - viewDistanceY);
-            int maxY = Mathf.Min(worldData.Height - 1, center.y + viewDistanceY);
+            Camera cam = worldCamera != null ? worldCamera : Camera.main;
 
-            // Keep track of tiles we verified are in view
-            HashSet<Vector2Int> currentlyVisible = new HashSet<Vector2Int>();
-
-            // 2. Spawn required tiles
-            for (int x = minX; x <= maxX; x++)
+            if (cam == null)
             {
-                for (int y = minY; y <= maxY; y++)
+                Vector2Int fallbackCenter = WorldToCell(hero.position);
+
+                minX = Mathf.Max(0, fallbackCenter.x - 15 - extraX);
+                maxX = Mathf.Min(worldData.Width - 1, fallbackCenter.x + 15 + extraX);
+                minY = Mathf.Max(0, fallbackCenter.y - 10 - extraY);
+                maxY = Mathf.Min(worldData.Height - 1, fallbackCenter.y + 10 + extraY);
+                return;
+            }
+
+            // Для orthographic-камери halfHeight задається orthographicSize
+            float halfHeight = cam.orthographicSize;
+            float halfWidth = halfHeight * cam.aspect;
+
+            Vector3 camPos = cam.transform.position;
+
+            // Додаємо preload/extras, щоб спавнити трохи поза межами екрана
+            minX = Mathf.Max(0, Mathf.FloorToInt(camPos.x - halfWidth) - extraX);
+            maxX = Mathf.Min(worldData.Width - 1, Mathf.CeilToInt(camPos.x + halfWidth) + extraX);
+
+            minY = Mathf.Max(0, Mathf.FloorToInt(camPos.y - halfHeight) - extraY);
+            maxY = Mathf.Min(worldData.Height - 1, Mathf.CeilToInt(camPos.y + halfHeight) + extraY);
+        }
+
+        private void UpdateLoadedTiles()
+        {
+            // 1. Межі, де тайли точно мають бути завантажені
+            GetCameraBoundsInCells(
+                preloadBlocksX,
+                preloadBlocksY,
+                out int loadMinX,
+                out int loadMaxX,
+                out int loadMinY,
+                out int loadMaxY
+            );
+
+            // 2. Межі, де тайли ще дозволено тримати в пам'яті,
+            // навіть якщо вони вже трохи вийшли за екран.
+            GetCameraBoundsInCells(
+                preloadBlocksX + keepAliveMarginX,
+                preloadBlocksY + keepAliveMarginY,
+                out int keepMinX,
+                out int keepMaxX,
+                out int keepMinY,
+                out int keepMaxY
+            );
+
+            // 3. Спавнимо все, що потрібно в зоні камери
+            for (int x = loadMinX; x <= loadMaxX; x++)
+            {
+                for (int y = loadMinY; y <= loadMaxY; y++)
                 {
                     TileID id = worldData.GetTile(x, y);
-                    if (id != TileID.Empty && id != TileID.Edge)
-                    {
-                        Vector2Int pos = new Vector2Int(x, y);
-                        currentlyVisible.Add(pos);
 
-                        if (!spawnedTiles.ContainsKey(pos))
-                        {
-                            SpawnTileGameObject(pos, id);
-                        }
+                    if (id == TileID.Empty || id == TileID.Edge)
+                    {
+                        continue;
+                    }
+
+                    Vector2Int pos = new Vector2Int(x, y);
+
+                    if (!spawnedTiles.ContainsKey(pos))
+                    {
+                        SpawnTileGameObject(pos, id);
                     }
                 }
             }
 
-            // 2.5 Clear fog of war in a fixed smaller radius (3x, 1y) just like old TerrainController
-            if (hiddenAreaFog != null)
-            {
-                bool inCave = false;
-                foreach (Collider2D collider in Physics2D.OverlapCircleAll(hero.position, 0.4f))
-                {
-                    if (collider.CompareTag("Cave")) inCave = true;
-                }
-
-                if (!inCave)
-                {
-                    int fogRadiusX = 3;
-                    int fogRadiusY = 1;
-                    int fogCenterY = Mathf.FloorToInt(hero.position.y); // Adjust y independently if needed
-                    bool fogChanged = false;
-
-                    for (int x = -fogRadiusX; x <= fogRadiusX; x++)
-                    {
-                        for (int y = -fogRadiusY; y <= fogRadiusY; y++)
-                        {
-                            Vector3Int fogPos = new Vector3Int(center.x + x, center.y + y, 0); // old script used heroCellPosition which is similar
-                            if (hiddenAreaFog.GetTile(fogPos) != null)
-                            {
-                                hiddenAreaFog.SetTile(fogPos, null);
-
-                                // Save this securely in byte array mapping
-                                if (fogPos.x >= 0 && fogPos.x < worldData.Width && fogPos.y >= 0 && fogPos.y < worldData.Height)
-                                {
-                                    fogGrid[fogPos.y * worldData.Width + fogPos.x] = 1;
-                                    fogChanged = true;
-                                }
-                            }
-                        }
-                    }
-
-                    if (fogChanged && fogPath != null)
-                    {
-                        System.IO.File.WriteAllBytes(fogPath, fogGrid);
-                    }
-                }
-            }
-
-            // 3. Despawn tiles that are now out of view
+            // 4. Деспавнимо лише ті тайли, що вже далеко за межами keep-alive області
             tilesToDespawn.Clear();
+
             foreach (var kvp in spawnedTiles)
             {
-                if (!currentlyVisible.Contains(kvp.Key))
+                Vector2Int pos = kvp.Key;
+
+                bool outsideKeepAlive =
+                    pos.x < keepMinX || pos.x > keepMaxX ||
+                    pos.y < keepMinY || pos.y > keepMaxY;
+
+                if (outsideKeepAlive)
                 {
-                    tilesToDespawn.Add(kvp.Key);
+                    tilesToDespawn.Add(pos);
                 }
             }
 
-            foreach (var pos in tilesToDespawn)
+            for (int i = 0; i < tilesToDespawn.Count; i++)
             {
+                Vector2Int pos = tilesToDespawn[i];
                 Destroy(spawnedTiles[pos]);
                 spawnedTiles.Remove(pos);
+            }
+        }
+
+        private void RevealFogAroundHero(Vector2Int center)
+        {
+            if (hiddenAreaFog == null || hero == null)
+            {
+                return;
+            }
+
+            bool inCave = false;
+            Collider2D[] overlaps = Physics2D.OverlapCircleAll(hero.position, 0.4f);
+
+            for (int i = 0; i < overlaps.Length; i++)
+            {
+                if (overlaps[i].CompareTag("Cave"))
+                {
+                    inCave = true;
+                    break;
+                }
+            }
+
+            if (inCave)
+            {
+                return;
+            }
+
+            bool fogChanged = false;
+
+            for (int x = -fogRevealRadiusX; x <= fogRevealRadiusX; x++)
+            {
+                for (int y = -fogRevealRadiusDown; y <= fogRevealRadiusUp; y++)
+                {
+                    int worldX = center.x + x;
+                    int worldY = center.y + y;
+
+                    if (worldX < 0 || worldX >= worldData.Width || worldY < 0 || worldY >= worldData.Height)
+                    {
+                        continue;
+                    }
+
+                    Vector3Int fogPos = new Vector3Int(worldX, worldY, 0);
+
+                    if (hiddenAreaFog.GetTile(fogPos) != null)
+                    {
+                        hiddenAreaFog.SetTile(fogPos, null);
+                        fogGrid[worldY * worldData.Width + worldX] = 1;
+                        fogChanged = true;
+                    }
+                }
+            }
+
+            if (fogChanged && !string.IsNullOrEmpty(fogPath))
+            {
+                System.IO.File.WriteAllBytes(fogPath, fogGrid);
             }
         }
 

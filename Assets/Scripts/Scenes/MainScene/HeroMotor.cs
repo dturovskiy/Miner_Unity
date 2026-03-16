@@ -72,21 +72,23 @@ public class HeroMotor : MonoBehaviour
             rb.linearVelocity = new Vector2(speedX, rb.linearVelocity.y);
         }
 
-        UpdateFacingAndAnimation(speedX);
+        UpdateFacingAndAnimation();
     }
 
-    private void UpdateFacingAndAnimation(float speedX)
+    private void UpdateFacingAndAnimation()
     {
-        if (speedX > 0.01f)
+        float actualSpeedX = rb.linearVelocity.x;
+
+        if (actualSpeedX > 0.01f)
         {
             transform.localScale = new Vector3(-Mathf.Abs(transform.localScale.x), transform.localScale.y, transform.localScale.z);
         }
-        else if (speedX < -0.01f)
+        else if (actualSpeedX < -0.01f)
         {
             transform.localScale = new Vector3(Mathf.Abs(transform.localScale.x), transform.localScale.y, transform.localScale.z);
         }
 
-        UpdateAnimatorWalking(Mathf.Abs(speedX) > 0.01f);
+        UpdateAnimatorWalking(Mathf.Abs(actualSpeedX) > 0.01f);
     }
 
     private void UpdateAnimatorWalking(bool shouldWalk)

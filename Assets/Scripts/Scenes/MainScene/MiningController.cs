@@ -34,7 +34,8 @@ public class MiningController : MonoBehaviour
         int roundedHorizontalInput = Mathf.RoundToInt(horizontalInput);
         int roundedVerticalInput = Mathf.RoundToInt(verticalInput);
 
-        if (Math.Abs(horizontalInput) >= 0.5 || Math.Abs(verticalInput) >= 0.5)
+        // Require a very deliberate input so normal walking doesn't hijack mining
+        if (Math.Abs(horizontalInput) >= 0.8f || Math.Abs(verticalInput) >= 0.8f)
         {
             Vector2 miningDirection = new Vector2(roundedHorizontalInput, roundedVerticalInput).normalized;
             if (roundedVerticalInput == 1)
@@ -68,7 +69,9 @@ public class MiningController : MonoBehaviour
 
         animator.SetBool("IsMining", true);
         animator.SetBool("IsWalking", false);
-        stateController.ChangeState(HeroState.Mining);
+        
+        // TEMPORARY: disabled state overriding for bug tracing.
+        // stateController.ChangeState(HeroState.Mining);
     }
 
     private void StopMiningAnimation()
@@ -81,10 +84,13 @@ public class MiningController : MonoBehaviour
 
         animator.SetBool("IsMining", false);
 
+        // TEMPORARY: disabled state overriding for bug tracing.
+        /*
         if (stateController != null && stateController.CurrentState == HeroState.Mining)
         {
             stateController.ChangeState(HeroState.Normal);
         }
+        */
     }
 
     private void CheckTile(Vector2 targetPosition)

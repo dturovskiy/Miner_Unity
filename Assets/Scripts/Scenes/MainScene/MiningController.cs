@@ -9,7 +9,7 @@ public class MiningController : MonoBehaviour
     private Animator animator;
     private HeroController heroController;
     private TileBehaviour tileBehaviour;
-    [SerializeField] private SaveLoadSystem saveLoadSystem;
+
     private float maxMiningDistance = 0.5f;
 
     public Joystick miningJoystick;
@@ -54,7 +54,6 @@ public class MiningController : MonoBehaviour
         }
         else
         {
-            // Зупинка анімації майнінгу, якщо вона вже почалася
             StopMiningAnimation();
         }
     }
@@ -89,14 +88,16 @@ public class MiningController : MonoBehaviour
     {
         Collider2D hitCollider = Physics2D.OverlapPoint(targetPosition);
 
-        // Перевірка наявності цілі
         if (hitCollider != null)
         {
             GameObject tile = hitCollider.gameObject;
             tileBehaviour = tile.GetComponent<TileBehaviour>();
 
-            // Перевірка тегів та стану плитки
-            if (tile.CompareTag("Edge") || tile.CompareTag("Stone") || tile.CompareTag("Cave")) return;
+            if (tile.CompareTag("Edge") || tile.CompareTag("Stone") || tile.CompareTag("Cave"))
+            {
+                StopMiningAnimation();
+                return;
+            }
 
             StartMiningAnimation();
 
@@ -111,7 +112,7 @@ public class MiningController : MonoBehaviour
                     StopMiningAnimation();
                     animator.SetBool("IsWalking", true);
                     Vector2 tileCoordinates = new Vector2(tile.transform.position.x, tile.transform.position.y);
-                    saveLoadSystem.SaveDestroyedTiles(tileCoordinates);
+                    
                 }
             }
         }

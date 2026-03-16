@@ -11,7 +11,6 @@ namespace AwesomeTools.MainScene
         [Header("PlayButton")]
         [SerializeField] private SceneData _sceneData;
         [SerializeField] private SceneLoader _sceneLoader;
-        [SerializeField] private SaveLoadSystem _saveLoadSystem;
 
         public event Action OnButtonIsPressed;
 
@@ -22,8 +21,13 @@ namespace AwesomeTools.MainScene
 
         public void GoToMainScene()
         {
-            //Disappear();
-            _saveLoadSystem.DeleteTerrainBinaryFile();
+            // Delete new world grid map and fog map
+            string path = System.IO.Path.Combine(Application.persistentDataPath, "world_grid.dat");
+            if (System.IO.File.Exists(path)) System.IO.File.Delete(path);
+
+            string fogPath = System.IO.Path.Combine(Application.persistentDataPath, "fog_grid.dat");
+            if (System.IO.File.Exists(fogPath)) System.IO.File.Delete(fogPath);
+
             StartCoroutine(LoadScene(_sceneData));
         }
         public void ContinueGame()

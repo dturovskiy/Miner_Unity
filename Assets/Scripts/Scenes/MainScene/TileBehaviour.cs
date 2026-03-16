@@ -10,6 +10,10 @@ public class TileBehaviour : MonoBehaviour
 
     public bool IsBroken => isBroken;
 
+    // Added for new Terrain Architecture
+    public int gridX;
+    public int gridY;
+
     public GameObject crackPrefab;
     public Crack crackClass;
 
@@ -25,22 +29,14 @@ public class TileBehaviour : MonoBehaviour
 
     public void BreakTile()
     {
-        Vector2 rayStart = (Vector2)transform.position + new Vector2(0f, 0.6f);
-        float rayLength = 0.5f;
-
-        // If a stone is above the tile, trigger its fall.
-        RaycastHit2D hit = Physics2D.Raycast(rayStart, Vector2.up, rayLength, LayerMask.GetMask("Default"));
-        if (hit.collider != null)
-        {
-            StoneBehaviour stone = hit.collider.GetComponent<StoneBehaviour>();
-            if (stone != null)
-            {
-                stone.StartFalling();
-            }
-        }
-
-        Destroy(gameObject);
         isBroken = true;
+        
+        // Notify the new terrain system to permanently remove this block
+        var chunkManager = GetComponentInParent<MinerUnity.Terrain.ChunkManager>();
+        if (chunkManager != null)
+        {
+            chunkManager.DestroyTileInWorld(gridX, gridY);
+        }
     }
 
     public void HitTile(TileBehaviour tile)

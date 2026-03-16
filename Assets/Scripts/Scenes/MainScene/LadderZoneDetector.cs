@@ -118,7 +118,7 @@ public class LadderZoneDetector : MonoBehaviour
             // і не намагається лізти вниз — переводимо в Normal.
             // Але НЕ робимо цього відразу після старту climb знизу,
             // інакше отримаємо race condition із нижньою землею.
-            if (recentlyGrounded && !wantsDown && !justStartedClimbing)
+            if (groundedNow && !wantsDown && !justStartedClimbing)
             {
                 lastTopExitTime = Time.time;
                 heroState.ChangeState(HeroState.Normal);

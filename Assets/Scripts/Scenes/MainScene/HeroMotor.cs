@@ -38,13 +38,24 @@ public class HeroMotor : MonoBehaviour
     {
         if (newState == HeroState.Climbing)
         {
+            // Заходимо на драбину:
+            // прибираємо гравітацію і обнуляємо швидкість,
+            // щоб не тягнувся старий імпульс із попереднього стану.
             rb.gravityScale = 0f;
             rb.linearVelocity = Vector2.zero;
+            return;
         }
-        else
+
+        // Якщо щойно вийшли з драбини,
+        // не даємо зберегтися позитивній вертикальній швидкості,
+        // яка й підкидає героя над верхнім краєм.
+        if (oldState == HeroState.Climbing)
         {
-            rb.gravityScale = defaultGravityScale;
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, Mathf.Min(0f, rb.linearVelocity.y));
         }
+
+        // Повертаємо звичайну гравітацію.
+        rb.gravityScale = defaultGravityScale;
     }
 
     private void FixedUpdate()

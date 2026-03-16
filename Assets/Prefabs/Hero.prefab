@@ -1290,6 +1290,7 @@ Transform:
   - {fileID: 4708900309245269112}
   - {fileID: 4708900308190467508}
   - {fileID: 4182114272373522314}
+  - {fileID: 2176956999594715348}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!95 &4708900309069914501
@@ -1338,11 +1339,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 03d2fc735eeeeeb409901e5a75048444, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  maxMiningDistance: 0.5
   miningJoystick: {fileID: 0}
-  inputDeadZone: 0.5
-  horizontalMiningDistance: 0.4
-  upwardMiningDistance: 0.7
-  downwardMiningDistance: 0.4
   miningDelay: 0.4
 --- !u!50 &4708900309069914523
 Rigidbody2D:
@@ -1486,13 +1484,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fbdaa95cb9dd2ad4e9e10b5e695f1071, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LadderZoneDetector
-  groundCheck: {fileID: 0}
+  ladderCheck: {fileID: 2176956999594715348}
+  ladderCheckSize: {x: 0.35, y: 0.9}
+  ladderMask:
+    serializedVersion: 2
+    m_Bits: 0
+  groundCheck: {fileID: 4182114272373522314}
   groundCheckRadius: 0.08
   groundMask:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 5
   climbEnterThreshold: 0.25
-  climbExitThreshold: -0.15
+  climbDownThreshold: -0.25
+  groundedMemoryTime: 0.12
+  topExitLockTime: 0.18
 --- !u!1 &4708900309072046849
 GameObject:
   m_ObjectHideFlags: 0
@@ -6695,3 +6700,34 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!1 &9153231523505380208
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2176956999594715348}
+  m_Layer: 3
+  m_Name: LadderCheck
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2176956999594715348
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9153231523505380208}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.38, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4708900309331890126}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

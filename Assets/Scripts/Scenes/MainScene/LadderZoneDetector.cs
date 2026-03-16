@@ -63,11 +63,11 @@ public class LadderZoneDetector : MonoBehaviour
 
         // Вхід у climb:
         // - або тиснемо вниз, стоячи зверху на драбині
-        // - або тиснемо вгору, але тільки якщо НЕ стоїмо вже на верхньому блоці
+        // - або тиснемо вгору (тепер завжди, бо інакше не залізеш знизу)
         if (isInsideLadderZone && heroState.CurrentState == HeroState.Normal)
         {
             bool wantsClimbDown = vertical < -climbEnterThreshold;
-            bool wantsClimbUp = vertical > climbEnterThreshold && !isGrounded;
+            bool wantsClimbUp = vertical > climbEnterThreshold;
 
             if (wantsClimbDown || wantsClimbUp)
             {

@@ -1,62 +1,88 @@
-using System;
 using UnityEngine;
 
 public class MiningController : MonoBehaviour
 {
-    //[SerializeField] TerrainController terrainController;
+    [Header("Input")]
+    [SerializeField] private Joystick miningJoystick;
+    [SerializeField] private float inputDeadZone = 0.5f;
 
+    [Header("Distances")]
+    [SerializeField] private float horizontalMiningDistance = 0.4f;
+    [SerializeField] private float upwardMiningDistance = 0.7f;
+    [SerializeField] private float downwardMiningDistance = 0.4f;
+
+    [Header("Timing")]
+    [SerializeField] private float miningDelay = 0.4f;
 
     private Animator animator;
     private HeroStateController stateController;
-    private TileBehaviour tileBehaviour;
-
-    private float maxMiningDistance = 0.5f;
-
-    public Joystick miningJoystick;
-
-    private float miningDelay = 0.4f;
     private float startTime;
-
-    private bool isMiningStarted = false;
-
+    private bool isMiningStarted;
 
     private void Awake()
     {
+        // Беремо посилання один раз.
         animator = GetComponent<Animator>();
         stateController = GetComponent<HeroStateController>();
     }
 
     private void Update()
     {
-        float horizontalInput = miningJoystick.Horizontal;
-        float verticalInput = miningJoystick.Vertical;
-
-        int roundedHorizontalInput = Mathf.RoundToInt(horizontalInput);
-        int roundedVerticalInput = Mathf.RoundToInt(verticalInput);
-
-        // Require a very deliberate input so normal walking doesn't hijack mining
-        if (Math.Abs(horizontalInput) >= 0.8f || Math.Abs(verticalInput) >= 0.8f)
-        {
-            Vector2 miningDirection = new Vector2(roundedHorizontalInput, roundedVerticalInput).normalized;
-            if (roundedVerticalInput == 1)
-            {
-                maxMiningDistance = 0.7f;
-            }
-            else
-            {
-                maxMiningDistance = 0.4f;
-            }
-            Vector2 miningPosition = (Vector2)transform.position + miningDirection * maxMiningDistance;
-
-            //if (!terrainController.inCave)
-            {
-                CheckTile(miningPosition);
-            }
-        }
-        else
+        // Захист від null, щоб не ловити помилки в рантаймі.
+        if (miningJoystick == null)
         {
             StopMiningAnimation();
+            return;
         }
+
+        // Сирий вектор вводу з джойстика.
+        Vector2 rawInput = new Vector2(miningJoystick.Horizontal, miningJoystick.Vertical);
+
+        // Якщо джойстик майже в центрі — копання нема.
+        if (rawInput.magnitude < inputDeadZone)
+        {
+            StopMiningAnimation();
+            return;
+        }
+
+        // Ключова частина:
+        // ми НЕ дозволяємо одночасно X і Y для mining-напрямку.
+        // Беремо лише домінуючу вісь.
+        Vector2Int snappedDirection = GetSnappedDirection(rawInput);
+
+        // Для різних напрямків можна тримати різну дистанцію.
+        float miningDistance = GetMiningDistance(snappedDirection);
+
+        // Цільова точка для OverlapPoint.
+        Vector2 miningPosition = (Vector2)transform.position + (Vector2)snappedDirection * miningDistance;
+
+        CheckTile(miningPosition);
+    }
+
+    private Vector2Int GetSnappedDirection(Vector2 rawInput)
+    {
+        // Якщо вертикаль домінує — копаємо тільки вгору або вниз.
+        if (Mathf.Abs(rawInput.y) > Mathf.Abs(rawInput.x))
+        {
+            return new Vector2Int(0, rawInput.y > 0f ? 1 : -1);
+        }
+
+        // Інакше копаємо тільки вліво або вправо.
+        return new Vector2Int(rawInput.x > 0f ? 1 : -1, 0);
+    }
+
+    private float GetMiningDistance(Vector2Int direction)
+    {
+        // Окрема дистанція для копання вгору.
+        if (direction.y > 0)
+            return upwardMiningDistance;
+
+        // Окрема дистанція для копання вниз.
+        if (direction.y < 0)
+            return downwardMiningDistance;
+
+        // Горизонтальне копання.
+        return horizontalMiningDistance;
     }
 
     private void StartMiningAnimation()
@@ -67,11 +93,15 @@ public class MiningController : MonoBehaviour
             startTime = Time.time;
         }
 
+        // MiningController має керувати ТІЛЬКИ анімацією копання.
         animator.SetBool("IsMining", true);
-        animator.SetBool("IsWalking", false);
-        
-        // TEMPORARY: disabled state overriding for bug tracing.
-        // stateController.ChangeState(HeroState.Mining);
+
+        // Не чіпаємо IsWalking тут.
+        // Ходьбою нехай керує лише HeroMotor.
+        if (stateController != null)
+        {
+            stateController.ChangeState(HeroState.Mining);
+        }
     }
 
     private void StopMiningAnimation()
@@ -84,51 +114,45 @@ public class MiningController : MonoBehaviour
 
         animator.SetBool("IsMining", false);
 
-        // TEMPORARY: disabled state overriding for bug tracing.
-        /*
         if (stateController != null && stateController.CurrentState == HeroState.Mining)
         {
             stateController.ChangeState(HeroState.Normal);
         }
-        */
     }
 
     private void CheckTile(Vector2 targetPosition)
     {
         Collider2D hitCollider = Physics2D.OverlapPoint(targetPosition);
 
-        if (hitCollider != null)
-        {
-            GameObject tile = hitCollider.gameObject;
-            tileBehaviour = tile.GetComponent<TileBehaviour>();
-
-            if (tile.CompareTag("Edge") || tile.CompareTag("Stone") || tile.CompareTag("Cave"))
-            {
-                StopMiningAnimation();
-                return;
-            }
-
-            StartMiningAnimation();
-
-            if (Time.time - startTime >= miningDelay)
-            {
-                if (tileBehaviour != null && !tileBehaviour.IsBroken)
-                {
-                    tileBehaviour.HitTile(tileBehaviour);
-                }
-                if (tileBehaviour != null && tileBehaviour.IsBroken)
-                {
-                    StopMiningAnimation();
-                    animator.SetBool("IsWalking", true);
-                    Vector2 tileCoordinates = new Vector2(tile.transform.position.x, tile.transform.position.y);
-                    
-                }
-            }
-        }
-        else
+        if (hitCollider == null)
         {
             StopMiningAnimation();
-            animator.SetBool("IsWalking", true);
+            return;
+        }
+
+        GameObject tile = hitCollider.gameObject;
+        TileBehaviour tileBehaviour = tile.GetComponent<TileBehaviour>();
+
+        // Ці теги, як і раніше, не копаємо.
+        if (tile.CompareTag("Edge") || tile.CompareTag("Stone") || tile.CompareTag("Cave"))
+        {
+            StopMiningAnimation();
+            return;
+        }
+
+        StartMiningAnimation();
+
+        if (Time.time - startTime >= miningDelay)
+        {
+            if (tileBehaviour != null && !tileBehaviour.IsBroken)
+            {
+                tileBehaviour.HitTile(tileBehaviour);
+            }
+
+            if (tileBehaviour != null && tileBehaviour.IsBroken)
+            {
+                StopMiningAnimation();
+            }
         }
     }
 }

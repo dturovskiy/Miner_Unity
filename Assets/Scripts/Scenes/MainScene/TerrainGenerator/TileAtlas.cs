@@ -8,6 +8,7 @@ public class TileAtlas : ScriptableObject
     public TileClass dirt;
     public TileClass stone;
     public TileClass tunnel;
+    public TileClass ladder;
 
     [Header("Ores")]
     public TileClass coal;

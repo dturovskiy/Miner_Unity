@@ -1,42 +1,61 @@
-using System.Collections.Generic;
 using UnityEngine;
 
-public class PlaceItem : MonoBehaviour
+/// <summary>
+/// Постановка драбини через логічну сітку.
+/// Не інстансить ladder prefab як джерело істини.
+/// Спочатку змінює дані grid, а візуал оновлюється окремо.
+/// </summary>
+public sealed class PlaceItem : MonoBehaviour
 {
-    [SerializeField] private GameObject ladderPrefab;
+    [SerializeField] private WorldGridService worldGrid;
 
-    private readonly HashSet<Vector2> placedLadderPositions = new HashSet<Vector2>();
-
-    public void PlaceLadder()
+    /// <summary>
+    /// Ставить драбину в клітинку, де зараз знаходиться точка feet.
+    /// Адаптуй цю точку під твою механіку інвентаря / будівництва.
+    /// </summary>
+    public bool TryPlaceLadderAtFeet(Vector2 feetWorldPosition)
     {
-        if (ladderPrefab == null)
+        if (worldGrid == null)
         {
-            return;
+            return false;
         }
 
-        // Keep old gameplay rule: do not place ladder while hero is in cave zone.
-        bool inCave = false;
-        foreach (Collider2D collider in Physics2D.OverlapCircleAll(transform.position, 0.4f))
-        {
-            if (collider.CompareTag("Cave")) inCave = true;
-        }
-        if (inCave)
-        {
-            return;
-        }
+        Vector2Int cell = worldGrid.WorldToCell(feetWorldPosition);
 
-        Vector3 playerPosition = transform.position;
-        float roundedX = Mathf.Floor(playerPosition.x) + 0.5f;
-        float roundedY = Mathf.Floor(playerPosition.y) + 0.5f;
-        Vector2 playerTilePosition = new Vector2(roundedX, roundedY);
+        WorldCellType currentType = worldGrid.GetCellType(cell);
 
-        if (placedLadderPositions.Contains(playerTilePosition))
+        // Драбину дозволяємо ставити тільки в passable-простір.
+        if (currentType != WorldCellType.Empty && currentType != WorldCellType.Cave)
         {
-            return;
+            return false;
         }
 
-        Vector3 ladderPosition = new Vector3(playerTilePosition.x, playerTilePosition.y, 0f);
-        Instantiate(ladderPrefab, ladderPosition, Quaternion.identity);
-        placedLadderPositions.Add(playerTilePosition);
+        worldGrid.SetCellType(cell, WorldCellType.Ladder);
+        
+        var chunkManager = Object.FindFirstObjectByType<MinerUnity.Terrain.ChunkManager>();
+        if (chunkManager != null)
+        {
+            chunkManager.PlaceTileInWorld(cell.x, cell.y, MinerUnity.Terrain.TileID.Ladder);
+        }
+
+        return true;
+    }
+
+    public bool TryRemoveLadder(Vector2 worldPosition)
+    {
+        if (worldGrid == null)
+        {
+            return false;
+        }
+
+        Vector2Int cell = worldGrid.WorldToCell(worldPosition);
+
+        if (worldGrid.GetCellType(cell) != WorldCellType.Ladder)
+        {
+            return false;
+        }
+
+        worldGrid.SetCellType(cell, WorldCellType.Empty);
+        return true;
     }
 }

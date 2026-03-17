@@ -392,6 +392,22 @@ namespace MinerUnity.Terrain
             SaveWorldData();
         }
 
+        /// <summary>
+        /// Called when a tile is placed at runtime (e.g. Ladder).
+        /// </summary>
+        public void PlaceTileInWorld(int x, int y, TileID id)
+        {
+            worldData.SetTile(x, y, id);
+            
+            // Якщо клітинка в білій зоні - спавнимо візуал негайно
+            if (IsCellInsideLoadedArea(new Vector2Int(x, y)))
+            {
+                SpawnTileGameObject(new Vector2Int(x, y), id);
+            }
+            
+            SaveWorldData();
+        }
+
         private void TryScheduleStoneAfterSupportLoss(int x, int y)
         {
             Vector2Int pos = new Vector2Int(x, y);

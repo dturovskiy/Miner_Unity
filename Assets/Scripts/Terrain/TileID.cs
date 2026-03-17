@@ -31,6 +31,9 @@ namespace MinerUnity.Terrain
         Lazurite = 22,
         Emerald = 23,
         Artifact = 24,
-        Amethyst = 25
+        Amethyst = 25,
+        
+        // Building
+        Ladder = 50
     }
 }

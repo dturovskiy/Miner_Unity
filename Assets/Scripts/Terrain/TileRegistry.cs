@@ -39,6 +39,7 @@ namespace MinerUnity.Terrain
             Register(TileID.Stone, atlas.stone);
             Register(TileID.Dirt, atlas.dirt);
             Register(TileID.Tunnel, atlas.tunnel);
+            Register(TileID.Ladder, atlas.ladder);
             
             // Ores
             Register(TileID.Coal, atlas.coal);

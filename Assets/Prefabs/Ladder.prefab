@@ -151,4 +151,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9e440e31042ff8047aa73ae0c77df8cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  feetSkin: 0.01
+  ladderCollider: {fileID: 7725581797492293097}
+  topExitOffset: 0.05
+  bottomExitOffset: 0.05

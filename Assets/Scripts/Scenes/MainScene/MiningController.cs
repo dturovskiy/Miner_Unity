@@ -27,6 +27,12 @@ public sealed class MiningController : MonoBehaviour
     private void Awake()
     {
         animator = GetComponent<Animator>();
+        if (worldGrid == null) worldGrid = WorldGridService.Instance;
+    }
+
+    private void Start()
+    {
+        if (worldGrid == null) worldGrid = WorldGridService.Instance;
     }
 
     private void Update()

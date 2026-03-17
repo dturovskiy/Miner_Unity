@@ -39,6 +39,8 @@ public sealed class HeroGridMotor : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
 
+        if (worldGrid == null) worldGrid = WorldGridService.Instance;
+
         if (inputReader == null)
         {
             inputReader = GetComponent<HeroInputReader>();
@@ -50,10 +52,16 @@ public sealed class HeroGridMotor : MonoBehaviour
         rb.freezeRotation = true;
     }
 
+    private void Start()
+    {
+        if (worldGrid == null) worldGrid = WorldGridService.Instance;
+    }
+
     private void FixedUpdate()
     {
-        if (worldGrid == null || inputReader == null)
+        if (worldGrid == null || !worldGrid.IsReady || inputReader == null)
         {
+            // Якщо світ ще не завантажений - стоїмо на місці
             return;
         }
 

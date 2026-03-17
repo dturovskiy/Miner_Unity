@@ -334,7 +334,13 @@ namespace MinerUnity.Terrain
             {
                 BoxCollider2D coll = newTile.AddComponent<BoxCollider2D>();
                 coll.size = Vector2.one;
-                if (id != TileID.Edge)
+
+                if (id == TileID.Ladder)
+                {
+                    coll.isTrigger = true;
+                    newTile.tag = "Ladder";
+                }
+                else if (id != TileID.Edge)
                 {
                     newTile.tag = "Ground";
                 }

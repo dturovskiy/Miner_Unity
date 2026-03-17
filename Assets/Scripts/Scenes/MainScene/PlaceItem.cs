@@ -2,26 +2,41 @@ using UnityEngine;
 
 /// <summary>
 /// Постановка драбини через логічну сітку.
-/// Не інстансить ladder prefab як джерело істини.
-/// Спочатку змінює дані grid, а візуал оновлюється окремо.
 /// </summary>
 public sealed class PlaceItem : MonoBehaviour
 {
     [SerializeField] private WorldGridService worldGrid;
 
+    private void Awake()
+    {
+        if (worldGrid == null) worldGrid = WorldGridService.Instance;
+    }
+
+    private void Start()
+    {
+        if (worldGrid == null) worldGrid = WorldGridService.Instance;
+    }
+
     /// <summary>
-    /// Ставить драбину в клітинку, де зараз знаходиться точка feet.
-    /// Адаптуй цю точку під твою механіку інвентаря / будівництва.
+    /// Цей метод викликається з UI-кнопки (Unity Event).
     /// </summary>
+    public void PlaceLadder()
+    {
+        // Використовуємо позицію ніг героя
+        TryPlaceLadderAtFeet(transform.position);
+    }
+
     public bool TryPlaceLadderAtFeet(Vector2 feetWorldPosition)
     {
+        if (worldGrid == null) worldGrid = WorldGridService.Instance;
+        
         if (worldGrid == null)
         {
+            Debug.LogError("[PlaceItem] WorldGridService is missing!");
             return false;
         }
 
         Vector2Int cell = worldGrid.WorldToCell(feetWorldPosition);
-
         WorldCellType currentType = worldGrid.GetCellType(cell);
 
         // Драбину дозволяємо ставити тільки в passable-простір.
@@ -43,10 +58,9 @@ public sealed class PlaceItem : MonoBehaviour
 
     public bool TryRemoveLadder(Vector2 worldPosition)
     {
-        if (worldGrid == null)
-        {
-            return false;
-        }
+        if (worldGrid == null) worldGrid = WorldGridService.Instance;
+        
+        if (worldGrid == null) return false;
 
         Vector2Int cell = worldGrid.WorldToCell(worldPosition);
 
@@ -56,6 +70,13 @@ public sealed class PlaceItem : MonoBehaviour
         }
 
         worldGrid.SetCellType(cell, WorldCellType.Empty);
+        
+        var chunkManager = Object.FindFirstObjectByType<MinerUnity.Terrain.ChunkManager>();
+        if (chunkManager != null)
+        {
+            chunkManager.DestroyTileInWorld(cell.x, cell.y);
+        }
+
         return true;
     }
 }

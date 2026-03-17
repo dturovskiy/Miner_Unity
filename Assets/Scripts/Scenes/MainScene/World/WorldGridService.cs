@@ -8,26 +8,45 @@ using UnityEngine;
 /// </summary>
 public sealed class WorldGridService : MonoBehaviour
 {
+    public static WorldGridService Instance { get; private set; }
+
     [Header("Grid Settings")]
-    [SerializeField] private int width = 250;
-    [SerializeField] private int height = 100;
-    [SerializeField] private float cellSize = 1.28f; // Згідно з README: 128 пікселів = 1.28 одиниці (якщо PPU=100)
+    [SerializeField] private int width = 100;
+    [SerializeField] private int height = 255;
+    [SerializeField] private float cellSize = 1f;
     [SerializeField] private Vector2 origin = Vector2.zero;
 
     private WorldCellType[,] cells;
+    private bool isReady = false;
 
     public int Width => width;
     public int Height => height;
     public float CellSize => cellSize;
     public Vector2 Origin => origin;
+    public bool IsReady => isReady;
 
     public event Action<Vector2Int, WorldCellType, WorldCellType> OnCellChanged;
 
     private void Awake()
     {
-        cells = new WorldCellType[width, height];
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
 
-        // За замовчуванням усе порожнє.
+        if (cells == null)
+        {
+            Initialize(width, height);
+        }
+    }
+
+    public void Initialize(int w, int h)
+    {
+        width = w;
+        height = h;
+        cells = new WorldCellType[width, height];
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
@@ -35,6 +54,11 @@ public sealed class WorldGridService : MonoBehaviour
                 cells[x, y] = WorldCellType.Empty;
             }
         }
+    }
+
+    public void MarkReady()
+    {
+        isReady = true;
     }
 
     public bool IsInsideBounds(Vector2Int cell)

@@ -11,19 +11,21 @@ public sealed class TerrainToGridBootstrap : MonoBehaviour
     [SerializeField] private WorldGridService worldGrid;
     [SerializeField] private ChunkManager chunkManager;
 
-    private void Start()
-    {
-        if (worldGrid == null || chunkManager == null)
-        {
-            Debug.LogError("[TerrainToGridBootstrap] References are not assigned!");
-            return;
-        }
+    private bool isSynced = false;
 
-        // Чекаємо, поки ChunkManager завантажить worldData.
-        // Оскільки ChunkManager.Start() завантажує дані, 
-        // SyncWorldToGrid() можна викликати в Start() цього скрипта 
-        // (Execution Order в Unity має бути налаштований, або викликаємо через invoke).
-        Invoke(nameof(SyncWorldToGrid), 0.1f);
+    private void Update()
+    {
+        if (isSynced) return;
+        
+        if (chunkManager != null)
+        {
+            WorldData data = chunkManager.GetWorldData();
+            if (data != null && data.Width > 0)
+            {
+                SyncWorldToGrid();
+                isSynced = true;
+            }
+        }
     }
 
     public void SyncWorldToGrid()
@@ -32,6 +34,9 @@ public sealed class TerrainToGridBootstrap : MonoBehaviour
         if (data == null) return;
 
         Debug.Log($"[TerrainToGridBootstrap] Syncing {data.Width}x{data.Height} map to grid...");
+
+        // Переініціалізуємо сітку під реальний розмір даних
+        worldGrid.Initialize(data.Width, data.Height);
 
         for (int y = 0; y < data.Height; y++)
         {
@@ -43,6 +48,7 @@ public sealed class TerrainToGridBootstrap : MonoBehaviour
             }
         }
 
+        worldGrid.MarkReady();
         Debug.Log("[TerrainToGridBootstrap] Sync complete!");
     }
 

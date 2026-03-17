@@ -16,6 +16,7 @@ MonoBehaviour:
   dirt: {fileID: 11400000, guid: 9f39ae6b6d1957549b92adfe510258df, type: 2}
   stone: {fileID: 11400000, guid: f007af2b4d2b3a546b8db358f59a1a4b, type: 2}
   tunnel: {fileID: 11400000, guid: 20d8515ab265c824c90fa3c45edbaa32, type: 2}
+  ladder: {fileID: 11400000, guid: 1429e3dd3232d73478f636c4cb724cc9, type: 2}
   coal: {fileID: 11400000, guid: 76671bfac2653c440bd451969df0e4d8, type: 2}
   iron: {fileID: 11400000, guid: c9c5ecb83f80ed84bacc4b2e7c563686, type: 2}
   gold: {fileID: 11400000, guid: d758535b26312bc48a48b986b6972864, type: 2}

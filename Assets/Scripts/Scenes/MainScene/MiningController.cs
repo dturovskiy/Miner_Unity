@@ -1,134 +1,97 @@
 using UnityEngine;
 
 /// <summary>
-/// Новий контролер копання.
-/// Він працює не через overlap по колайдерах,
-/// а через сусідню клітинку grid.
-/// Це робить копання з драбини абсолютно природним.
+/// Грід-базований контролер копання.
+/// Працює незалежно від стану руху.
 /// </summary>
-[RequireComponent(typeof(Animator))]
 public sealed class MiningController : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private WorldGridService worldGrid;
     [SerializeField] private Joystick miningJoystick;
+    public float miningDelay = 0.4f;
 
-    [Header("Timing")]
-    [SerializeField] private float miningDelay = 0.4f;
-    [SerializeField] private float inputThreshold = 0.5f;
+    [Header("Visuals")]
+    [SerializeField] private Animator animator;
 
-    private Animator animator;
-    private float miningStartTime;
-    private bool isMining;
-    private Vector2Int currentTargetCell;
-
-    public bool IsMining => isMining;
+    private float timer;
+    private Vector2Int currentTarget;
+    public bool IsMining { get; private set; }
 
     private void Awake()
     {
-        animator = GetComponent<Animator>();
-        if (worldGrid == null) worldGrid = WorldGridService.Instance;
-    }
-
-    private void Start()
-    {
-        if (worldGrid == null) worldGrid = WorldGridService.Instance;
+        if (animator == null) animator = GetComponent<Animator>();
     }
 
     private void Update()
     {
-        if (worldGrid == null || miningJoystick == null)
+        if (worldGrid == null) worldGrid = WorldGridService.Instance;
+        if (miningJoystick == null || worldGrid == null) return;
+
+        Vector2 input = new Vector2(miningJoystick.Horizontal, miningJoystick.Vertical);
+        
+        if (input.magnitude < 0.5f)
         {
-            StopMining();
+            Stop();
             return;
         }
 
-        Vector2Int direction = ReadMiningDirection();
-
-        if (direction == Vector2Int.zero)
+        // Визначаємо напрямок копання (4 сторони)
+        Vector2Int dir = Vector2Int.zero;
+        if (Mathf.Abs(input.x) > Mathf.Abs(input.y))
         {
-            StopMining();
-            return;
+            dir.x = input.x > 0 ? 1 : -1;
+        }
+        else
+        {
+            dir.y = input.y > 0 ? 1 : -1;
         }
 
-        Vector2Int bodyCell = worldGrid.WorldToCell(transform.position);
-        Vector2Int targetCell = bodyCell + direction;
+        Vector2Int target = worldGrid.WorldToCell(transform.position) + dir;
 
-        if (!worldGrid.IsMineable(targetCell))
+        if (worldGrid.IsMineable(target))
         {
-            StopMining();
-            return;
-        }
+            if (!IsMining || currentTarget != target)
+            {
+                IsMining = true;
+                currentTarget = target;
+                timer = 0;
+            }
 
-        if (!isMining || currentTargetCell != targetCell)
+            timer += Time.deltaTime;
+            
+            if (timer >= miningDelay)
+            {
+                BreakCell(target);
+                timer = 0;
+            }
+        }
+        else
         {
-            StartMining(targetCell);
+            Stop();
         }
-
-        if (Time.time - miningStartTime >= miningDelay)
-        {
-            BreakCell(targetCell);
-            StopMining();
-        }
-    }
-
-    private Vector2Int ReadMiningDirection()
-    {
-        float x = miningJoystick.Horizontal;
-        float y = miningJoystick.Vertical;
-
-        bool hasX = Mathf.Abs(x) >= inputThreshold;
-        bool hasY = Mathf.Abs(y) >= inputThreshold;
-
-        if (!hasX && !hasY)
-        {
-            return Vector2Int.zero;
-        }
-
-        // Беремо домінуючу вісь.
-        if (Mathf.Abs(y) > Mathf.Abs(x))
-        {
-            return y > 0f ? Vector2Int.up : Vector2Int.down;
-        }
-
-        return x > 0f ? Vector2Int.right : Vector2Int.left;
-    }
-
-    private void StartMining(Vector2Int targetCell)
-    {
-        isMining = true;
-        currentTargetCell = targetCell;
-        miningStartTime = Time.time;
 
         if (animator != null)
         {
-            animator.SetBool("IsMining", true);
-        }
-    }
-
-    private void StopMining()
-    {
-        isMining = false;
-
-        if (animator != null)
-        {
-            animator.SetBool("IsMining", false);
+            animator.SetBool("IsMining", IsMining);
         }
     }
 
     private void BreakCell(Vector2Int cell)
     {
-        // Мінімальний варіант:
-        // просто перетворюємо mineable-клітинку на Empty.
-        // Якщо захочеш HP/міцність по типах — додається поверх цього шару.
         worldGrid.SetCellType(cell, WorldCellType.Empty);
         
-        // Тут також варто викликати ChunkManager.DestroyTileInWorld, якщо він існує,
-        // щоб оновити візуал і worldData.
+        // Синхронізація з ChunkManager для візуального видалення
         var chunkManager = Object.FindFirstObjectByType<MinerUnity.Terrain.ChunkManager>();
         if (chunkManager != null)
         {
             chunkManager.DestroyTileInWorld(cell.x, cell.y);
         }
+    }
+
+    private void Stop()
+    {
+        IsMining = false;
+        timer = 0;
     }
 }

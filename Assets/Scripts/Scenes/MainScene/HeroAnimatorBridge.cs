@@ -1,77 +1,47 @@
 using UnityEngine;
 
 /// <summary>
-/// Міст між логікою руху і Animator.
-/// Animator не має вирішувати gameplay.
-/// Він тільки відображає вже готовий стан мотора.
+/// Повертає анімації та поворот героя.
 /// </summary>
 [RequireComponent(typeof(Animator))]
 public sealed class HeroAnimatorBridge : MonoBehaviour
 {
-    [SerializeField] private HeroInputReader inputReader;
-    [SerializeField] private HeroGridMotor gridMotor;
-    [SerializeField] private MiningController miningController; // Використовуємо MiningController, оскільки він у нас уже є
-
+    [SerializeField] private HeroInputReader input;
+    [SerializeField] private HeroGridMotor motor;
+    
     private Animator animator;
 
     private void Awake()
     {
         animator = GetComponent<Animator>();
-
-        if (inputReader == null)
-        {
-            inputReader = GetComponent<HeroInputReader>();
-        }
-
-        if (gridMotor == null)
-        {
-            gridMotor = GetComponent<HeroGridMotor>();
-        }
-
-        if (miningController == null)
-        {
-            miningController = GetComponent<MiningController>();
-        }
+        if (input == null) input = GetComponent<HeroInputReader>();
+        if (motor == null) motor = GetComponent<HeroGridMotor>();
     }
 
     private void Update()
     {
-        if (animator == null || inputReader == null || gridMotor == null)
-        {
-            return;
-        }
+        if (input == null || motor == null || animator == null) return;
 
-        bool isWalking =
-            Mathf.Abs(inputReader.Horizontal) > 0.01f &&
-            gridMotor.IsGrounded &&
-            !gridMotor.IsInsideLadder;
+        float h = input.Horizontal;
+        float v = input.Vertical;
 
-        bool isClimbing =
-            (Mathf.Abs(inputReader.Vertical) > 0.01f || Mathf.Abs(inputReader.Horizontal) > 0.01f) &&
-            gridMotor.IsInsideLadder;
-
-        bool isMining =
-            miningController != null && miningController.IsMining;
-
+        // 1. Анімації
+        bool isWalking = Mathf.Abs(h) > 0.01f && motor.IsGrounded && !motor.IsInsideLadder;
+        bool isClimbing = motor.IsInsideLadder && (Mathf.Abs(v) > 0.1f || Mathf.Abs(h) > 0.1f);
+        
         animator.SetBool("IsWalking", isWalking);
         animator.SetBool("IsClimbing", isClimbing);
-        animator.SetBool("IsMining", isMining);
-        animator.SetBool("IsFalling", gridMotor.IsFalling);
+        animator.SetBool("IsFalling", motor.IsFalling);
 
-        // Фліп по X.
-        if (Mathf.Abs(inputReader.Horizontal) > 0.01f)
+        // 2. Поворот (Flip)
+        if (Mathf.Abs(h) > 0.01f)
         {
             Vector3 scale = transform.localScale;
-
-            if (inputReader.Horizontal > 0f)
-            {
-                scale.x = -Mathf.Abs(scale.x);
-            }
-            else
-            {
-                scale.x = Mathf.Abs(scale.x);
-            }
-
+            // У твоєму проекті зазвичай позитивний X - це вліво, а негативний - вправо (або навпаки)
+            // Адаптуємо:
+            if (h > 0) scale.x = -Mathf.Abs(scale.x);
+            else scale.x = Mathf.Abs(scale.x);
+            
             transform.localScale = scale;
         }
     }

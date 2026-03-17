@@ -4,7 +4,7 @@ using UnityEngine;
 /// Звичайний рух героя по землі.
 /// УВАГА:
 /// Цей скрипт більше НЕ керує драбиною.
-/// Драбиною тепер повністю займається LadderZoneDetector.
+/// Усе climb-поведінка тепер живе в HeroLadderMotor.
 /// </summary>
 [RequireComponent(typeof(HeroStateController))]
 [RequireComponent(typeof(HeroInputReader))]
@@ -30,7 +30,6 @@ public class HeroMotor : MonoBehaviour
         animator = GetComponent<Animator>();
 
         defaultGravityScale = rb.gravityScale;
-
         stateController.OnStateChanged += HandleStateChanged;
     }
 
@@ -43,26 +42,23 @@ public class HeroMotor : MonoBehaviour
     }
 
     /// <summary>
-    /// Перемикання фізики між звичайним режимом і climb-режимом.
+    /// Перемикаємо фізику між ground-режимом і climb-режимом.
     /// </summary>
     private void HandleStateChanged(HeroState oldState, HeroState newState)
     {
         if (newState == HeroState.Climbing)
         {
-            // На драбині гравітація не потрібна.
+            // На драбині вимикаємо гравітацію,
+            // щоб герой не падав униз без інпуту.
             rb.gravityScale = 0f;
-
-            // Обнуляємо інерцію,
-            // щоб із землі чи падіння не переносився випадковий імпульс.
             rb.linearVelocity = Vector2.zero;
 
             UpdateAnimatorWalking(false);
             return;
         }
 
-        // Якщо ми щойно вийшли з драбини —
-        // повністю гасимо швидкість.
-        // Це прибирає будь-які підскоки або залишковий політ.
+        // При виході з драбини повністю прибираємо інерцію,
+        // щоб не було ні підскоку, ні залишкового дрейфу.
         if (oldState == HeroState.Climbing)
         {
             rb.linearVelocity = Vector2.zero;
@@ -84,7 +80,7 @@ public class HeroMotor : MonoBehaviour
         }
 
         // Під час mining / hurt блокуємо активний рух по X,
-        // але падіння від гравітації лишаємо.
+        // але не чіпаємо звичайне падіння від гравітації.
         if (currentState == HeroState.Mining || currentState == HeroState.Hurt)
         {
             rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
@@ -93,7 +89,6 @@ public class HeroMotor : MonoBehaviour
         }
 
         float speedX = inputReader.Horizontal * walkSpeed;
-
         rb.linearVelocity = new Vector2(speedX, rb.linearVelocity.y);
 
         UpdateFacingAndAnimation();

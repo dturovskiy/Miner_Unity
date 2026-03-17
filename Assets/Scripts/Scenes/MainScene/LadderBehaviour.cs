@@ -1,26 +1,21 @@
 using UnityEngine;
 
 /// <summary>
-/// Дані однієї драбини.
-/// Тут НІЯКОЇ логіки станів героя немає.
-/// Цей компонент лише дає геометрію:
-/// - центр драбини по X
-/// - верхню межу
-/// - нижню межу
-/// - зручні позиції, куди ставити центр героя
-///   на верхньому краї або внизу драбини
+/// Опис однієї драбини.
+/// Цей скрипт не рухає героя і не керує станами.
+/// Він лише дає геометрію драбини в world space.
 /// </summary>
 [RequireComponent(typeof(Collider2D))]
 public class LadderBehaviour : MonoBehaviour
 {
-    [Header("Hero Alignment")]
+    [Header("Snap Settings")]
     [SerializeField] private float feetSkin = 0.01f;
 
     private Collider2D cachedCollider;
 
     /// <summary>
-    /// Кешуємо колайдер драбини.
-    /// Для драбини краще використовувати Collider2D з IsTrigger = true.
+    /// Кешований колайдер драбини.
+    /// Для драбини краще мати Collider2D з IsTrigger = true.
     /// </summary>
     public Collider2D LadderCollider
     {
@@ -36,34 +31,29 @@ public class LadderBehaviour : MonoBehaviour
     }
 
     /// <summary>
-    /// Світові межі драбини.
+    /// Межі драбини у світових координатах.
     /// </summary>
-    public Bounds WorldBounds => LadderCollider.bounds;
+    public Bounds Bounds => LadderCollider.bounds;
 
     /// <summary>
     /// Центр драбини по X.
-    /// Героя під час climb ми вирівнюємо саме сюди.
+    /// Під час climb героя завжди притягуємо до цього X.
     /// </summary>
-    public float CenterX => WorldBounds.center.x;
+    public float CenterX => Bounds.center.x;
 
     /// <summary>
-    /// Верхня межа драбини.
+    /// Верхня межа колайдера драбини.
     /// </summary>
-    public float TopY => WorldBounds.max.y;
+    public float TopY => Bounds.max.y;
 
     /// <summary>
-    /// Нижня межа драбини.
+    /// Нижня межа колайдера драбини.
     /// </summary>
-    public float BottomY => WorldBounds.min.y;
-
-    /// <summary>
-    /// Висота драбини в world units.
-    /// </summary>
-    public float Height => WorldBounds.size.y;
+    public float BottomY => Bounds.min.y;
 
     /// <summary>
     /// Позиція центру героя, коли він стоїть зверху на цій драбині.
-    /// Тобто ноги героя рівно на верхній межі блока драбини.
+    /// Тобто ноги героя знаходяться рівно на верхній площині драбини.
     /// </summary>
     public float GetTopStandCenterY(Collider2D heroCollider)
     {
@@ -71,9 +61,7 @@ public class LadderBehaviour : MonoBehaviour
     }
 
     /// <summary>
-    /// Позиція центру героя, коли він знаходиться внизу драбини.
-    /// Це нижня безпечна позиція, нижче якої ми не даємо спускатися,
-    /// якщо під поточною драбиною вже немає продовження.
+    /// Позиція центру героя, коли він спустився до низу цієї драбини.
     /// </summary>
     public float GetBottomStandCenterY(Collider2D heroCollider)
     {

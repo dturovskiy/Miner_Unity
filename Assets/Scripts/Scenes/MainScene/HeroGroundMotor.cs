@@ -40,13 +40,13 @@ public sealed class HeroGroundMotor : MonoBehaviour
         // Якщо герой сильно заблокований дією — теж не рухаємо.
         if (stateHub.ActionState == HeroActionState.Hurt)
         {
-            rb.velocity = new Vector2(0f, rb.velocity.y);
+            rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
             SetWalking(false);
             return;
         }
 
         float targetX = input.Horizontal * walkSpeed;
-        rb.velocity = new Vector2(targetX, rb.velocity.y);
+        rb.linearVelocity = new Vector2(targetX, rb.linearVelocity.y);
 
         // Оновлюємо локомоційний стан.
         if (sensors.IsGrounded())

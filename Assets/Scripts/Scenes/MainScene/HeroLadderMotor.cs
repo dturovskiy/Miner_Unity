@@ -96,7 +96,7 @@ public sealed class HeroLadderMotor : MonoBehaviour
         stateHub.SetLocomotion(HeroLocomotionState.Ladder);
 
         rb.gravityScale = 0f;
-        rb.velocity = Vector2.zero;
+        rb.linearVelocity = Vector2.zero;
 
         // Одразу притискаємо героя до осі драбини.
         rb.position = new Vector2(activeLadder.CenterX, rb.position.y);
@@ -106,7 +106,7 @@ public sealed class HeroLadderMotor : MonoBehaviour
     {
         activeLadder = null;
         rb.gravityScale = defaultGravityScale;
-        rb.velocity = Vector2.zero;
+        rb.linearVelocity = Vector2.zero;
         stateHub.SetLocomotion(nextState);
     }
 

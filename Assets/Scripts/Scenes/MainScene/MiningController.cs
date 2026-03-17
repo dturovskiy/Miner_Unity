@@ -1,43 +1,54 @@
 using UnityEngine;
 
-/// <summary>
-/// Грід-базований контролер копання.
-/// Працює незалежно від стану руху.
-/// </summary>
 public sealed class MiningController : MonoBehaviour
 {
-    [Header("References")]
     [SerializeField] private WorldGridService worldGrid;
-    [SerializeField] private Joystick miningJoystick;
-    public float miningDelay = 0.4f;
 
-    [Header("Visuals")]
+    // Для діагностики руху краще тимчасово не читати той самий joystick,
+    // який використовується для ходьби.
+    [SerializeField] private Joystick miningJoystick;
+
     [SerializeField] private Animator animator;
+    [SerializeField] private float miningDelay = 0.4f;
 
     private float timer;
     private Vector2Int currentTarget;
+
     public bool IsMining { get; private set; }
 
     private void Awake()
     {
-        if (animator == null) animator = GetComponent<Animator>();
+        if (animator == null)
+        {
+            animator = GetComponent<Animator>();
+        }
     }
 
     private void Update()
     {
-        if (worldGrid == null) worldGrid = WorldGridService.Instance;
-        if (miningJoystick == null || worldGrid == null) return;
-
-        Vector2 input = new Vector2(miningJoystick.Horizontal, miningJoystick.Vertical);
-        
-        if (input.magnitude < 0.5f)
+        if (worldGrid == null)
         {
-            Stop();
+            worldGrid = WorldGridService.Instance;
+        }
+
+        // Поки лагодимо рух, можна просто вийти,
+        // якщо окремий joystick для копання не призначений.
+        if (worldGrid == null || miningJoystick == null)
+        {
+            StopMining();
             return;
         }
 
-        // Визначаємо напрямок копання (4 сторони)
+        Vector2 input = new Vector2(miningJoystick.Horizontal, miningJoystick.Vertical);
+
+        if (input.magnitude < 0.5f)
+        {
+            StopMining();
+            return;
+        }
+
         Vector2Int dir = Vector2Int.zero;
+
         if (Mathf.Abs(input.x) > Mathf.Abs(input.y))
         {
             dir.x = input.x > 0 ? 1 : -1;
@@ -49,26 +60,25 @@ public sealed class MiningController : MonoBehaviour
 
         Vector2Int target = worldGrid.WorldToCell(transform.position) + dir;
 
-        if (worldGrid.IsMineable(target))
+        if (!worldGrid.IsMineable(target))
         {
-            if (!IsMining || currentTarget != target)
-            {
-                IsMining = true;
-                currentTarget = target;
-                timer = 0;
-            }
-
-            timer += Time.deltaTime;
-            
-            if (timer >= miningDelay)
-            {
-                BreakCell(target);
-                timer = 0;
-            }
+            StopMining();
+            return;
         }
-        else
+
+        if (!IsMining || currentTarget != target)
         {
-            Stop();
+            IsMining = true;
+            currentTarget = target;
+            timer = 0f;
+        }
+
+        timer += Time.deltaTime;
+
+        if (timer >= miningDelay)
+        {
+            BreakCell(target);
+            timer = 0f;
         }
 
         if (animator != null)
@@ -80,18 +90,24 @@ public sealed class MiningController : MonoBehaviour
     private void BreakCell(Vector2Int cell)
     {
         worldGrid.SetCellType(cell, WorldCellType.Empty);
-        
-        // Синхронізація з ChunkManager для візуального видалення
-        var chunkManager = Object.FindFirstObjectByType<MinerUnity.Terrain.ChunkManager>();
+
+        // Для Unity 2020.3 безпечніше використовувати FindObjectOfType.
+        var chunkManager = Object.FindObjectOfType<MinerUnity.Terrain.ChunkManager>();
         if (chunkManager != null)
         {
             chunkManager.DestroyTileInWorld(cell.x, cell.y);
         }
     }
 
-    private void Stop()
+    private void StopMining()
     {
         IsMining = false;
-        timer = 0;
+        timer = 0f;
+
+        if (animator != null)
+        {
+            animator.SetBool("IsMining", false);
+        }
     }
 }
+

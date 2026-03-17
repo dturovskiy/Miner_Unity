@@ -1,40 +1,41 @@
 using UnityEngine;
 
-public class HeroInputReader : MonoBehaviour
+/// <summary>
+/// Читає лише інпут руху.
+/// Ніякої логіки станів або фізики тут бути не повинно.
+/// </summary>
+public sealed class HeroInputReader : MonoBehaviour
 {
-    // If not using the inspector to assign, it will attempt to find one in the scene.
-    [SerializeField] private Joystick joystick;
-    [SerializeField] private float deadZone = 0.2f;
-    
-    public Vector2 Direction { get; private set; }
-    
-    public float Horizontal => Direction.x;
-    public float Vertical => Direction.y;
+    [Header("Movement Input")]
+    [SerializeField] private Joystick movementJoystick;
 
-    private void Start()
-    {
-        if (joystick == null)
-        {
-            joystick = FindFirstObjectByType<Joystick>();
-        }
-    }
+    /// <summary>
+    /// Сирий напрямок від -1 до 1.
+    /// </summary>
+    public Vector2 Move { get; private set; }
+
+    public float Horizontal => Move.x;
+    public float Vertical => Move.y;
 
     private void Update()
     {
-        Vector2 rawInput;
-
-        if (joystick != null)
+        if (movementJoystick != null)
         {
-            rawInput = new Vector2(joystick.Horizontal, joystick.Vertical);
+            Move = new Vector2(movementJoystick.Horizontal, movementJoystick.Vertical);
         }
         else
         {
-            rawInput = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
+            // Фолбек для редактора / клавіатури.
+            Move = new Vector2(
+                Input.GetAxisRaw("Horizontal"),
+                Input.GetAxisRaw("Vertical")
+            );
         }
 
-        if (Mathf.Abs(rawInput.x) < deadZone) rawInput.x = 0f;
-        if (Mathf.Abs(rawInput.y) < deadZone) rawInput.y = 0f;
-
-        Direction = rawInput;
+        // Щоб діагональ не ставала довшою за 1.
+        if (Move.sqrMagnitude > 1f)
+        {
+            Move = Move.normalized;
+        }
     }
 }

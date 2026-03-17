@@ -1,70 +1,52 @@
 using UnityEngine;
 
 /// <summary>
-/// Опис однієї драбини.
-/// Цей скрипт не рухає героя і не керує станами.
-/// Він лише дає геометрію драбини в world space.
+/// Дані конкретної драбини.
+/// Саме звідси мотор драбини бере:
+/// - центр по X
+/// - верхню точку виходу
+/// - нижню точку входу/виходу
 /// </summary>
 [RequireComponent(typeof(Collider2D))]
-public class LadderBehaviour : MonoBehaviour
+public sealed class LadderBehaviour : MonoBehaviour
 {
-    [Header("Snap Settings")]
-    [SerializeField] private float feetSkin = 0.01f;
+    [SerializeField] private Collider2D ladderCollider;
 
-    private Collider2D cachedCollider;
+    [Header("Offsets")]
+    [SerializeField] private float topExitOffset = 0.05f;
+    [SerializeField] private float bottomExitOffset = 0.05f;
 
-    /// <summary>
-    /// Кешований колайдер драбини.
-    /// Для драбини краще мати Collider2D з IsTrigger = true.
-    /// </summary>
-    public Collider2D LadderCollider
+    public Bounds Bounds
     {
         get
         {
-            if (cachedCollider == null)
+            if (ladderCollider == null)
             {
-                cachedCollider = GetComponent<Collider2D>();
+                ladderCollider = GetComponent<Collider2D>();
             }
 
-            return cachedCollider;
+            return ladderCollider.bounds;
         }
     }
 
-    /// <summary>
-    /// Межі драбини у світових координатах.
-    /// </summary>
-    public Bounds Bounds => LadderCollider.bounds;
-
-    /// <summary>
-    /// Центр драбини по X.
-    /// Під час climb героя завжди притягуємо до цього X.
-    /// </summary>
     public float CenterX => Bounds.center.x;
-
-    /// <summary>
-    /// Верхня межа колайдера драбини.
-    /// </summary>
     public float TopY => Bounds.max.y;
-
-    /// <summary>
-    /// Нижня межа колайдера драбини.
-    /// </summary>
     public float BottomY => Bounds.min.y;
 
-    /// <summary>
-    /// Позиція центру героя, коли він стоїть зверху на цій драбині.
-    /// Тобто ноги героя знаходяться рівно на верхній площині драбини.
-    /// </summary>
-    public float GetTopStandCenterY(Collider2D heroCollider)
+    public float GetTopStandY(Collider2D heroCollider)
     {
-        return TopY + heroCollider.bounds.extents.y - feetSkin;
+        float heroHalfHeight = heroCollider.bounds.extents.y;
+        return TopY + heroHalfHeight + topExitOffset;
     }
 
-    /// <summary>
-    /// Позиція центру героя, коли він спустився до низу цієї драбини.
-    /// </summary>
-    public float GetBottomStandCenterY(Collider2D heroCollider)
+    public float GetBottomStandY(Collider2D heroCollider)
     {
-        return BottomY + heroCollider.bounds.extents.y - feetSkin;
+        float heroHalfHeight = heroCollider.bounds.extents.y;
+        return BottomY + heroHalfHeight + bottomExitOffset;
+    }
+
+    private void Reset()
+    {
+        ladderCollider = GetComponent<Collider2D>();
     }
 }

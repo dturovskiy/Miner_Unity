@@ -45,6 +45,9 @@ public sealed class HeroGroundMotor : MonoBehaviour
             return;
         }
 
+        // Тимчасовий лог для діагностики вводу
+        // Debug.Log($"[HeroGroundMotor] Input X: {input.Horizontal}, Grounded: {sensors.IsGrounded()}, State: {stateHub.LocomotionState}");
+
         float targetX = input.Horizontal * walkSpeed;
         rb.linearVelocity = new Vector2(targetX, rb.linearVelocity.y);
 

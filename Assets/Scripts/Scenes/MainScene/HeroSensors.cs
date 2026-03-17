@@ -23,6 +23,8 @@ public sealed class HeroSensors : MonoBehaviour
 
     [SerializeField] private LayerMask ladderMask;
 
+    public LayerMask LadderMask => ladderMask;
+
     public bool IsGrounded()
     {
         if (groundCheck == null)

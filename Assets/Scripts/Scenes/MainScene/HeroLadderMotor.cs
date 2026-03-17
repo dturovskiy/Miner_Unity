@@ -74,6 +74,13 @@ public sealed class HeroLadderMotor : MonoBehaviour
             LadderBehaviour ladder = sensors.GetLadderAtBody();
             if (ladder != null)
             {
+                // Блокуємо повторний вхід ВГОРУ, тільки якщо ми вже стоїмо НА ВЕРХІВЦІ останнього блоку.
+                if (stateHub.LocomotionState == HeroLocomotionState.Grounded)
+                {
+                    bool isAtTopExit = rb.position.y >= ladder.TopY;
+                    if (isAtTopExit && !HasLadderAbove()) return;
+                }
+
                 EnterLadder(ladder);
                 return;
             }
@@ -105,15 +112,35 @@ public sealed class HeroLadderMotor : MonoBehaviour
     private void ExitLadder(HeroLocomotionState nextState)
     {
         activeLadder = null;
-        rb.gravityScale = defaultGravityScale;
         rb.linearVelocity = Vector2.zero;
+        rb.gravityScale = defaultGravityScale;
         stateHub.SetLocomotion(nextState);
+    }
+
+    /// <summary>
+    /// Перевіряє, чи є драбина над поточною активною драбиною.
+    /// Це дозволяє безшовно переходити між сегментами без виходу зі стану Climbing.
+    /// </summary>
+    private bool HasLadderAbove()
+    {
+        if (activeLadder == null) return false;
+        Vector2 checkPos = new Vector2(activeLadder.CenterX, activeLadder.TopY + 0.1f);
+        return Physics2D.OverlapPoint(checkPos, sensors.LadderMask) != null;
+    }
+
+    /// <summary>
+    /// Перевіряє, чи є драбина під поточною активною драбиною.
+    /// </summary>
+    private bool HasLadderBelow()
+    {
+        if (activeLadder == null) return false;
+        Vector2 checkPos = new Vector2(activeLadder.CenterX, activeLadder.BottomY - 0.1f);
+        return Physics2D.OverlapPoint(checkPos, sensors.LadderMask) != null;
     }
 
     private void MoveOnLadder()
     {
         float vertical = input.Vertical;
-
         Vector2 current = rb.position;
 
         // На драбині X завжди прямує до центра драбини.
@@ -125,23 +152,36 @@ public sealed class HeroLadderMotor : MonoBehaviour
 
         float nextY = current.y + vertical * climbSpeed * Time.fixedDeltaTime;
 
+        // Оновлюємо активну драбину, якщо перейшли на наступний сегмент.
+        LadderBehaviour ladderAtBody = sensors.GetLadderAtBody();
+        if (ladderAtBody != null && ladderAtBody != activeLadder)
+        {
+            activeLadder = ladderAtBody;
+        }
+
         float topStandY = activeLadder.GetTopStandY(heroCollider);
         float bottomStandY = activeLadder.GetBottomStandY(heroCollider);
 
-        // Вихід зверху.
+        // Вихід ВГОРУ: тільки якщо над поточною драбиною НЕМАЄ продовження.
         if (vertical > 0f && nextY >= topStandY)
         {
-            rb.MovePosition(new Vector2(activeLadder.CenterX, topStandY));
-            ExitLadder(HeroLocomotionState.Grounded);
-            return;
+            if (!HasLadderAbove())
+            {
+                rb.MovePosition(new Vector2(activeLadder.CenterX, topStandY));
+                ExitLadder(HeroLocomotionState.Grounded);
+                return;
+            }
         }
 
-        // Вихід знизу.
+        // Вихід УНИЗ: тільки якщо під поточною драбиною НЕМАЄ продовження.
         if (vertical < 0f && nextY <= bottomStandY)
         {
-            rb.MovePosition(new Vector2(activeLadder.CenterX, bottomStandY));
-            ExitLadder(HeroLocomotionState.Airborne);
-            return;
+            if (!HasLadderBelow())
+            {
+                rb.MovePosition(new Vector2(activeLadder.CenterX, bottomStandY));
+                ExitLadder(HeroLocomotionState.Airborne);
+                return;
+            }
         }
 
         rb.MovePosition(new Vector2(nextX, nextY));

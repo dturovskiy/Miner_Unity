@@ -35,14 +35,16 @@ public sealed class LadderBehaviour : MonoBehaviour
 
     public float GetTopStandY(Collider2D heroCollider)
     {
+        // Встановлюємо героя ТАК, щоб ноги були на 0.01 нижче за край драбини.
+        // Це гарантує миттєве спрацювання GroundCheck і запобігає підстрибуванню.
         float heroHalfHeight = heroCollider.bounds.extents.y;
-        return TopY + heroHalfHeight + topExitOffset;
+        return TopY + heroHalfHeight - 0.01f;
     }
 
     public float GetBottomStandY(Collider2D heroCollider)
     {
         float heroHalfHeight = heroCollider.bounds.extents.y;
-        return BottomY + heroHalfHeight + bottomExitOffset;
+        return BottomY + heroHalfHeight;
     }
 
     private void Reset()

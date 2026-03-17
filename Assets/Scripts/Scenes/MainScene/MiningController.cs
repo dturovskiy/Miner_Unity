@@ -1,87 +1,130 @@
-using System;
 using UnityEngine;
 
 /// <summary>
-/// Контролер копання.
-/// 
-/// Важлива зміна:
-/// - якщо герой копає, стоячи на драбині, ми НЕ переводимо його в HeroState.Mining;
-/// - отже HeroMotor не блокує йому боковий рух і не "викидає" його з логіки драбини.
+/// Контролер копання під нову архітектуру.
+///
+/// Головна ідея:
+/// - цей компонент більше НЕ керує locomotion-станом героя;
+/// - він працює тільки з action-станом через HeroStateHub;
+/// - ходьба / падіння / драбина живуть у своїх моторах окремо.
+///
+/// Unity 2020.3.28f1+ / Unity 6:
+/// - використовується звичайний Physics2D.OverlapPoint;
+/// - ніякої залежності від старого HeroStateController більше немає.
 /// </summary>
-public class MiningController : MonoBehaviour
+[RequireComponent(typeof(Animator))]
+[RequireComponent(typeof(HeroStateHub))]
+public sealed class MiningController : MonoBehaviour
 {
-    private Animator animator;
-    private HeroStateController stateController;
-    private TileBehaviour tileBehaviour;
-
-    [SerializeField] private float maxMiningDistance = 0.5f;
+    [Header("Input")]
     [SerializeField] private Joystick miningJoystick;
+
+    [Header("Mining Distances")]
+    [SerializeField] private float sideAndDownMiningDistance = 0.4f;
+    [SerializeField] private float upMiningDistance = 0.7f;
+
+    [Header("Mining Timing")]
     [SerializeField] private float miningDelay = 0.4f;
+    [SerializeField] private float inputThreshold = 0.5f;
 
+    [Header("Rules")]
+    [SerializeField] private bool allowMiningOnLadder = false;
+
+    private Animator animator;
+    private HeroStateHub stateHub;
+
+    private TileBehaviour currentTile;
     private float startTime;
-    private bool isMiningStarted = false;
+    private bool isMiningStarted;
 
-    // Чи саме цей контролер "володіє" станом Mining.
-    // Якщо копаємо на землі — true.
-    // Якщо копаємо на драбині — false, стан Climbing не чіпаємо.
-    private bool miningOwnsState = false;
+    /// <summary>
+    /// Чи саме цей контролер зараз володіє ActionState = Mining.
+    /// Це важливо, щоб не скинути чужий стан випадково.
+    /// </summary>
+    private bool miningOwnsAction;
 
     private void Awake()
     {
         animator = GetComponent<Animator>();
-        stateController = GetComponent<HeroStateController>();
+        stateHub = GetComponent<HeroStateHub>();
     }
 
     private void Update()
     {
+        // Якщо не призначений джойстик копання — просто гарантуємо,
+        // що mining-стан і анімація вимкнені.
         if (miningJoystick == null)
         {
-            StopMiningAnimation();
+            StopMining();
+            return;
+        }
+
+        // Якщо герой у сильному блокуючому стані — не копаємо.
+        if (stateHub.ActionState == HeroActionState.Hurt)
+        {
+            StopMining();
+            return;
+        }
+
+        // Якщо за правилами дизайну на драбині копати не можна — блокуємо це тут.
+        // Це безпечніше, ніж намагатися міксувати climb + mining в одному animator layer.
+        if (!allowMiningOnLadder && stateHub.IsOnLadder())
+        {
+            StopMining();
             return;
         }
 
         float horizontalInput = miningJoystick.Horizontal;
         float verticalInput = miningJoystick.Vertical;
 
-        int roundedHorizontalInput = Mathf.RoundToInt(horizontalInput);
-        int roundedVerticalInput = Mathf.RoundToInt(verticalInput);
+        // Починаємо mining тільки якщо джойстик реально відхилений,
+        // а не дрейфує біля нуля.
+        bool hasMiningInput =
+            Mathf.Abs(horizontalInput) >= inputThreshold ||
+            Mathf.Abs(verticalInput) >= inputThreshold;
 
-        // Починаємо копання тільки якщо джойстик достатньо відхилений.
-        if (Mathf.Abs(horizontalInput) >= 0.5f || Mathf.Abs(verticalInput) >= 0.5f)
+        if (!hasMiningInput)
         {
-            // Ключова частина:
-            // ми НЕ дозволяємо одночасно X і Y для mining-напрямку.
-            // Беремо лише домінуючу вісь.
-            Vector2 miningDirection;
-            if (Mathf.Abs(verticalInput) > Mathf.Abs(horizontalInput))
-            {
-                miningDirection = new Vector2(0, verticalInput > 0f ? 1 : -1);
-            }
-            else
-            {
-                miningDirection = new Vector2(horizontalInput > 0f ? 1 : -1, 0);
-            }
-
-            // Вгору копаємо трохи далі, ніж убік/вниз.
-            if (miningDirection.y > 0)
-            {
-                maxMiningDistance = 0.7f;
-            }
-            else
-            {
-                maxMiningDistance = 0.4f;
-            }
-
-            Vector2 miningPosition = (Vector2)transform.position + miningDirection * maxMiningDistance;
-            CheckTile(miningPosition);
+            StopMining();
+            return;
         }
-        else
-        {
-            StopMiningAnimation();
-        }
+
+        // Беремо тільки домінуючу вісь:
+        // або вліво/вправо, або вгору/вниз.
+        // Це прибирає неоднозначність при діагональному відхиленні стика.
+        Vector2 miningDirection = GetDominantAxisDirection(horizontalInput, verticalInput);
+
+        // Вгору копаємо трохи далі, як і в старій логіці.
+        float miningDistance = miningDirection.y > 0f
+            ? upMiningDistance
+            : sideAndDownMiningDistance;
+
+        Vector2 miningPosition = (Vector2)transform.position + miningDirection * miningDistance;
+
+        CheckTile(miningPosition);
     }
 
-    private void StartMiningAnimation()
+    /// <summary>
+    /// Повертає напрямок копання лише по одній осі.
+    /// Наприклад:
+    /// (0.8, 0.7) -> (1, 0)
+    /// (0.2, -0.9) -> (0, -1)
+    /// </summary>
+    private Vector2 GetDominantAxisDirection(float horizontalInput, float verticalInput)
+    {
+        if (Mathf.Abs(verticalInput) > Mathf.Abs(horizontalInput))
+        {
+            return new Vector2(0f, verticalInput > 0f ? 1f : -1f);
+        }
+
+        return new Vector2(horizontalInput > 0f ? 1f : -1f, 0f);
+    }
+
+    /// <summary>
+    /// Запускає mining-анімацію і, якщо потрібно,
+    /// переводить ActionState у Mining.
+    /// </summary>
+    private void StartMining()
     {
         if (!isMiningStarted)
         {
@@ -91,37 +134,31 @@ public class MiningController : MonoBehaviour
 
         animator.SetBool("IsMining", true);
 
-        if (stateController == null)
+        // Якщо вже хтось поставив Mining — просто не конфліктуємо.
+        if (stateHub.ActionState == HeroActionState.Mining)
         {
-            miningOwnsState = false;
+            miningOwnsAction = true;
             return;
         }
 
-        // Якщо герой уже на драбині — НЕ переводимо його в Mining.
-        // Інакше він втратить climb-поведінку.
-        if (stateController.CurrentState == HeroState.Climbing)
+        // Hurt не перетираємо.
+        if (stateHub.ActionState == HeroActionState.Hurt)
         {
-            miningOwnsState = false;
+            miningOwnsAction = false;
             return;
         }
 
-        // Якщо герой не в climb і не hurt — дозволяємо режим Mining.
-        if (stateController.CurrentState != HeroState.Hurt)
-        {
-            if (stateController.CurrentState != HeroState.Mining)
-            {
-                stateController.ChangeState(HeroState.Mining);
-            }
-
-            miningOwnsState = true;
-        }
-        else
-        {
-            miningOwnsState = false;
-        }
+        stateHub.SetAction(HeroActionState.Mining);
+        miningOwnsAction = true;
     }
 
-    private void StopMiningAnimation()
+    /// <summary>
+    /// Повністю зупиняє копання:
+    /// - скидає таймер,
+    /// - вимикає анімацію,
+    /// - повертає ActionState у None, якщо саме цей компонент його встановив.
+    /// </summary>
+    private void StopMining()
     {
         if (isMiningStarted)
         {
@@ -131,47 +168,64 @@ public class MiningController : MonoBehaviour
 
         animator.SetBool("IsMining", false);
 
-        if (stateController != null && miningOwnsState && stateController.CurrentState == HeroState.Mining)
+        if (miningOwnsAction && stateHub.ActionState == HeroActionState.Mining)
         {
-            stateController.ChangeState(HeroState.Normal);
+            stateHub.SetAction(HeroActionState.None);
         }
 
-        miningOwnsState = false;
+        miningOwnsAction = false;
+        currentTile = null;
     }
 
+    /// <summary>
+    /// Перевіряє тайл у точці miningPosition.
+    /// Якщо там немає валідного блоку для копання — mining скидається.
+    /// </summary>
     private void CheckTile(Vector2 targetPosition)
     {
         Collider2D hitCollider = Physics2D.OverlapPoint(targetPosition);
 
         if (hitCollider == null)
         {
-            StopMiningAnimation();
+            StopMining();
             return;
         }
 
         GameObject tile = hitCollider.gameObject;
-        tileBehaviour = tile.GetComponent<TileBehaviour>();
+        currentTile = tile.GetComponent<TileBehaviour>();
 
-        // Ці теги не копаємо.
+        // Ці типи не копаємо.
         if (tile.CompareTag("Edge") || tile.CompareTag("Stone") || tile.CompareTag("Cave"))
         {
-            StopMiningAnimation();
+            StopMining();
             return;
         }
 
-        StartMiningAnimation();
-
-        if (Time.time - startTime >= miningDelay)
+        // Якщо на об'єкті немає TileBehaviour — це теж невалідна ціль.
+        if (currentTile == null)
         {
-            if (tileBehaviour != null && !tileBehaviour.IsBroken)
-            {
-                tileBehaviour.HitTile(tileBehaviour);
-            }
+            StopMining();
+            return;
+        }
 
-            if (tileBehaviour != null && tileBehaviour.IsBroken)
-            {
-                StopMiningAnimation();
-            }
+        StartMining();
+
+        // Чекаємо затримку перед ударом,
+        // щоб зберегти старий ритм gameplay.
+        if (Time.time - startTime < miningDelay)
+        {
+            return;
+        }
+
+        if (!currentTile.IsBroken)
+        {
+            // Залишаю твій поточний виклик, якщо саме так очікує TileBehaviour.
+            currentTile.HitTile(currentTile);
+        }
+
+        if (currentTile.IsBroken)
+        {
+            StopMining();
         }
     }
 }

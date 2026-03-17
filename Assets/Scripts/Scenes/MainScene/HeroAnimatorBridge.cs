@@ -37,8 +37,6 @@ public sealed class HeroAnimatorBridge : MonoBehaviour
         if (Mathf.Abs(h) > 0.01f)
         {
             Vector3 scale = transform.localScale;
-            // У твоєму проекті зазвичай позитивний X - це вліво, а негативний - вправо (або навпаки)
-            // Адаптуємо:
             if (h > 0) scale.x = -Mathf.Abs(scale.x);
             else scale.x = Mathf.Abs(scale.x);
             

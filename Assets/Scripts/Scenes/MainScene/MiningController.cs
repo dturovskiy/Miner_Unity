@@ -13,6 +13,9 @@ public sealed class MiningController : MonoBehaviour
 
     private float timer;
     private Vector2Int currentTarget;
+    private string lastRejectedReason;
+    private Vector2Int lastRejectedTarget;
+    private bool hasRejectedTarget;
 
     public bool IsMining { get; private set; }
 
@@ -33,9 +36,17 @@ public sealed class MiningController : MonoBehaviour
 
         // Поки лагодимо рух, можна просто вийти,
         // якщо окремий joystick для копання не призначений.
-        if (worldGrid == null || miningJoystick == null)
+        if (worldGrid == null)
         {
-            StopMining();
+            LogRejectedOnce("world_grid_missing", Vector2Int.zero);
+            StopMining("world_grid_missing");
+            return;
+        }
+
+        if (miningJoystick == null)
+        {
+            LogRejectedOnce("mining_joystick_missing", Vector2Int.zero);
+            StopMining("mining_joystick_missing");
             return;
         }
 
@@ -43,7 +54,8 @@ public sealed class MiningController : MonoBehaviour
 
         if (input.magnitude < 0.5f)
         {
-            StopMining();
+            ClearRejectedLatch();
+            StopMining("input_below_threshold");
             return;
         }
 
@@ -62,15 +74,40 @@ public sealed class MiningController : MonoBehaviour
 
         if (!worldGrid.IsMineable(target))
         {
-            StopMining();
+            LogRejectedOnce("target_not_mineable", target);
+            StopMining("target_not_mineable");
             return;
         }
 
-        if (!IsMining || currentTarget != target)
+        ClearRejectedLatch();
+
+        if (!IsMining)
         {
             IsMining = true;
             currentTarget = target;
             timer = 0f;
+
+            Diag.Event(
+                "Mining",
+                "Started",
+                "Mining started.",
+                this,
+                ("targetCell", currentTarget),
+                ("delay", miningDelay));
+        }
+        else if (currentTarget != target)
+        {
+            Vector2Int previousTarget = currentTarget;
+            currentTarget = target;
+            timer = 0f;
+
+            Diag.Event(
+                "Mining",
+                "TargetChanged",
+                "Mining target changed.",
+                this,
+                ("from", previousTarget),
+                ("to", currentTarget));
         }
 
         timer += Time.deltaTime;
@@ -89,18 +126,46 @@ public sealed class MiningController : MonoBehaviour
 
     private void BreakCell(Vector2Int cell)
     {
+        WorldCellType previousType = worldGrid.GetCellType(cell);
         worldGrid.SetCellType(cell, WorldCellType.Empty);
 
-        // Для Unity 2020.3 безпечніше використовувати FindObjectOfType.
-        var chunkManager = Object.FindObjectOfType<MinerUnity.Terrain.ChunkManager>();
+        Diag.Event(
+            "Mining",
+            "BreakApplied",
+            "Mining break applied.",
+            this,
+            ("targetCell", cell),
+            ("previousType", previousType));
+
+        var chunkManager = Object.FindFirstObjectByType<MinerUnity.Terrain.ChunkManager>();
         if (chunkManager != null)
         {
             chunkManager.DestroyTileInWorld(cell.x, cell.y);
         }
+        else
+        {
+            Diag.Warning(
+                "Mining",
+                "ChunkManagerMissing",
+                "ChunkManager was not found while applying mining result.",
+                this,
+                ("targetCell", cell));
+        }
     }
 
-    private void StopMining()
+    private void StopMining(string reason)
     {
+        if (IsMining)
+        {
+            Diag.Event(
+                "Mining",
+                "Stopped",
+                "Mining stopped.",
+                this,
+                ("reason", reason),
+                ("targetCell", currentTarget));
+        }
+
         IsMining = false;
         timer = 0f;
 
@@ -109,5 +174,31 @@ public sealed class MiningController : MonoBehaviour
             animator.SetBool("IsMining", false);
         }
     }
-}
 
+    private void LogRejectedOnce(string reason, Vector2Int target)
+    {
+        if (hasRejectedTarget && lastRejectedReason == reason && lastRejectedTarget == target)
+        {
+            return;
+        }
+
+        hasRejectedTarget = true;
+        lastRejectedReason = reason;
+        lastRejectedTarget = target;
+
+        Diag.Event(
+            "Mining",
+            "Rejected",
+            "Mining rejected.",
+            this,
+            ("reason", reason),
+            ("targetCell", target));
+    }
+
+    private void ClearRejectedLatch()
+    {
+        hasRejectedTarget = false;
+        lastRejectedReason = null;
+        lastRejectedTarget = default;
+    }
+}

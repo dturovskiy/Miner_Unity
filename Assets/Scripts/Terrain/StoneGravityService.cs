@@ -36,15 +36,43 @@ namespace MinerUnity.Terrain
         /// </summary>
         public bool CanStoneStartFalling(int x, int y)
         {
-            if (worldData.GetTile(x, y) != TileID.Stone)
+            TileID tile = worldData.GetTile(x, y);
+            if (tile != TileID.Stone)
             {
+                Diag.Event(
+                    "Stone",
+                    "StartCheckRejected",
+                    "Stone start fall rejected: source tile is not stone.",
+                    fields: new (string key, object value)[]
+                    {
+                        ("x", x),
+                        ("y", y),
+                        ("tile", tile)
+                    }
+                );
                 return false;
             }
 
             TileID below = worldData.GetTile(x, y - 1);
 
             // Камінь може почати падіння лише якщо під ним прохідна клітинка.
-            return below == TileID.Empty || below == TileID.Tunnel;
+            bool canFall = below == TileID.Empty || below == TileID.Tunnel;
+            if (!canFall)
+            {
+                Diag.Event(
+                    "Stone",
+                    "StartCheckRejected",
+                    "Stone start fall rejected: support below is solid.",
+                    fields: new (string key, object value)[]
+                    {
+                        ("x", x),
+                        ("y", y),
+                        ("below", below)
+                    }
+                );
+            }
+
+            return canFall;
         }
 
         /// <summary>
@@ -66,6 +94,22 @@ namespace MinerUnity.Terrain
                 y--;
             }
 
+            if (y != startY)
+            {
+                Diag.Event(
+                    "Stone",
+                    "LandingResolved",
+                    "Stone landing cell resolved.",
+                    fields: new (string key, object value)[]
+                    {
+                        ("x", x),
+                        ("fromY", startY),
+                        ("landingY", y),
+                        ("fallDistance", startY - y)
+                    }
+                );
+            }
+
             return y;
         }
 
@@ -79,6 +123,16 @@ namespace MinerUnity.Terrain
 
             if (!CanStoneStartFalling(x, y))
             {
+                Diag.Event(
+                    "Stone",
+                    "MoveRejected",
+                    "Stone move rejected: cannot start falling.",
+                    fields: new (string key, object value)[]
+                    {
+                        ("x", x),
+                        ("y", y)
+                    }
+                );
                 return false;
             }
 
@@ -86,6 +140,16 @@ namespace MinerUnity.Terrain
 
             if (landingY == y)
             {
+                Diag.Event(
+                    "Stone",
+                    "MoveRejected",
+                    "Stone move rejected: landing cell equals current cell.",
+                    fields: new (string key, object value)[]
+                    {
+                        ("x", x),
+                        ("y", y)
+                    }
+                );
                 return false;
             }
 

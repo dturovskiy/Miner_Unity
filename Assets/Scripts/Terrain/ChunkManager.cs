@@ -56,6 +56,7 @@ namespace MinerUnity.Terrain
 
         private Vector2Int lastHeroPos = new Vector2Int(-999, -999);
         private Vector2Int lastCameraPos = new Vector2Int(-999, -999);
+        private bool? lastFogInCaveState;
 
         public WorldData GetWorldData() => worldData;
 
@@ -71,20 +72,34 @@ namespace MinerUnity.Terrain
             // 2. Load the world data from disk into memory
             worldData = new WorldData();
             string path = System.IO.Path.Combine(Application.persistentDataPath, "world_grid.dat");
-            if (!worldData.LoadFromFile(path))
+            bool worldLoaded = worldData.LoadFromFile(path);
+            if (!worldLoaded)
             {
                 Debug.LogError("ChunkManager: Failed to load world grid! Make sure FastTerrainGenerator ran.");
             }
+
+            Diag.Event(
+                "World",
+                "Loaded",
+                worldLoaded ? "World data loaded." : "World data failed to load.",
+                this,
+                ("path", path),
+                ("success", worldLoaded),
+                ("width", worldData.Width),
+                ("height", worldData.Height));
 
             stoneGravityService = new StoneGravityService(worldData);
 
             // Load Fog state
             fogGrid = new byte[worldData.Width * worldData.Height];
             fogPath = System.IO.Path.Combine(Application.persistentDataPath, "fog_grid.dat");
+
+            bool fogLoaded = false;
             if (System.IO.File.Exists(fogPath))
             {
                 fogGrid = System.IO.File.ReadAllBytes(fogPath);
-                
+                fogLoaded = true;
+
                 // Clear already explored fog at start setup
                 if (hiddenAreaFog != null)
                 {
@@ -100,6 +115,17 @@ namespace MinerUnity.Terrain
                     }
                 }
             }
+
+            Diag.Event(
+                "Fog",
+                "Loaded",
+                fogLoaded ? "Fog data loaded." : "Fog data file not found. Starting with hidden fog.",
+                this,
+                ("path", fogPath),
+                ("success", fogLoaded),
+                ("bytes", fogGrid != null ? fogGrid.Length : 0),
+                ("exploredCount", CountExploredFogCells()),
+                ("tilemapAssigned", hiddenAreaFog != null));
 
             // 3. Clear fog of war logic around starting area immediately
             ForceUpdateChunks();
@@ -173,13 +199,11 @@ namespace MinerUnity.Terrain
                 return;
             }
 
-            // Для orthographic-камери halfHeight задається orthographicSize
             float halfHeight = cam.orthographicSize;
             float halfWidth = halfHeight * cam.aspect;
 
             Vector3 camPos = cam.transform.position;
 
-            // Додаємо preload/extras, щоб спавнити трохи поза межами екрана
             minX = Mathf.Max(0, Mathf.FloorToInt(camPos.x - halfWidth) - extraX);
             maxX = Mathf.Min(worldData.Width - 1, Mathf.CeilToInt(camPos.x + halfWidth) + extraX);
 
@@ -189,7 +213,6 @@ namespace MinerUnity.Terrain
 
         private void UpdateLoadedTiles()
         {
-            // 1. Межі, де тайли точно мають бути завантажені
             GetCameraBoundsInCells(
                 preloadBlocksX,
                 preloadBlocksY,
@@ -199,8 +222,6 @@ namespace MinerUnity.Terrain
                 out int loadMaxY
             );
 
-            // 2. Межі, де тайли ще дозволено тримати в пам'яті,
-            // навіть якщо вони вже трохи вийшли за екран.
             GetCameraBoundsInCells(
                 preloadBlocksX + keepAliveMarginX,
                 preloadBlocksY + keepAliveMarginY,
@@ -210,7 +231,8 @@ namespace MinerUnity.Terrain
                 out int keepMaxY
             );
 
-            // 3. Спавнимо все, що потрібно в зоні камери
+            int spawnedCount = 0;
+
             for (int x = loadMinX; x <= loadMaxX; x++)
             {
                 for (int y = loadMinY; y <= loadMaxY; y++)
@@ -227,11 +249,11 @@ namespace MinerUnity.Terrain
                     if (!spawnedTiles.ContainsKey(pos))
                     {
                         SpawnTileGameObject(pos, id);
+                        spawnedCount++;
                     }
                 }
             }
 
-            // 4. Деспавнимо лише ті тайли, що вже далеко за межами keep-alive області
             tilesToDespawn.Clear();
 
             foreach (var kvp in spawnedTiles)
@@ -248,33 +270,74 @@ namespace MinerUnity.Terrain
                 }
             }
 
+            int despawnedCount = tilesToDespawn.Count;
+
             for (int i = 0; i < tilesToDespawn.Count; i++)
             {
                 Vector2Int pos = tilesToDespawn[i];
                 Destroy(spawnedTiles[pos]);
                 spawnedTiles.Remove(pos);
             }
+
+            Diag.Event(
+                "Chunk",
+                "LoadedAreaUpdated",
+                "Loaded area updated around camera.",
+                this,
+                ("cameraCell", lastCameraPos),
+                ("loadMin", new Vector2Int(loadMinX, loadMinY)),
+                ("loadMax", new Vector2Int(loadMaxX, loadMaxY)),
+                ("keepMin", new Vector2Int(keepMinX, keepMinY)),
+                ("keepMax", new Vector2Int(keepMaxX, keepMaxY)),
+                ("spawned", spawnedCount),
+                ("despawned", despawnedCount),
+                ("activeTiles", spawnedTiles.Count));
         }
 
         private void RevealFogAroundHero(Vector2Int center)
         {
-            if (hiddenAreaFog == null || hero == null)
+            if (hiddenAreaFog == null)
             {
+                Diag.Warning("Fog", "Skipped", "Fog reveal skipped: hiddenAreaFog is missing.", this,
+                    ("reason", "hiddenAreaFogMissing"),
+                    ("center", center));
+                return;
+            }
+
+            if (hero == null)
+            {
+                Diag.Warning("Fog", "Skipped", "Fog reveal skipped: hero is missing.", this,
+                    ("reason", "heroMissing"),
+                    ("center", center));
                 return;
             }
 
             if (!worldData.IsValidCoordinate(center.x, center.y))
             {
+                Diag.Warning("Fog", "Skipped", "Fog reveal skipped: hero cell is outside world bounds.", this,
+                    ("reason", "centerOutOfBounds"),
+                    ("center", center));
                 return;
             }
 
             bool inCave = worldData.GetTile(center.x, center.y) == TileID.Tunnel;
             if (!inCave)
             {
+                if (lastFogInCaveState != false)
+                {
+                    Diag.Event("Fog", "Skipped", "Fog reveal skipped: hero is outside cave.", this,
+                        ("reason", "outsideCave"),
+                        ("center", center));
+                }
+
+                lastFogInCaveState = false;
                 return;
             }
 
+            lastFogInCaveState = true;
+
             bool fogChanged = false;
+            int revealedCount = 0;
 
             for (int x = -fogRevealRadiusX; x <= fogRevealRadiusX; x++)
             {
@@ -295,13 +358,29 @@ namespace MinerUnity.Terrain
                         hiddenAreaFog.SetTile(fogPos, null);
                         fogGrid[worldY * worldData.Width + worldX] = 1;
                         fogChanged = true;
+                        revealedCount++;
                     }
                 }
             }
 
-            if (fogChanged && !string.IsNullOrEmpty(fogPath))
+            if (fogChanged)
             {
-                fogDirty = true;
+                if (!string.IsNullOrEmpty(fogPath))
+                {
+                    fogDirty = true;
+                }
+
+                Diag.Event(
+                    "Fog",
+                    "Revealed",
+                    "Fog area revealed around hero.",
+                    this,
+                    ("center", center),
+                    ("revealedCount", revealedCount),
+                    ("radiusX", fogRevealRadiusX),
+                    ("radiusUp", fogRevealRadiusUp),
+                    ("radiusDown", fogRevealRadiusDown),
+                    ("fogDirty", fogDirty));
             }
         }
 
@@ -314,11 +393,9 @@ namespace MinerUnity.Terrain
             newTile.transform.position = new Vector3(pos.x + 0.5f, pos.y + 0.5f, 0);
             newTile.transform.SetParent(this.transform);
 
-            // Sprite
             SpriteRenderer sr = newTile.AddComponent<SpriteRenderer>();
             sr.sprite = tClass.tileSprite;
 
-            // Physics & Gameplay logic (from old TerrainGeneration)
             if (id == TileID.Edge)
             {
                 newTile.tag = "Edge";
@@ -346,8 +423,6 @@ namespace MinerUnity.Terrain
 
                 StoneView stoneView = newTile.AddComponent<StoneView>();
 
-                // Якщо камінь уже стоїть у черзі на падіння,
-                // відтворюємо решту warning-time після спавну.
                 if (scheduledFalls.TryGetValue(pos, out ScheduledStoneFall scheduled))
                 {
                     float remaining = Mathf.Max(0f, scheduled.ExecuteAt - Time.time);
@@ -358,26 +433,17 @@ namespace MinerUnity.Terrain
                 }
             }
 
-            // Add the behaviour that handles mining
             TileBehaviour tb = newTile.AddComponent<TileBehaviour>();
-            // Store coordinates so TileBehaviour knows what to tell WorldData to delete
             tb.gridX = pos.x;
             tb.gridY = pos.y;
-
-            // Notice we DO NOT use TransformSaver anymore - it's handled by world_grid.dat array!
 
             spawnedTiles[pos] = newTile;
         }
 
-        /// <summary>
-        /// Called by TileBehaviour when it's destroyed by the player 4 hits.
-        /// </summary>
         public void DestroyTileInWorld(int x, int y)
         {
-            // 1. Видаляємо тайл із даних світу.
             worldData.SetTile(x, y, TileID.Empty);
 
-            // 2. Якщо в'юшка цієї клітинки існує — прибираємо її.
             Vector2Int removedPos = new Vector2Int(x, y);
             if (spawnedTiles.TryGetValue(removedPos, out GameObject removedGo))
             {
@@ -385,26 +451,19 @@ namespace MinerUnity.Terrain
                 Destroy(removedGo);
             }
 
-            // 3. Після втрати опори перевіряємо лише камінь безпосередньо над зруйнованим блоком.
             TryScheduleStoneAfterSupportLoss(x, y + 1);
-
-            // 4. Зберігаємо новий стан карти.
             SaveWorldData();
         }
 
-        /// <summary>
-        /// Called when a tile is placed at runtime (e.g. Ladder).
-        /// </summary>
         public void PlaceTileInWorld(int x, int y, TileID id)
         {
             worldData.SetTile(x, y, id);
-            
-            // Якщо клітинка в білій зоні - спавнимо візуал негайно
+
             if (IsCellInsideLoadedArea(new Vector2Int(x, y)))
             {
                 SpawnTileGameObject(new Vector2Int(x, y), id);
             }
-            
+
             SaveWorldData();
         }
 
@@ -412,13 +471,11 @@ namespace MinerUnity.Terrain
         {
             Vector2Int pos = new Vector2Int(x, y);
 
-            // Уже стоїть у черзі - не дублюємо.
             if (scheduledFalls.ContainsKey(pos))
             {
                 return;
             }
 
-            // Якщо це не камінь або в нього ще є опора - нічого не робимо.
             if (!stoneGravityService.CanStoneStartFalling(x, y))
             {
                 return;
@@ -430,7 +487,15 @@ namespace MinerUnity.Terrain
                 ExecuteAt = Time.time + stoneWarningDelay
             };
 
-            // Якщо камінь зараз у сцені - запускаємо його локальне попередження.
+            Diag.Event(
+                "Stone",
+                "FallScheduled",
+                "Stone fall scheduled after support loss.",
+                this,
+                ("from", pos),
+                ("executeAt", Time.time + stoneWarningDelay),
+                ("delay", stoneWarningDelay));
+
             if (spawnedTiles.TryGetValue(pos, out GameObject stoneGo))
             {
                 StoneView stoneView = stoneGo.GetComponent<StoneView>();
@@ -440,7 +505,6 @@ namespace MinerUnity.Terrain
                 }
             }
 
-            // Глобальна тряска камери.
             if (cameraFollow != null)
             {
                 cameraFollow.PlayStoneWarningShake();
@@ -456,8 +520,6 @@ namespace MinerUnity.Terrain
 
             dueFalls.Clear();
 
-            // Спочатку збираємо всі готові падіння в окремий список,
-            // щоб безпечно змінювати dictionary після цього.
             foreach (var pair in scheduledFalls)
             {
                 if (Time.time >= pair.Value.ExecuteAt)
@@ -471,35 +533,37 @@ namespace MinerUnity.Terrain
                 Vector2Int from = dueFalls[i];
                 scheduledFalls.Remove(from);
 
-                // Перевіряємо стан ще раз у момент старту падіння.
-                // За час затримки щось могло змінитися.
                 if (!stoneGravityService.TryMoveStoneToLanding(from.x, from.y, out StoneFallResult result))
                 {
+                    Diag.Event(
+                        "Stone",
+                        "FallCancelled",
+                        "Scheduled stone fall was cancelled before execution.",
+                        this,
+                        ("from", from),
+                        ("reason", "tryMoveFailed"));
                     continue;
                 }
 
-                // Пересуваємо в'юшку, якщо вона заспавнена.
                 MoveSpawnedStoneView(result.From, result.To);
 
-                // Зберігаємо новий стан після фактичного переміщення.
-                SaveWorldData();
+                Diag.Event(
+                    "Stone",
+                    "FallExecuted",
+                    "Stone fall executed.",
+                    this,
+                    ("from", result.From),
+                    ("to", result.To));
 
-                // Після того як нижній камінь зрушив,
-                // камінь над старою клітинкою міг втратити опору.
+                SaveWorldData();
                 TryScheduleStoneAfterSupportLoss(result.From.x, result.From.y + 1);
             }
         }
 
         private void MoveSpawnedStoneView(Vector2Int from, Vector2Int to)
         {
-            // Якщо старий камінь не був заспавнений,
-            // значить він був поза екраном.
-            // Дані світу вже правильні, тому нічого страшного.
-            // При наступному оновленні чанків він з’явиться одразу на новому місці.
             if (!spawnedTiles.TryGetValue(from, out GameObject stoneGo))
             {
-                // Камінь був поза спавном. Якщо тепер його нова клітинка
-                // потрапляє в активну область камери — заспавнимо його одразу.
                 if (IsCellInsideLoadedArea(to))
                 {
                     SpawnTileGameObject(to, TileID.Stone);
@@ -517,12 +581,9 @@ namespace MinerUnity.Terrain
             }
             else
             {
-                // Якщо раптом компонента немає —
-                // просто жорстко переносимо об'єкт.
                 stoneGo.transform.position = new Vector3(to.x + 0.5f, to.y + 0.5f, 0f);
             }
 
-            // Оновлюємо координати для TileBehaviour
             var tb = stoneGo.GetComponent<TileBehaviour>();
             if (tb != null)
             {
@@ -535,6 +596,15 @@ namespace MinerUnity.Terrain
         {
             string path = System.IO.Path.Combine(Application.persistentDataPath, "world_grid.dat");
             worldData.SaveToFile(path);
+
+            Diag.Event(
+                "World",
+                "Saved",
+                "World data saved.",
+                this,
+                ("path", path),
+                ("width", worldData.Width),
+                ("height", worldData.Height));
         }
 
         private void SaveFogData()
@@ -547,6 +617,16 @@ namespace MinerUnity.Terrain
             System.IO.File.WriteAllBytes(fogPath, fogGrid);
             fogDirty = false;
             nextFogSaveTime = Time.time + fogSaveInterval;
+
+            Diag.Event(
+                "Fog",
+                "Saved",
+                "Fog data saved.",
+                this,
+                ("path", fogPath),
+                ("bytes", fogGrid.Length),
+                ("exploredCount", CountExploredFogCells()),
+                ("nextSaveTime", nextFogSaveTime));
         }
 
         private void OnApplicationPause(bool pauseStatus)
@@ -576,6 +656,25 @@ namespace MinerUnity.Terrain
             );
 
             return pos.x >= minX && pos.x <= maxX && pos.y >= minY && pos.y <= maxY;
+        }
+
+        private int CountExploredFogCells()
+        {
+            if (fogGrid == null)
+            {
+                return 0;
+            }
+
+            int count = 0;
+            for (int i = 0; i < fogGrid.Length; i++)
+            {
+                if (fogGrid[i] == 1)
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
     }
 }

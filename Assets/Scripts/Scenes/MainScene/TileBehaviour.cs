@@ -29,18 +29,60 @@ public class TileBehaviour : MonoBehaviour
 
     public void BreakTile()
     {
+        if (isBroken)
+        {
+            return;
+        }
+
         isBroken = true;
-        
+
+        Diag.Event(
+            "Tile",
+            "Destroyed",
+            null,
+            this,
+            ("cellX", gridX),
+            ("cellY", gridY),
+            ("hitsRemaining", hitsRemaining));
+
         // Notify the new terrain system to permanently remove this block
         var chunkManager = GetComponentInParent<MinerUnity.Terrain.ChunkManager>();
         if (chunkManager != null)
         {
             chunkManager.DestroyTileInWorld(gridX, gridY);
         }
+        else
+        {
+            Diag.Warning(
+                "Tile",
+                "DestroyWorldMissing",
+                "ChunkManager not found while breaking tile.",
+                this,
+                ("cellX", gridX),
+                ("cellY", gridY));
+        }
     }
 
     public void HitTile(TileBehaviour tile)
     {
+        if (tile == null)
+        {
+            Diag.Warning(
+                "Tile",
+                "HitRejected",
+                "Tile reference is null.",
+                this,
+                ("cellX", gridX),
+                ("cellY", gridY),
+                ("reason", "null_target"));
+            return;
+        }
+
+        if (isBroken)
+        {
+            return;
+        }
+
         if (!CanHit())
         {
             return;
@@ -52,6 +94,16 @@ public class TileBehaviour : MonoBehaviour
         }
 
         hitsRemaining--;
+
+        Diag.Event(
+            "Tile",
+            "Hit",
+            null,
+            this,
+            ("cellX", gridX),
+            ("cellY", gridY),
+            ("hitsRemaining", hitsRemaining));
+
         HitAndCrack(hitsRemaining);
 
         // Break after the required number of hits.
@@ -77,6 +129,14 @@ public class TileBehaviour : MonoBehaviour
         }
         else
         {
+            Diag.Error(
+                "Tile",
+                "CrackPrefabMissing",
+                "CrackPrefab not found in Resources.",
+                this,
+                ("cellX", gridX),
+                ("cellY", gridY));
+
             Debug.LogError("CrackPrefab not found in Resources!");
         }
     }

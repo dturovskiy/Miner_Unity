@@ -15,8 +15,7 @@
 - [x] rewrite roadmap created
 - [x] runtime ownership document created
 - [x] scene cleanup checklist created
-- [x] script inventory created
-- [x] asset restructure plan created
+- [x] unified cleanup and restructure plan created
 - [x] Stage 0 execution started
 - [x] manual smoke test passed for `New Game`, `Continue`, world restore, fog restore, and basic hero movement
 - [ ] Stage 0 completed

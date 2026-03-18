@@ -60,6 +60,9 @@ namespace MinerUnity.Terrain
         private Vector2Int lastCameraPos = new Vector2Int(-999, -999);
         private bool? lastFogInCaveState;
         private GameSaveData saveData;
+        private Rigidbody2D heroRigidbody;
+        private bool runtimeInitialized;
+        private bool isShuttingDown;
 
         public WorldData GetWorldData() => worldData;
         public WorldRuntime GetWorldRuntime() => worldRuntime;
@@ -149,7 +152,7 @@ namespace MinerUnity.Terrain
 
             if (hero != null && saveData != null)
             {
-                hero.position = GamePersistenceService.GetHeroPositionOrDefault(saveData, hero.position);
+                SetHeroPositionImmediate(GamePersistenceService.GetHeroPositionOrDefault(saveData, hero.position));
             }
 
             Diag.Event(
@@ -171,6 +174,8 @@ namespace MinerUnity.Terrain
 
             // 3. Clear fog of war logic around starting area immediately
             ForceUpdateChunks();
+            FinalizeHeroBootstrapState();
+            runtimeInitialized = true;
         }
 
         private void Update()
@@ -679,15 +684,24 @@ namespace MinerUnity.Terrain
         {
             if (pauseStatus)
             {
-                SaveFogData();
-                SaveWorldData();
+                SaveRuntimeState();
             }
         }
 
         private void OnApplicationQuit()
         {
-            SaveFogData();
-            SaveWorldData();
+            isShuttingDown = true;
+            SaveRuntimeState();
+        }
+
+        private void OnDisable()
+        {
+            if (!Application.isPlaying || !runtimeInitialized || isShuttingDown)
+            {
+                return;
+            }
+
+            SaveRuntimeState();
         }
 
         private bool IsCellInsideLoadedArea(Vector2Int pos)
@@ -753,6 +767,53 @@ namespace MinerUnity.Terrain
                 hero != null ? hero.position : Vector3.zero);
 
             GamePersistenceService.Save(saveData);
+        }
+
+        private void SaveRuntimeState()
+        {
+            SaveFogData();
+            SaveWorldData();
+        }
+
+        private void SetHeroPositionImmediate(Vector3 position)
+        {
+            if (hero == null)
+            {
+                return;
+            }
+
+            heroRigidbody ??= hero.GetComponent<Rigidbody2D>();
+
+            if (heroRigidbody != null)
+            {
+                heroRigidbody.simulated = false;
+                heroRigidbody.position = position;
+                heroRigidbody.linearVelocity = Vector2.zero;
+                heroRigidbody.angularVelocity = 0f;
+            }
+
+            hero.position = position;
+            Physics2D.SyncTransforms();
+        }
+
+        private void FinalizeHeroBootstrapState()
+        {
+            if (hero == null)
+            {
+                return;
+            }
+
+            heroRigidbody ??= hero.GetComponent<Rigidbody2D>();
+            if (heroRigidbody == null)
+            {
+                return;
+            }
+
+            heroRigidbody.position = hero.position;
+            heroRigidbody.linearVelocity = Vector2.zero;
+            heroRigidbody.angularVelocity = 0f;
+            Physics2D.SyncTransforms();
+            heroRigidbody.simulated = true;
         }
     }
 }

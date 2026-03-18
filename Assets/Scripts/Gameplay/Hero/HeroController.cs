@@ -55,6 +55,11 @@ public sealed class HeroController : MonoBehaviour
             state = GetComponent<HeroState>();
         }
 
+        if (movementJoystick == null)
+        {
+            movementJoystick = FindFirstObjectByType<Joystick>();
+        }
+
         rb.bodyType = RigidbodyType2D.Dynamic;
         rb.gravityScale = Mathf.Max(0.01f, rb.gravityScale);
         rb.freezeRotation = true;

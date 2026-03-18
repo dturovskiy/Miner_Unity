@@ -169,7 +169,7 @@ public sealed class HeroController : MonoBehaviour
         }
 
         Vector3 scale = transform.localScale;
-        scale.x = Mathf.Abs(scale.x) * (horizontalInput >= 0f ? 1f : -1f);
+        scale.x = Mathf.Abs(scale.x) * (horizontalInput >= 0f ? -1f : 1f);
         transform.localScale = scale;
     }
 

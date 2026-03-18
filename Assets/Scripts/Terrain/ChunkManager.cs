@@ -263,19 +263,13 @@ namespace MinerUnity.Terrain
                 return;
             }
 
-            bool inCave = false;
-            Collider2D[] overlaps = Physics2D.OverlapCircleAll(hero.position, 0.4f);
-
-            for (int i = 0; i < overlaps.Length; i++)
+            if (!worldData.IsValidCoordinate(center.x, center.y))
             {
-                if (overlaps[i].CompareTag("Cave"))
-                {
-                    inCave = true;
-                    break;
-                }
+                return;
             }
 
-            if (inCave)
+            bool inCave = worldData.GetTile(center.x, center.y) == TileID.Tunnel;
+            if (!inCave)
             {
                 return;
             }

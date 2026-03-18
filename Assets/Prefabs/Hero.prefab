@@ -15,6 +15,11 @@ GameObject:
   - component: {fileID: 4252292007067128505}
   - component: {fileID: 1399537227865273101}
   - component: {fileID: 3895912602907065983}
+  - component: {fileID: 8140039062436213594}
+  - component: {fileID: 378698898247785166}
+  - component: {fileID: 8325242555248039030}
+  - component: {fileID: 4074647476582498815}
+  - component: {fileID: 1767804235948839445}
   m_Layer: 3
   m_Name: Hero
   m_TagString: Player
@@ -85,14 +90,14 @@ Rigidbody2D:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 180661555027601269}
-  m_BodyType: 1
+  m_BodyType: 0
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
   m_Mass: 1
   m_LinearDamping: 0
-  m_AngularDamping: 0.05
-  m_GravityScale: 1
+  m_AngularDamping: 0
+  m_GravityScale: 3
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -169,6 +174,93 @@ MonoBehaviour:
   snapshotName: Heartbeat
   intervalSeconds: 0.5
   emitOnEnable: 1
+--- !u!114 &8140039062436213594
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 180661555027601269}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 737ab440048de794eb6e3e1876d3fa55, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HeroCollision
+  rb: {fileID: 4573596400054799793}
+  capsule: {fileID: 462460703696282872}
+  worldGrid: {fileID: 0}
+  solidMask:
+    serializedVersion: 2
+    m_Bits: 1
+  groundProbeDistance: 0.08
+  probeWidthFactor: 0.9
+  wallProbeDistance: 0.05
+--- !u!114 &378698898247785166
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 180661555027601269}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33a723562411c0f4a91125d0becdb370, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HeroState
+  locomotion: 0
+--- !u!114 &8325242555248039030
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 180661555027601269}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 800440a87512add4384788e8aba5e9c4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HeroController
+  rb: {fileID: 4573596400054799793}
+  collision: {fileID: 8140039062436213594}
+  state: {fileID: 378698898247785166}
+  movementJoystick: {fileID: 0}
+  moveSpeed: 3
+  useKeyboardFallback: 1
+  inputDeadZone: 0.15
+  flipSpriteByScale: 1
+  logInputChanges: 1
+  logBlockedMovement: 1
+--- !u!114 &4074647476582498815
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 180661555027601269}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ac8cf0d533e17f4ab449cd67c1ba0a8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HeroDebugContextProvider
+  heroController: {fileID: 8325242555248039030}
+  heroState: {fileID: 378698898247785166}
+  heroCollision: {fileID: 8140039062436213594}
+--- !u!114 &1767804235948839445
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 180661555027601269}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48f439d7fe7061843ac714dec7d2adf8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HeroDebugSnapshotProvider
+  rb: {fileID: 4573596400054799793}
+  heroController: {fileID: 8325242555248039030}
+  heroState: {fileID: 378698898247785166}
+  heroCollision: {fileID: 8140039062436213594}
 --- !u!1 &1088475223798242320
 GameObject:
   m_ObjectHideFlags: 0

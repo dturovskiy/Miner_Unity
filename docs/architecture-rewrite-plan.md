@@ -41,6 +41,7 @@ In progress:
 - [x] manual smoke test passed for menu boot, world restore, fog restore, and hero movement
 - [x] legacy `SaveLoadSystem` objects removed from production scenes
 - [x] gameplay cell conversion centralized into one shared coordinate contract
+- [x] script folders and data assets reorganized into cleaner runtime-oriented groups
 
 Not started yet:
 
@@ -236,7 +237,7 @@ Introduce:
 
 Status:
 
-`Ready to start`
+`In progress`
 
 Goals:
 
@@ -263,6 +264,12 @@ Exit criteria:
 3. diagnostics session starts cleanly without UI warning spam
 4. a single world authority is chosen and documented
 5. production scenes no longer depend on test-only objects
+
+Current blockers before Stage 1:
+
+1. menu navigation is still coupled to save reset in `PlayButton`
+2. diagnostics still produce too many `Heartbeat` events to be considered clean
+3. hero logs still contain readiness-era duplication that makes early boot traces harder to read
 
 ## Stage 1 - Ground Core
 

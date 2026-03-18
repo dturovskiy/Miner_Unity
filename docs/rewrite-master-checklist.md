@@ -18,6 +18,7 @@
 - [x] unified cleanup and restructure plan created
 - [x] Stage 0 execution started
 - [x] manual smoke test passed for `New Game`, `Continue`, world restore, fog restore, and basic hero movement
+- [x] script layout cleanup applied without breaking the local build
 - [ ] Stage 0 completed
 - [ ] Stage 1 completed
 - [ ] Stage 2 completed
@@ -56,15 +57,15 @@
 - [x] remove duplicated gameplay keys from emitted events
 - [ ] reduce heartbeat noise to a useful level
 - [x] add explicit runtime bootstrap events such as `WorldGridReady`
-- [ ] verify that a clean boot session is readable without UI warning spam
+- [x] verify that a clean boot session is readable without UI warning spam
 
 ### Stage 0 Exit Gate
 
 - [ ] hero cell logic and terrain cell logic report the same cells
-- [ ] production scenes do not reference test-only runtime objects
-- [ ] scenes do not call missing methods
+- [x] production scenes do not reference test-only runtime objects
+- [x] scenes do not call missing methods
 - [ ] clean session logs are readable
-- [ ] one world authority is documented and implemented
+- [x] one world authority is documented and implemented
 
 ## Stage 1 - Ground Core
 

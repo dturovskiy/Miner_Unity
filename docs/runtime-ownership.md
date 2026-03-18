@@ -20,6 +20,7 @@ Recommended ownership model:
 | `WorldGridService` | second cell grid for gameplay queries | diverges from terrain runtime and uses conflicting coordinates | thin facade or removed entirely | refactor or remove |
 | `TerrainToGridBootstrap` | copies terrain data into gameplay grid | exists because world state is duplicated | bootstrap runtime readiness only, or remove | remove or replace |
 | `ChunkManager` | loads tiles, mutates terrain, updates view, saves | mixes view responsibilities with gameplay mutation authority | view adapter that reacts to world runtime changes | refactor |
+| current fog logic in `ChunkManager` | reveals `HiddenArea` around the hero | mixes permanent discovery, current visibility, and rendering in one place | move to a dedicated visibility service and leave `ChunkManager` as a view adapter | refactor |
 | `StoneGravityService` | stone movement and landing logic | mutates world state outside one shared gameplay authority | world runtime subsystem or runtime-owned helper | refactor |
 | `HeroController` | movement orchestration and hero behavior entry point | too broad as a long-term feature host | shrink into `HeroMotor` or be replaced by smaller components | refactor |
 | `HeroCollision` | physics sensing plus world cell reads | mixes trusted physics checks with untrusted grid reads | split into `HeroGroundSensor` and `HeroWallSensor` | refactor |
@@ -59,6 +60,14 @@ It is the persistence root, not the gameplay API.
 2. spawned tile object lifecycle
 3. visual responses to runtime world changes
 4. optional view-only stone effects
+
+`VisibilityRuntime` or equivalent service should own:
+
+1. permanent discovered-cell state for minimap and persistence
+2. current live visibility around the hero
+3. reveal rules for `Empty`, `Tunnel`, and future `Ladder` cells
+4. visibility radius derived from lantern or light progression
+5. visibility refresh after hero movement, digging, and placed-object changes
 
 `HeroMotor` owns:
 
@@ -126,6 +135,7 @@ Current practical notes:
 2. `ChunkManager` still coordinates view updates and save timing, but it no longer owns the world model
 3. the legacy raw files remain as migration input for now, not as the primary runtime truth
 4. shared world-to-cell conversion now lives in `WorldCellCoordinates`, so hero-facing and terrain-facing cell math use one code path
+5. current fog reveal still lives inside `ChunkManager`, so visibility is not fully separated yet
 
 ## Keep, Freeze, Remove, Introduce
 
@@ -159,6 +169,7 @@ Introduce next:
 6. `HeroMining`
 7. `HeroLadder`
 8. a dedicated `SceneLoader` boundary if scene navigation remains necessary
+9. a dedicated visibility or fog-of-war runtime service before final minimap and lantern integration
 
 ## Working Policy
 

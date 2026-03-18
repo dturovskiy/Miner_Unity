@@ -108,6 +108,7 @@ The engineering goal is:
 2. small feature-focused hero components
 3. one root save model for the game
 4. clean separation between domain logic, view logic, scene wiring, persistence, and diagnostics
+5. separate permanent world discovery from temporary hero visibility and lighting
 
 ## Non-Negotiable Decisions
 
@@ -184,6 +185,23 @@ View-facing systems stay view-facing:
 4. UI stays presentation only
 
 `ChunkManager` should stop being a second gameplay mutation authority.
+
+### Visibility Layer
+
+Visibility should become its own subsystem instead of staying as ad hoc fog logic inside `ChunkManager`.
+
+Target rules:
+
+1. permanent world discovery and current live visibility are not the same thing
+2. permanent discovery is used by minimap and save data
+3. current live visibility is controlled by hero lighting equipment such as lantern level
+4. `HiddenArea` remains a rendering target, not the owner of visibility state
+5. visibility rules must work in mined `Empty` cells, `Tunnel`, and future `Ladder` cells
+6. visibility radius should support asymmetric tuning by axis, for example `leftRight = 3`, `up = 1`, `down = 1`
+
+Current known weakness:
+
+1. the current fog reveal rule depends on `TileID.Tunnel`, so it does not scale to mined empty space and is not suitable for the final mining loop
 
 ### Diagnostics Layer
 
@@ -368,6 +386,39 @@ Exit criteria:
 1. save and load no longer decide gameplay state transitions
 2. menu flow does not produce gameplay warning noise
 3. scene navigation and persistence have separate responsibilities
+
+## Planned Visibility And Fog Track
+
+Status:
+
+`Planned after Stage 1 foundation`
+
+Why this is a separate track:
+
+1. visibility depends on stable hero movement and stable world cell queries
+2. mining should be able to reveal newly opened space
+3. minimap discovery and hero lighting progression must share one clean data model
+
+Goals:
+
+1. define a clean fog of war and visibility model for the game
+2. make minimap discovery persistent
+3. make hero lantern upgrades control current visibility radius
+
+Planned rules:
+
+1. discovered cells remain discovered forever unless a design change says otherwise
+2. current live visibility follows the hero and is limited by lantern level
+3. maximum lantern target can be tuned around `leftRight = 3` and `upDown = 1..2`
+4. the hero should still understand what is happening immediately around him on the left, right, and above while moving underground
+
+Implementation direction:
+
+1. move fog logic out of `ChunkManager` into a dedicated runtime-owned visibility service or equivalent subsystem
+2. keep a persistent discovery mask in save data for minimap usage
+3. derive live visibility radius from hero progression or equipped lantern data
+4. let rendering consume visibility state instead of owning reveal logic
+5. refresh visibility after hero movement, digging, and future placed objects such as ladders
 
 ## Implementation Rules
 

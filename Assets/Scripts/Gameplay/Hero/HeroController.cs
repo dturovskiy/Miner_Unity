@@ -63,6 +63,10 @@ public sealed class HeroController : MonoBehaviour
         rb.bodyType = RigidbodyType2D.Dynamic;
         rb.gravityScale = Mathf.Max(0.01f, rb.gravityScale);
         rb.freezeRotation = true;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        EnsureDebugTools();
+#endif
     }
 
     private void Update()
@@ -194,4 +198,14 @@ public sealed class HeroController : MonoBehaviour
 
         state.SetLocomotion(HeroLocomotionState.Idle);
     }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    private void EnsureDebugTools()
+    {
+        if (GetComponent<HeroDebugDigTool>() == null)
+        {
+            gameObject.AddComponent<HeroDebugDigTool>();
+        }
+    }
+#endif
 }

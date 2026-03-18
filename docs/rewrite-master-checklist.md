@@ -19,6 +19,7 @@
 - [x] Stage 0 execution started
 - [x] manual smoke test passed for `New Game`, `Continue`, world restore, fog restore, and basic hero movement
 - [x] script layout cleanup applied without breaking the local build
+- [ ] visibility and fog of war design documented and staged
 - [x] Stage 0 completed
 - [ ] Stage 1 completed
 - [ ] Stage 2 completed
@@ -148,6 +149,27 @@
 - [ ] reconnect menu flow on top of stable gameplay runtime
 - [ ] verify UI does not introduce warning noise into gameplay sessions
 - [ ] verify gameplay can boot without menu-side side effects
+
+## Visibility, Fog, And Minimap Track
+
+### Structure
+
+- [ ] separate permanent discovery from temporary live visibility
+- [ ] move fog rules out of `ChunkManager` into a dedicated visibility service or runtime subsystem
+- [ ] define how lantern level maps to visibility radius
+
+### Behavior
+
+- [ ] visibility works in mined `Empty` cells, `Tunnel`, and future `Ladder` cells
+- [ ] discovered cells persist for minimap usage
+- [ ] current live visibility follows the hero without depending on `TileID.Tunnel`
+- [ ] reveal updates after movement, digging, and future object placement
+
+### Save And Rendering
+
+- [ ] save data keeps permanent discovery separately from transient lighting state
+- [ ] `HiddenArea` acts as view only and does not own discovery logic
+- [ ] minimap reads discovered cells instead of current temporary light radius
 
 ## Frozen During Rewrite
 

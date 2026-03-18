@@ -60,6 +60,7 @@ It is the persistence root, not the gameplay API.
 2. spawned tile object lifecycle
 3. visual responses to runtime world changes
 4. optional view-only stone effects
+5. until refactor, temporary background spawning rules for open-space visuals
 
 `VisibilityRuntime` or equivalent service should own:
 
@@ -68,6 +69,12 @@ It is the persistence root, not the gameplay API.
 3. reveal rules for `Empty`, `Tunnel`, and future `Ladder` cells
 4. visibility radius derived from lantern or light progression
 5. visibility refresh after hero movement, digging, and placed-object changes
+
+Background tunnel rendering should eventually be driven by:
+
+1. world shape and neighboring solid cells
+2. view-only rules for full tunnel, upper half tunnel, and lower half tunnel variants
+3. a separate rendering concern, not the logical definition of passable underground space
 
 `HeroMotor` owns:
 
@@ -180,3 +187,4 @@ Until the rewrite is complete:
 3. no scene object may become a hidden gameplay authority
 4. no feature work should bypass the world runtime boundary
 5. if a system is frozen, it may be read for reference but not expanded
+6. `Tunnel` should not remain an overloaded concept for both gameplay passability and background art once the visibility and mining work matures

@@ -170,6 +170,8 @@
 - [ ] save data keeps permanent discovery separately from transient lighting state
 - [ ] `HiddenArea` acts as view only and does not own discovery logic
 - [ ] minimap reads discovered cells instead of current temporary light radius
+- [ ] tunnel background rendering is separated from logical open-space tiles
+- [ ] full tunnel and half-tunnel background variants are driven by local vertical gap rules
 
 ## Frozen During Rewrite
 

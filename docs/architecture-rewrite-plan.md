@@ -202,6 +202,14 @@ Target rules:
 Current known weakness:
 
 1. the current fog reveal rule depends on `TileID.Tunnel`, so it does not scale to mined empty space and is not suitable for the final mining loop
+2. the current project overloads `Tunnel` as both an open-space gameplay tile and a background art concept, which should be separated
+
+Background rendering clarification:
+
+1. the final system should treat tunnel visuals as background decoration for open space, not as the sole logical definition of an underground passage
+2. full tunnel background is used when the vertical gap between upper and lower ground is exactly one cell
+3. `Tunnel_Top` and `Tunnel_Bottom` style halves should be used when the vertical gap is larger than one cell
+4. this is a rendering rule driven by local world shape, not a separate gameplay movement rule
 
 ### Diagnostics Layer
 

@@ -6,14 +6,16 @@ There must be exactly one authoritative gameplay runtime for world cells.
 
 Recommended ownership model:
 
-1. `WorldData` remains the low-level storage model
-2. `WorldRuntime` becomes the only gameplay mutation and query authority
-3. everything else either reads from `WorldRuntime` or reacts to its events
+1. `GameSaveData` is the root persistence model for the whole game
+2. `WorldData` remains the low-level mutable world storage model
+3. `WorldRuntime` becomes the only gameplay mutation and query authority over `WorldData`
+4. everything else either reads from `WorldRuntime` or reacts to its events
 
 ## Current System Assessment
 
 | System | Current role | Current problem | Target role | Action |
 | --- | --- | --- | --- | --- |
+| `GameSaveData` | not implemented yet | there is no single root save model for world, hero, and progression | root persistence model | introduce |
 | `WorldData` | terrain cell storage | currently shares authority with other mutable state | low-level cell storage under runtime ownership | keep |
 | `WorldGridService` | second cell grid for gameplay queries | diverges from terrain runtime and uses conflicting coordinates | thin facade or removed entirely | refactor or remove |
 | `TerrainToGridBootstrap` | copies terrain data into gameplay grid | exists because world state is duplicated | bootstrap runtime readiness only, or remove | remove or replace |
@@ -32,6 +34,14 @@ Recommended ownership model:
 | `GameController` | standalone manager script | not part of active scene runtime | quarantine until needed | review later |
 
 ## Target Ownership Map
+
+`GameSaveData` owns:
+
+1. world save payload
+2. hero save payload
+3. progression save payload
+
+It is the persistence root, not the gameplay API.
 
 `WorldRuntime` owns:
 
@@ -123,19 +133,21 @@ Remove from production scenes:
 
 Introduce next:
 
-1. `WorldRuntime`
-2. `HeroMotor`
-3. `HeroGroundSensor`
-4. `HeroWallSensor`
-5. `HeroMining`
-6. `HeroLadder`
-7. a dedicated `SceneLoader` boundary if scene navigation remains necessary
+1. `GameSaveData`
+2. `WorldRuntime`
+3. `HeroMotor`
+4. `HeroGroundSensor`
+5. `HeroWallSensor`
+6. `HeroMining`
+7. `HeroLadder`
+8. a dedicated `SceneLoader` boundary if scene navigation remains necessary
 
 ## Working Policy
 
 Until the rewrite is complete:
 
-1. no gameplay system may mutate both a grid copy and terrain data directly
-2. no scene object may become a hidden gameplay authority
-3. no feature work should bypass the world runtime boundary
-4. if a system is frozen, it may be read for reference but not expanded
+1. `WorldData` is the only mutable world state in memory
+2. no gameplay system may mutate both a grid copy and terrain data directly
+3. no scene object may become a hidden gameplay authority
+4. no feature work should bypass the world runtime boundary
+5. if a system is frozen, it may be read for reference but not expanded

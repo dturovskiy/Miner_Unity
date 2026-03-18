@@ -28,7 +28,8 @@
 
 - [x] coordinate mismatch identified and verified
 - [x] double mutable world state identified and verified
-- [ ] choose the single world authority
+- [x] choose the single world authority
+- [x] introduce the initial `GameSaveData` root save model
 - [ ] document the final world mutation path
 - [ ] align every gameplay `WorldToCell` contract to one coordinate system
 - [ ] make hero cell readers depend on explicit world readiness

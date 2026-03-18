@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using MinerUnity.Runtime;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
@@ -27,8 +28,9 @@ namespace MinerUnity.Terrain
         [SerializeField, Min(0)] private int fogRevealRadiusUp = 4;
         [SerializeField, Min(0)] private int fogRevealRadiusDown = 2;
 
-        // The single source of truth for the entire map (25KB)
-        private WorldData worldData;
+        // The gameplay-facing owner of world queries and mutations.
+        private WorldRuntime worldRuntime;
+        private WorldData worldData => worldRuntime?.WorldData;
         private byte[] fogGrid; // For storing fog of war state (1 = explored, 0 = hidden)
         private string fogPath;
         private bool fogDirty;
@@ -48,7 +50,7 @@ namespace MinerUnity.Terrain
         private readonly Dictionary<Vector2Int, ScheduledStoneFall> scheduledFalls = new();
         private readonly List<Vector2Int> dueFalls = new();
 
-        private StoneGravityService stoneGravityService;
+        private StoneGravityService stoneGravityService => worldRuntime?.StoneGravityService;
 
         // Keeps track of which GameObjects are currently physically spawned in the scene
         private Dictionary<Vector2Int, GameObject> spawnedTiles = new Dictionary<Vector2Int, GameObject>();
@@ -59,6 +61,7 @@ namespace MinerUnity.Terrain
         private bool? lastFogInCaveState;
 
         public WorldData GetWorldData() => worldData;
+        public WorldRuntime GetWorldRuntime() => worldRuntime;
 
         private void Start()
         {
@@ -70,9 +73,9 @@ namespace MinerUnity.Terrain
             }
 
             // 2. Load the world data from disk into memory
-            worldData = new WorldData();
             string path = System.IO.Path.Combine(Application.persistentDataPath, "world_grid.dat");
-            bool worldLoaded = worldData.LoadFromFile(path);
+            worldRuntime = new WorldRuntime(new WorldData());
+            bool worldLoaded = worldRuntime.LoadFromFile(path);
             if (!worldLoaded)
             {
                 Debug.LogError("ChunkManager: Failed to load world grid! Make sure FastTerrainGenerator ran.");
@@ -87,8 +90,6 @@ namespace MinerUnity.Terrain
                 ("success", worldLoaded),
                 ("width", worldData.Width),
                 ("height", worldData.Height));
-
-            stoneGravityService = new StoneGravityService(worldData);
 
             // Load Fog state
             fogGrid = new byte[worldData.Width * worldData.Height];
@@ -442,7 +443,10 @@ namespace MinerUnity.Terrain
 
         public void DestroyTileInWorld(int x, int y)
         {
-            worldData.SetTile(x, y, TileID.Empty);
+            if (worldRuntime == null || !worldRuntime.TryDestroyTile(x, y, out _))
+            {
+                return;
+            }
 
             Vector2Int removedPos = new Vector2Int(x, y);
             if (spawnedTiles.TryGetValue(removedPos, out GameObject removedGo))
@@ -457,7 +461,10 @@ namespace MinerUnity.Terrain
 
         public void PlaceTileInWorld(int x, int y, TileID id)
         {
-            worldData.SetTile(x, y, id);
+            if (worldRuntime == null || !worldRuntime.TryPlaceTile(x, y, id))
+            {
+                return;
+            }
 
             if (IsCellInsideLoadedArea(new Vector2Int(x, y)))
             {
@@ -476,7 +483,7 @@ namespace MinerUnity.Terrain
                 return;
             }
 
-            if (!stoneGravityService.CanStoneStartFalling(x, y))
+            if (worldRuntime == null || !worldRuntime.CanStoneStartFalling(x, y))
             {
                 return;
             }
@@ -533,7 +540,7 @@ namespace MinerUnity.Terrain
                 Vector2Int from = dueFalls[i];
                 scheduledFalls.Remove(from);
 
-                if (!stoneGravityService.TryMoveStoneToLanding(from.x, from.y, out StoneFallResult result))
+                if (worldRuntime == null || !worldRuntime.TryMoveStoneToLanding(from.x, from.y, out StoneFallResult result))
                 {
                     Diag.Event(
                         "Stone",
@@ -595,7 +602,7 @@ namespace MinerUnity.Terrain
         private void SaveWorldData()
         {
             string path = System.IO.Path.Combine(Application.persistentDataPath, "world_grid.dat");
-            worldData.SaveToFile(path);
+            worldRuntime?.SaveToFile(path);
 
             Diag.Event(
                 "World",

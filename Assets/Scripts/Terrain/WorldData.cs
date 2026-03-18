@@ -65,6 +65,31 @@ namespace MinerUnity.Terrain
         }
 
         /// <summary>
+        /// Returns a copy of the raw world grid bytes for persistence layers.
+        /// </summary>
+        public byte[] ToByteArray()
+        {
+            var copy = new byte[grid.Length];
+            Array.Copy(grid, copy, grid.Length);
+            return copy;
+        }
+
+        /// <summary>
+        /// Replaces the world grid from an external byte array.
+        /// Returns false if the payload size does not match the world shape.
+        /// </summary>
+        public bool LoadFromBytes(byte[] source)
+        {
+            if (source == null || source.Length != grid.Length)
+            {
+                return false;
+            }
+
+            Array.Copy(source, grid, grid.Length);
+            return true;
+        }
+
+        /// <summary>
         /// Saves the entire world instantly as a raw byte array.
         /// </summary>
         public void SaveToFile(string filePath)

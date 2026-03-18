@@ -34,10 +34,13 @@ In progress:
 - [x] Stage 0 cleanup implementation started
 - [x] initial scene wiring cleanup applied
 - [x] initial diagnostics cleanup applied
+- [x] single world authority decision locked
+- [x] initial root save/runtime foundation implemented
 
 Not started yet:
 
-- [ ] single world authority implementation
+- [ ] root save model implementation finished
+- [ ] single world authority implementation finished
 - [ ] Stage 1 ground core refactor
 - [ ] Stage 2 mining rewrite
 - [ ] Stage 3 ladder rewrite
@@ -83,7 +86,8 @@ The engineering goal is:
 
 1. one runtime source of truth for the world
 2. small feature-focused hero components
-3. clean separation between domain logic, view logic, scene wiring, persistence, and diagnostics
+3. one root save model for the game
+4. clean separation between domain logic, view logic, scene wiring, persistence, and diagnostics
 
 ## Non-Negotiable Decisions
 
@@ -92,10 +96,12 @@ These rules stay in effect during the rewrite:
 1. there must be one authoritative runtime model for world cells
 2. all gameplay cell queries must use the same coordinate contract
 3. gameplay mutation must go through one world-facing API
-4. scene buttons and menu helpers must not drive gameplay decisions
-5. view systems must react to domain state, not own it
-6. hero features must be separated by responsibility
-7. diagnostics must stay useful enough to explain gameplay transitions
+4. `WorldData` remains the mutable world state, and `WorldRuntime` is the only gameplay API over it
+5. `GameSaveData` is the root save model for world, hero, and progression state
+6. scene buttons and menu helpers must not drive gameplay decisions
+7. view systems must react to domain state, not own it
+8. hero features must be separated by responsibility
+9. diagnostics must stay useful enough to explain gameplay transitions
 
 ## Target Runtime Shape
 
@@ -116,6 +122,12 @@ Suggested responsibility set:
 5. own stone support logic and scheduled stone state
 6. publish world change events
 7. own persistence timing policy
+
+Locked decision:
+
+1. `WorldData` remains the low-level mutable world state
+2. `WorldRuntime` becomes the only gameplay mutation and query boundary over `WorldData`
+3. `GameSaveData` becomes the root persistence model for world, hero, and progression
 
 `WorldGridService` should either:
 
@@ -191,12 +203,13 @@ Remove from production scenes:
 Introduce:
 
 1. `WorldRuntime`
-2. `HeroMotor`
-3. `HeroGroundSensor`
-4. `HeroWallSensor`
-5. `HeroMining`
-6. `HeroLadder`
-7. a cleaner boundary between scene loading and save loading
+2. `GameSaveData`
+3. `HeroMotor`
+4. `HeroGroundSensor`
+5. `HeroWallSensor`
+6. `HeroMining`
+7. `HeroLadder`
+8. a cleaner boundary between scene loading and save loading
 
 ## Roadmap
 
@@ -220,8 +233,9 @@ Work packages:
 3. isolate or remove legacy and test objects still wired in scenes
 4. remove or fix noisy UI animation trigger warnings
 5. separate menu navigation concerns from save concerns
-6. document runtime ownership
-7. reduce diagnostics noise and duplication
+6. introduce the root save model for world, hero, and progression
+7. document runtime ownership
+8. reduce diagnostics noise and duplication
 
 Exit criteria:
 

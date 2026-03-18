@@ -19,7 +19,7 @@
 - [x] Stage 0 execution started
 - [x] manual smoke test passed for `New Game`, `Continue`, world restore, fog restore, and basic hero movement
 - [x] script layout cleanup applied without breaking the local build
-- [ ] Stage 0 completed
+- [x] Stage 0 completed
 - [ ] Stage 1 completed
 - [ ] Stage 2 completed
 - [ ] Stage 3 completed
@@ -55,16 +55,16 @@
 - [x] duplicate context sources identified
 - [x] route Unity log relay safely through a main-thread queue or equivalent buffer
 - [x] remove duplicated gameplay keys from emitted events
-- [ ] reduce heartbeat noise to a useful level
+- [x] reduce heartbeat noise to a useful level
 - [x] add explicit runtime bootstrap events such as `WorldGridReady`
 - [x] verify that a clean boot session is readable without UI warning spam
 
 ### Stage 0 Exit Gate
 
-- [ ] hero cell logic and terrain cell logic report the same cells
+- [x] hero cell logic and terrain cell logic report the same cells
 - [x] production scenes do not reference test-only runtime objects
 - [x] scenes do not call missing methods
-- [ ] clean session logs are readable
+- [x] clean session logs are readable
 - [x] one world authority is documented and implemented
 
 ## Stage 1 - Ground Core

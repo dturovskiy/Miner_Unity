@@ -237,7 +237,7 @@ Introduce:
 
 Status:
 
-`In progress`
+`Completed`
 
 Goals:
 
@@ -265,16 +265,17 @@ Exit criteria:
 4. a single world authority is chosen and documented
 5. production scenes no longer depend on test-only objects
 
-Current blockers before Stage 1:
+Stage 0 close-out:
 
-1. diagnostics still produce too many `Heartbeat` events to be considered clean until the next runtime verification pass
-2. hero logs still need one more runtime verification pass after field normalization and heartbeat throttling
+1. gameplay, save, camera, and menu boot paths are stable after smoke testing
+2. diagnostics noise was reduced to a readable level and duplicate hero emitters were removed from `MainScene`
+3. `Stage 1 - Ground Core` can start without carrying known foundation debt from Stage 0
 
 ## Stage 1 - Ground Core
 
 Status:
 
-`Blocked by Stage 0`
+`Ready to start`
 
 Goals:
 

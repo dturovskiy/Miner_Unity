@@ -33,9 +33,15 @@ public sealed class HeroDebugContextProvider : MonoBehaviour, IDiagContextProvid
 
         if (heroCollision != null)
         {
-            fields.Add(new DiagField("cell", heroCollision.GetCurrentCell().ToString()));
-            fields.Add(new DiagField("footCell", heroCollision.GetFootCell().ToString()));
-            fields.Add(new DiagField("footType", heroCollision.GetFootCellType().ToString()));
+            bool worldReady = heroCollision.WorldGrid != null && heroCollision.WorldGrid.IsReady;
+            fields.Add(new DiagField("worldReady", DiagFieldBag.Stringify(worldReady)));
+
+            if (worldReady)
+            {
+                fields.Add(new DiagField("cell", heroCollision.GetCurrentCell().ToString()));
+                fields.Add(new DiagField("footCell", heroCollision.GetFootCell().ToString()));
+                fields.Add(new DiagField("footType", heroCollision.GetFootCellType().ToString()));
+            }
         }
     }
 }

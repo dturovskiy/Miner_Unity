@@ -247,7 +247,8 @@ public static class SavingService
         else
         {
             // ���� ���� �� ����, ������� �������� �����������
-            Debug.LogWarningFormat("File does not exist at {0}. Cannot update active scene info.", outputPath);
+            return;
         }
     }
 }
+

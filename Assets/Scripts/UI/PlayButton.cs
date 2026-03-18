@@ -14,14 +14,8 @@ namespace AwesomeTools.MainScene
 
         public event Action OnButtonIsPressed;
 
-        private void Awake()
-        {
-            SavingService.UpdateActiveSceneInfo("SaveGame.json");
-        }
-
         public void GoToMainScene()
         {
-            // Delete new world grid map and fog map
             string path = System.IO.Path.Combine(Application.persistentDataPath, "world_grid.dat");
             if (System.IO.File.Exists(path)) System.IO.File.Delete(path);
 
@@ -30,6 +24,7 @@ namespace AwesomeTools.MainScene
 
             StartCoroutine(LoadScene(_sceneData));
         }
+
         public void ContinueGame()
         {
             StartCoroutine(LoadScene(_sceneData));
@@ -38,12 +33,8 @@ namespace AwesomeTools.MainScene
         public void InvokeOnButtonIsPressed()
         {
             OnButtonIsPressed?.Invoke();
-            //Disappear();
         }
 
-        /// <summary>
-        /// Вводимо тип сцени [type] - переходимо у сцену "type"
-        /// </summary>    
         private IEnumerator LoadScene(SceneData type)
         {
             yield return new WaitForSeconds(1);
@@ -55,7 +46,6 @@ namespace AwesomeTools.MainScene
         private IEnumerator LoadScene()
         {
             yield return new WaitForSeconds(1);
-            
         }
     }
 }

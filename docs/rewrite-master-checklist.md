@@ -15,7 +15,7 @@
 - [x] rewrite roadmap created
 - [x] runtime ownership document created
 - [x] scene cleanup checklist created
-- [ ] Stage 0 execution started
+- [x] Stage 0 execution started
 - [ ] Stage 0 completed
 - [ ] Stage 1 completed
 - [ ] Stage 2 completed
@@ -40,16 +40,16 @@
 - [x] broken persistent callback identified
 - [x] UI warning sources identified
 - [ ] remove `SaveLoadSystem` from production scenes or move it to debug-only usage
-- [ ] remove stale `RemoveDestroyedBlocksFromBinary` callback from `MainScene`
-- [ ] decide one supported button transition strategy
-- [ ] remove warning-producing button setups from clean runtime scenes
+- [x] remove stale `RemoveDestroyedBlocksFromBinary` callback from `MainScene`
+- [x] decide one supported button transition strategy
+- [x] remove warning-producing button setups from clean runtime scenes
 - [ ] separate menu navigation concerns from save concerns
 
 ### Diagnostics Cleanup
 
 - [x] diagnostics noise sources identified
 - [x] duplicate context sources identified
-- [ ] route Unity log relay safely through a main-thread queue or equivalent buffer
+- [x] route Unity log relay safely through a main-thread queue or equivalent buffer
 - [ ] remove duplicated gameplay keys from emitted events
 - [ ] reduce heartbeat noise to a useful level
 - [ ] add explicit runtime bootstrap events such as `WorldGridReady`
@@ -159,3 +159,4 @@ If we start implementation now, the first checklist items to attack are:
 1. choose the single world authority
 2. remove test-only and broken scene wiring
 3. clean diagnostics and UI warning noise
+

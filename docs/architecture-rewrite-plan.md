@@ -29,9 +29,14 @@ Completed and verified:
 - [x] scene, UI, save, and legacy wiring review completed
 - [x] initial rewrite roadmap created
 
+In progress:
+
+- [x] Stage 0 cleanup implementation started
+- [x] initial scene wiring cleanup applied
+- [x] initial diagnostics cleanup applied
+
 Not started yet:
 
-- [ ] Stage 0 cleanup implementation
 - [ ] single world authority implementation
 - [ ] Stage 1 ground core refactor
 - [ ] Stage 2 mining rewrite
@@ -367,3 +372,4 @@ Scene cleanup is done for a stage when:
 ## Immediate Next Step
 
 Start Stage 0 with the scene cleanup and world ownership checklist, then lock the single-world-runtime decision before writing new gameplay features.
+

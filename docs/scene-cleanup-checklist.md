@@ -13,9 +13,9 @@ The goal of this document is to make `MainScene` and `MenuScene` safe, quiet, an
 - [x] confirm stale callback to `RemoveDestroyedBlocksFromBinary`
 - [x] confirm warning-producing button animation setup exists
 - [ ] remove `SaveLoadSystem` from production scene wiring
-- [ ] remove stale `RemoveDestroyedBlocksFromBinary` callback
+- [x] remove stale `RemoveDestroyedBlocksFromBinary` callback
 - [ ] confirm only supported gameplay runtime objects remain
-- [ ] align gameplay grid settings with runtime coordinate contract
+- [x] align gameplay grid settings with runtime coordinate contract
 - [ ] run a clean `MainScene` boot log and verify warning noise is gone
 
 ## MenuScene
@@ -25,13 +25,13 @@ The goal of this document is to make `MainScene` and `MenuScene` safe, quiet, an
 - [x] confirm warning-producing button animation setup exists
 - [x] confirm `PlayButton` triggers save metadata side effects during menu flow
 - [ ] remove `SaveLoadSystem` from production scene wiring
-- [ ] replace unsupported button transition setup with a supported one
-- [ ] remove menu-open save metadata side effects
+- [x] replace unsupported button transition setup with a supported one
+- [x] remove menu-open save metadata side effects
 - [ ] run a clean `MenuScene` boot log and verify warning noise is gone
 
 ## Shared Scene Decisions
 
-- [ ] choose the supported button transition model for runtime scenes
+- [x] choose the supported button transition model for runtime scenes
 - [ ] ensure `Button.controller` matches the chosen scene button setup
 - [ ] separate scene navigation responsibility from save responsibility
 - [ ] ensure production scenes contain no test-only helper objects
@@ -43,3 +43,5 @@ The goal of this document is to make `MainScene` and `MenuScene` safe, quiet, an
 - [ ] `MenuScene` boots without scene-wiring warnings
 - [ ] a normal session log is readable without UI warning spam
 - [ ] production scenes contain no legacy test helpers
+
+

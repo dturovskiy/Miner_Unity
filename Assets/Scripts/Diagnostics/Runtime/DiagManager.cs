@@ -79,6 +79,7 @@ public sealed class DiagManager : MonoBehaviour
         };
 
         TryAppendObjectContext(context, record.fields);
+        NormalizeFields(record.fields);
         WriteRecord(record);
     }
 
@@ -181,6 +182,24 @@ public sealed class DiagManager : MonoBehaviour
         for (int i = 0; i < providers.Length; i++)
         {
             providers[i].AppendContext(fields);
+        }
+    }
+
+    private static void NormalizeFields(List<DiagField> fields)
+    {
+        if (fields == null || fields.Count < 2)
+        {
+            return;
+        }
+
+        var seenKeys = new HashSet<string>(StringComparer.Ordinal);
+        for (int i = fields.Count - 1; i >= 0; i--)
+        {
+            string key = fields[i].key ?? string.Empty;
+            if (!seenKeys.Add(key))
+            {
+                fields.RemoveAt(i);
+            }
         }
     }
 

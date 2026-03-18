@@ -66,6 +66,13 @@ namespace MinerUnity.Terrain
 
         private void Start()
         {
+            GameStartMode startMode = GameLaunchContext.ConsumePendingStartMode();
+            if (startMode == GameStartMode.NewGame)
+            {
+                GamePersistenceService.ResetForNewGame();
+                saveData = null;
+            }
+
             // 1. Ensure world is generated
             var generator = GetComponent<FastTerrainGenerator>();
             if (generator != null)

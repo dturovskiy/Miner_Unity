@@ -47,7 +47,7 @@
 - [x] remove stale `RemoveDestroyedBlocksFromBinary` callback from `MainScene`
 - [x] decide one supported button transition strategy
 - [x] remove warning-producing button setups from clean runtime scenes
-- [ ] separate menu navigation concerns from save concerns
+- [x] separate menu navigation concerns from save concerns
 
 ### Diagnostics Cleanup
 

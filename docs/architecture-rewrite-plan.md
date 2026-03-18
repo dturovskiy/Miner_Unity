@@ -267,9 +267,8 @@ Exit criteria:
 
 Current blockers before Stage 1:
 
-1. menu navigation is still coupled to save reset in `PlayButton`
-2. diagnostics still produce too many `Heartbeat` events to be considered clean
-3. hero logs still contain readiness-era duplication that makes early boot traces harder to read
+1. diagnostics still produce too many `Heartbeat` events to be considered clean until the next runtime verification pass
+2. hero logs still need one more runtime verification pass after field normalization and heartbeat throttling
 
 ## Stage 1 - Ground Core
 

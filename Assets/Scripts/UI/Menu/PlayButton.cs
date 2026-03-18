@@ -17,12 +17,13 @@ namespace AwesomeTools.MainScene
 
         public void GoToMainScene()
         {
-            GamePersistenceService.ResetForNewGame();
+            GameLaunchContext.RequestNewGame();
             StartCoroutine(LoadScene(_sceneData));
         }
 
         public void ContinueGame()
         {
+            GameLaunchContext.RequestContinue();
             StartCoroutine(LoadScene(_sceneData));
         }
 

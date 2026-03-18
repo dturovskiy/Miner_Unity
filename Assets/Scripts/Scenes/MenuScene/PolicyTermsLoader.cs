@@ -18,21 +18,24 @@ namespace AwesomeTools.UI
 
         private void LoadText()
         {
-            if (_textFilePolicy != null)
+            if (_textFilePolicy != null && _textMeshProTextPolicy != null)
             {
-                string fileContents = _textFilePolicy.text;
-                _textMeshProTextPolicy.text = fileContents;
-                Debug.Log("File was successfully uploaded");
+                _textMeshProTextPolicy.text = _textFilePolicy.text;
             }
-            if (_textFileTerms != null)
+
+            if (_textFilePolicy != null && _textMeshProTextPolicy == null)
             {
-                string fileContents = _textFileTerms.text;
-                _textMeshProTextTerms.text = fileContents;
-                Debug.Log("File was successfully uploaded");
+                Debug.LogError("PolicyTermsLoader: Policy text target is missing.");
             }
-            else
+
+            if (_textFileTerms != null && _textMeshProTextTerms != null)
             {
-                Debug.LogError("File not found: " + "_textFile");
+                _textMeshProTextTerms.text = _textFileTerms.text;
+            }
+
+            if (_textFileTerms != null && _textMeshProTextTerms == null)
+            {
+                Debug.LogError("PolicyTermsLoader: Terms text target is missing.");
             }
         }
     }

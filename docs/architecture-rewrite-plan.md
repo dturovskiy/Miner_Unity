@@ -18,6 +18,8 @@ Use these documents together:
 1. [Rewrite Master Checklist](./rewrite-master-checklist.md)
 2. [Runtime Ownership](./runtime-ownership.md)
 3. [Scene Cleanup Checklist](./scene-cleanup-checklist.md)
+4. [Script Inventory](./script-inventory.md)
+5. [Asset Restructure Plan](./asset-restructure-plan.md)
 
 ## Current Status Snapshot
 

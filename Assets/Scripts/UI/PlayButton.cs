@@ -34,8 +34,7 @@ namespace AwesomeTools.MainScene
         private IEnumerator LoadScene(SceneData type)
         {
             yield return new WaitForSeconds(1);
-            Debug.Log(type.Key);
-            _sceneLoader.LoadScene(_sceneData.Key);
+            _sceneLoader.LoadScene(type.Key);
         }
 
         private IEnumerator LoadScene()

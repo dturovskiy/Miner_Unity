@@ -12,10 +12,6 @@ public sealed class LadderBehaviour : MonoBehaviour
 {
     [SerializeField] private Collider2D ladderCollider;
 
-    [Header("Offsets")]
-    [SerializeField] private float topExitOffset = 0.05f;
-    [SerializeField] private float bottomExitOffset = 0.05f;
-
     public Bounds Bounds
     {
         get

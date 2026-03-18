@@ -69,7 +69,6 @@ namespace AwesomeTools.Scene
 
                 if (sceneInfo != null)
                 {
-                    Debug.Log(sceneKey);
                     return sceneInfo;
                 }
                 else

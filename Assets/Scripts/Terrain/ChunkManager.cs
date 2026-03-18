@@ -81,7 +81,7 @@ namespace MinerUnity.Terrain
             if (!loadedFromGameSave)
             {
                 // 2. Fallback to the legacy world file until migration is complete.
-                worldSourcePath = System.IO.Path.Combine(Application.persistentDataPath, "world_grid.dat");
+                worldSourcePath = GamePersistenceService.LegacyWorldFilePath;
                 worldLoaded = worldRuntime.LoadFromFile(worldSourcePath);
             }
 
@@ -113,7 +113,7 @@ namespace MinerUnity.Terrain
             }
             else
             {
-                string legacyFogPath = System.IO.Path.Combine(Application.persistentDataPath, "fog_grid.dat");
+                string legacyFogPath = GamePersistenceService.LegacyFogFilePath;
                 if (System.IO.File.Exists(legacyFogPath))
                 {
                     byte[] legacyFog = System.IO.File.ReadAllBytes(legacyFogPath);
@@ -198,10 +198,7 @@ namespace MinerUnity.Terrain
 
         private Vector2Int WorldToCell(Vector3 worldPosition)
         {
-            return new Vector2Int(
-                Mathf.FloorToInt(worldPosition.x),
-                Mathf.FloorToInt(worldPosition.y)
-            );
+            return WorldCellCoordinates.WorldToCell(worldPosition);
         }
 
         private void ForceUpdateChunks()

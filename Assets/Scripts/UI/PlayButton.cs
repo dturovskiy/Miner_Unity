@@ -17,14 +17,7 @@ namespace AwesomeTools.MainScene
 
         public void GoToMainScene()
         {
-            GamePersistenceService.DeleteSave();
-
-            string path = System.IO.Path.Combine(Application.persistentDataPath, "world_grid.dat");
-            if (System.IO.File.Exists(path)) System.IO.File.Delete(path);
-
-            string fogPath = System.IO.Path.Combine(Application.persistentDataPath, "fog_grid.dat");
-            if (System.IO.File.Exists(fogPath)) System.IO.File.Delete(fogPath);
-
+            GamePersistenceService.ResetForNewGame();
             StartCoroutine(LoadScene(_sceneData));
         }
 
@@ -43,7 +36,6 @@ namespace AwesomeTools.MainScene
             yield return new WaitForSeconds(1);
             Debug.Log(type.Key);
             _sceneLoader.LoadScene(_sceneData.Key);
-            SavingService.UpdateActiveSceneInfo("SaveGame.json");
         }
 
         private IEnumerator LoadScene()

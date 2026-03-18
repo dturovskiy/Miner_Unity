@@ -36,6 +36,10 @@ In progress:
 - [x] initial diagnostics cleanup applied
 - [x] single world authority decision locked
 - [x] initial root save/runtime foundation implemented
+- [x] runtime mutation path documented and partially migrated
+- [x] manual smoke test passed for menu boot, world restore, fog restore, and hero movement
+- [x] legacy `SaveLoadSystem` objects removed from production scenes
+- [x] gameplay cell conversion centralized into one shared coordinate contract
 
 Not started yet:
 
@@ -57,6 +61,20 @@ These items are treated as verified facts, not guesses:
 5. UI animation warnings currently add noise to diagnostics.
 6. `Ground Core` looks close to usable physically, but its logical cell layer is not yet trustworthy.
 7. Diagnostics confirm both the coordinate drift and the amount of non-gameplay warning noise during a normal session.
+
+## Latest Smoke Test
+
+Latest verified manual pass:
+
+1. `New Game` from menu works
+2. `MainScene` boots without runtime failure
+3. hero movement still works after the runtime/save migration
+4. hero position restores on `Continue`
+5. world state and fog state restore correctly
+
+Known non-blocking note:
+
+1. hero move speed currently feels too high, but this is tuning, not an architecture blocker
 
 ## Independent Verification Status
 

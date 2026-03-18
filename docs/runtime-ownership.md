@@ -109,6 +109,24 @@ It should not own scene navigation or gameplay bootstrap decisions.
 
 They should not own gameplay state or scene flow.
 
+## Current Validated Mutation Path
+
+The runtime path we are actively standardizing is:
+
+1. generation or save restore fills `WorldData`
+2. `WorldRuntime` becomes the only gameplay query and mutation boundary over that `WorldData`
+3. gameplay dig and place requests flow through `ChunkManager` or `WorldGridService` facade into `WorldRuntime`
+4. stone movement is scheduled by `ChunkManager`, executed through `WorldRuntime`, and applied by the runtime-owned `StoneGravityService`
+5. `ChunkManager` updates spawned views after the runtime mutation succeeds
+6. `GamePersistenceService` serializes the current `GameSaveData` snapshot from runtime state
+
+Current practical notes:
+
+1. `WorldGridService` is no longer a second mutable gameplay grid; it is a compatibility facade over `WorldRuntime`
+2. `ChunkManager` still coordinates view updates and save timing, but it no longer owns the world model
+3. the legacy raw files remain as migration input for now, not as the primary runtime truth
+4. shared world-to-cell conversion now lives in `WorldCellCoordinates`, so hero-facing and terrain-facing cell math use one code path
+
 ## Keep, Freeze, Remove, Introduce
 
 Keep now:

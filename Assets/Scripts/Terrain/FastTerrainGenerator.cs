@@ -1,5 +1,6 @@
 using System.IO;
 using UnityEngine;
+using MinerUnity.Runtime;
 
 namespace MinerUnity.Terrain
 {
@@ -9,8 +10,6 @@ namespace MinerUnity.Terrain
     /// </summary>
     public class FastTerrainGenerator : MonoBehaviour
     {
-        private const string FILE_NAME = "world_grid.dat";
-        
         [Header("Generation Settings")]
         [SerializeField] private float stoneProbability = 0.07f;
         [SerializeField] private OreClass[] ores; // Re-use the existing OreClass
@@ -23,7 +22,7 @@ namespace MinerUnity.Terrain
 
         public void GenerateIfMissing()
         {
-            string path = Path.Combine(Application.persistentDataPath, FILE_NAME);
+            string path = GamePersistenceService.LegacyWorldFilePath;
             
             if (File.Exists(path))
             {

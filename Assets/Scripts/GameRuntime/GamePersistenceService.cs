@@ -12,8 +12,14 @@ namespace MinerUnity.Runtime
     public static class GamePersistenceService
     {
         private const string SaveFileName = "game_save.json";
+        private const string LegacyWorldFileName = "world_grid.dat";
+        private const string LegacyFogFileName = "fog_grid.dat";
+        private const string LegacySceneSaveFileName = "SaveGame.json";
 
         public static string SaveFilePath => Path.Combine(Application.persistentDataPath, SaveFileName);
+        public static string LegacyWorldFilePath => Path.Combine(Application.persistentDataPath, LegacyWorldFileName);
+        public static string LegacyFogFilePath => Path.Combine(Application.persistentDataPath, LegacyFogFileName);
+        public static string LegacySceneSaveFilePath => Path.Combine(Application.persistentDataPath, LegacySceneSaveFileName);
 
         public static bool HasSave()
         {
@@ -26,6 +32,14 @@ namespace MinerUnity.Runtime
             {
                 File.Delete(SaveFilePath);
             }
+        }
+
+        public static void ResetForNewGame()
+        {
+            DeleteIfExists(SaveFilePath);
+            DeleteIfExists(LegacyWorldFilePath);
+            DeleteIfExists(LegacyFogFilePath);
+            DeleteIfExists(LegacySceneSaveFilePath);
         }
 
         public static bool TryLoad(out GameSaveData saveData)
@@ -130,6 +144,14 @@ namespace MinerUnity.Runtime
             var copy = new byte[source.Length];
             Array.Copy(source, copy, source.Length);
             return copy;
+        }
+
+        private static void DeleteIfExists(string filePath)
+        {
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+            }
         }
 
         private static void EnsureInitialized(GameSaveData saveData)

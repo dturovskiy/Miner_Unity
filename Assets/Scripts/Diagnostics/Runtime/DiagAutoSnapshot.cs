@@ -43,7 +43,9 @@ public sealed class DiagAutoSnapshot : MonoBehaviour
             providers[i].AppendSnapshot(fields);
         }
 
-        Diag.Event("Snapshot", nameOverride ?? snapshotName, null, this, Convert(fields));
+        // Use the GameObject as the event source so the record keeps a readable source name
+        // without re-appending all component-level context providers on snapshot events.
+        Diag.Event("Snapshot", nameOverride ?? snapshotName, null, gameObject, Convert(fields));
     }
 
     private static (string key, object value)[] Convert(List<DiagField> fields)

@@ -31,11 +31,19 @@ public sealed class TerrainToGridBootstrap : MonoBehaviour
             return;
         }
 
-        Debug.Log("[TerrainToGridBootstrap] Runtime world is ready. Marking grid facade ready...");
-
-        worldGrid.Initialize(chunkManager.GetWorldRuntime().Width, chunkManager.GetWorldRuntime().Height);
+        var runtime = chunkManager.GetWorldRuntime();
+        worldGrid.Initialize(runtime.Width, runtime.Height);
 
         worldGrid.MarkReady();
-        Debug.Log("[TerrainToGridBootstrap] Grid facade ready.");
+
+        Diag.Event(
+            "World",
+            "WorldGridReady",
+            "World grid facade is now ready and aligned to runtime dimensions.",
+            this,
+            ("width", runtime.Width),
+            ("height", runtime.Height),
+            ("cellSize", worldGrid.CellSize),
+            ("origin", worldGrid.Origin));
     }
 }

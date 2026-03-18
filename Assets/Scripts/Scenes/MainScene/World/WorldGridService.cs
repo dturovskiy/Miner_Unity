@@ -7,17 +7,13 @@ public sealed class WorldGridService : MonoBehaviour
     [Header("Grid Settings")]
     [SerializeField] private int width = 100;
     [SerializeField] private int height = 255;
-
-    // Для цього проєкту в MainScene тайлова сітка фактично 1x1.
-    // Тому логічна сітка героя теж повинна бути 1f,
-    // інакше колізії читатимуться з неправильних клітин.
-    [SerializeField] private float cellSize = 1f;
+    [SerializeField] private float cellSize = WorldCellCoordinates.DefaultCellSize;
 
     [SerializeField] private Vector2 origin = Vector2.zero;
     [SerializeField] private ChunkManager chunkManager;
 
     private WorldCellType[,] cells;
-    private bool isReady = false;
+    private bool isReady;
     private WorldRuntime worldRuntime;
 
     public static WorldGridService Instance { get; private set; }
@@ -45,10 +41,7 @@ public sealed class WorldGridService : MonoBehaviour
 
     public void Initialize(int w, int h)
     {
-        // Важливо: під час повторного заповнення сітки
-        // не даємо motor читати напівготові дані.
         isReady = false;
-
         width = w;
         height = h;
         cells = new WorldCellType[width, height];
@@ -69,16 +62,12 @@ public sealed class WorldGridService : MonoBehaviour
 
     public Vector2Int WorldToCell(Vector2 worldPosition)
     {
-        // При cellSize = 1f ця логіка збігається з Tilemap/Grid і ChunkManager.
-        int x = Mathf.FloorToInt((worldPosition.x - origin.x) / cellSize);
-        int y = Mathf.FloorToInt((worldPosition.y - origin.y) / cellSize);
-
-        return new Vector2Int(x, y);
+        return WorldCellCoordinates.WorldToCell(worldPosition, origin, cellSize);
     }
 
     public float GetCellTopY(int y)
     {
-        return origin.y + (y + 1) * cellSize;
+        return WorldCellCoordinates.GetCellTopY(y, origin.y, cellSize);
     }
 
     public bool IsInsideBounds(Vector2Int cell)
@@ -88,22 +77,23 @@ public sealed class WorldGridService : MonoBehaviour
 
     public Vector2 CellToWorldCenter(Vector2Int cell)
     {
-        return origin + new Vector2(
-            (cell.x + 0.5f) * cellSize,
-            (cell.y + 0.5f) * cellSize
-        );
+        return WorldCellCoordinates.CellToWorldCenter(cell, origin, cellSize);
     }
 
     public float GetCellBottomY(int y)
     {
-        return origin.y + y * cellSize;
+        return WorldCellCoordinates.GetCellBottomY(y, origin.y, cellSize);
     }
 
     public WorldCellType GetCellType(Vector2Int cell)
     {
         if (!IsInsideBounds(cell))
         {
-            if (cell.y >= height) return WorldCellType.Empty;
+            if (cell.y >= height)
+            {
+                return WorldCellType.Empty;
+            }
+
             return WorldCellType.Stone;
         }
 
@@ -118,7 +108,10 @@ public sealed class WorldGridService : MonoBehaviour
 
     public void SetCellType(Vector2Int cell, WorldCellType newType)
     {
-        if (!IsInsideBounds(cell)) return;
+        if (!IsInsideBounds(cell))
+        {
+            return;
+        }
 
         WorldRuntime runtime = GetWorldRuntime();
         if (isReady && runtime != null && TryMapCellTypeToTileId(newType, out TileID tileId))

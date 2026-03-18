@@ -6,13 +6,21 @@ Use this checklist before expanding gameplay features.
 
 The goal of this document is to make `MainScene` and `MenuScene` safe, quiet, and predictable enough for the rewrite.
 
+## Latest Manual Smoke Test
+
+- [x] `New Game` flow reaches `MainScene`
+- [x] `Continue` restores hero position
+- [x] world state restores correctly
+- [x] fog state restores correctly
+- [x] hero movement remains functional after the runtime/save migration
+
 ## MainScene
 
 - [x] audit current scene objects and callbacks
 - [x] confirm test-only `SaveLoadSystem` is present in scene wiring
 - [x] confirm stale callback to `RemoveDestroyedBlocksFromBinary`
 - [x] confirm warning-producing button animation setup exists
-- [ ] remove `SaveLoadSystem` from production scene wiring
+- [x] remove `SaveLoadSystem` from production scene wiring
 - [x] remove stale `RemoveDestroyedBlocksFromBinary` callback
 - [ ] confirm only supported gameplay runtime objects remain
 - [x] align gameplay grid settings with runtime coordinate contract
@@ -24,7 +32,7 @@ The goal of this document is to make `MainScene` and `MenuScene` safe, quiet, an
 - [x] confirm test-only `SaveLoadSystem` is present in scene wiring
 - [x] confirm warning-producing button animation setup exists
 - [x] confirm `PlayButton` triggers save metadata side effects during menu flow
-- [ ] remove `SaveLoadSystem` from production scene wiring
+- [x] remove `SaveLoadSystem` from production scene wiring
 - [x] replace unsupported button transition setup with a supported one
 - [x] remove menu-open save metadata side effects
 - [ ] run a clean `MenuScene` boot log and verify warning noise is gone

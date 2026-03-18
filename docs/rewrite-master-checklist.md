@@ -16,6 +16,7 @@
 - [x] runtime ownership document created
 - [x] scene cleanup checklist created
 - [x] Stage 0 execution started
+- [x] manual smoke test passed for `New Game`, `Continue`, world restore, fog restore, and basic hero movement
 - [ ] Stage 0 completed
 - [ ] Stage 1 completed
 - [ ] Stage 2 completed
@@ -30,17 +31,17 @@
 - [x] double mutable world state identified and verified
 - [x] choose the single world authority
 - [x] introduce the initial `GameSaveData` root save model
-- [ ] document the final world mutation path
-- [ ] align every gameplay `WorldToCell` contract to one coordinate system
+- [x] document the final world mutation path
+- [x] align every gameplay `WorldToCell` contract to one coordinate system
 - [x] make hero cell readers depend on explicit world readiness
-- [ ] ensure dig and stone mutations go through one runtime authority
+- [x] ensure dig and stone mutations go through one runtime authority
 
 ### Scene Cleanup
 
 - [x] legacy and test scene wiring identified
 - [x] broken persistent callback identified
 - [x] UI warning sources identified
-- [ ] remove `SaveLoadSystem` from production scenes or move it to debug-only usage
+- [x] remove `SaveLoadSystem` from production scenes or move it to debug-only usage
 - [x] remove stale `RemoveDestroyedBlocksFromBinary` callback from `MainScene`
 - [x] decide one supported button transition strategy
 - [x] remove warning-producing button setups from clean runtime scenes
@@ -51,9 +52,9 @@
 - [x] diagnostics noise sources identified
 - [x] duplicate context sources identified
 - [x] route Unity log relay safely through a main-thread queue or equivalent buffer
-- [ ] remove duplicated gameplay keys from emitted events
+- [x] remove duplicated gameplay keys from emitted events
 - [ ] reduce heartbeat noise to a useful level
-- [ ] add explicit runtime bootstrap events such as `WorldGridReady`
+- [x] add explicit runtime bootstrap events such as `WorldGridReady`
 - [ ] verify that a clean boot session is readable without UI warning spam
 
 ### Stage 0 Exit Gate

@@ -33,6 +33,7 @@ namespace AwesomeTools.Scene
             if (loadSceneInfo.Key == CurrentScene())
                 return;
 
+            PrepareCurrentSceneForTransition();
             PlayerPrefs.SetString(PREVIOUS_SCENE, CurrentScene());
             StartCoroutine(LoadScene(loadSceneInfo, delay));
         }
@@ -50,6 +51,7 @@ namespace AwesomeTools.Scene
         private IEnumerator ReloadCurrentSceneStart(bool isLevelComplied = true, float delay = 1f)
         {
             IsLevelComplied = isLevelComplied;
+            PrepareCurrentSceneForTransition();
 
             if (_fadeScreenPanel != null)
                 _fadeScreenPanel.FadeIn();
@@ -108,6 +110,18 @@ namespace AwesomeTools.Scene
                 float progress = Mathf.Clamp01(asyncLoad.progress / 0.9f); // Clamps the progress between 0 and 1
                 OnSceneLoadProgress?.Invoke(progress);
                 yield return null;
+            }
+        }
+
+        private void PrepareCurrentSceneForTransition()
+        {
+            MonoBehaviour[] behaviours = FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None);
+            foreach (MonoBehaviour behaviour in behaviours)
+            {
+                if (behaviour is ISceneTransitionSaveParticipant participant)
+                {
+                    participant.PrepareForSceneTransition();
+                }
             }
         }
     }

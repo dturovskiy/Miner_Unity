@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using AwesomeTools.Scene;
 using MinerUnity.Runtime;
 using UnityEngine;
 using UnityEngine.Tilemaps;
@@ -10,7 +11,7 @@ namespace MinerUnity.Terrain
     /// Dynamically spawns tiles near the camera and destroys them when out of range.
     /// Fog of war is separate and revealed based on hero position.
     /// </summary>
-    public class ChunkManager : MonoBehaviour
+    public class ChunkManager : MonoBehaviour, ISceneTransitionSaveParticipant
     {
         [Header("References")]
         [SerializeField] private Transform hero;
@@ -61,14 +62,17 @@ namespace MinerUnity.Terrain
         private bool? lastFogInCaveState;
         private GameSaveData saveData;
         private Rigidbody2D heroRigidbody;
+        private Vector3 defaultHeroSpawnPosition;
+        private bool hasDefaultHeroSpawnPosition;
         private bool runtimeInitialized;
-        private bool isShuttingDown;
 
         public WorldData GetWorldData() => worldData;
         public WorldRuntime GetWorldRuntime() => worldRuntime;
 
         private void Start()
         {
+            CacheDefaultHeroSpawnPosition();
+
             GameStartMode startMode = GameLaunchContext.ConsumePendingStartMode();
             if (startMode == GameStartMode.NewGame)
             {
@@ -152,7 +156,11 @@ namespace MinerUnity.Terrain
 
             if (hero != null && saveData != null)
             {
-                SetHeroPositionImmediate(GamePersistenceService.GetHeroPositionOrDefault(saveData, hero.position));
+                Vector3 savedHeroPosition = GamePersistenceService.GetHeroPositionOrDefault(
+                    saveData,
+                    hasDefaultHeroSpawnPosition ? defaultHeroSpawnPosition : hero.position);
+
+                SetHeroPositionImmediate(ResolveLoadedHeroPosition(savedHeroPosition));
             }
 
             Diag.Event(
@@ -175,6 +183,7 @@ namespace MinerUnity.Terrain
             // 3. Clear fog of war logic around starting area immediately
             ForceUpdateChunks();
             FinalizeHeroBootstrapState();
+            SnapCameraToHeroImmediate();
             runtimeInitialized = true;
         }
 
@@ -690,17 +699,6 @@ namespace MinerUnity.Terrain
 
         private void OnApplicationQuit()
         {
-            isShuttingDown = true;
-            SaveRuntimeState();
-        }
-
-        private void OnDisable()
-        {
-            if (!Application.isPlaying || !runtimeInitialized || isShuttingDown)
-            {
-                return;
-            }
-
             SaveRuntimeState();
         }
 
@@ -755,16 +753,18 @@ namespace MinerUnity.Terrain
                 return;
             }
 
+            Vector3 heroPositionForSave = ResolveHeroPositionForSave();
+
             saveData ??= GamePersistenceService.CreateFromRuntime(
                 worldData,
                 fogGrid,
-                hero != null ? hero.position : Vector3.zero);
+                heroPositionForSave);
 
             GamePersistenceService.ApplyRuntimeState(
                 saveData,
                 worldData,
                 fogGrid,
-                hero != null ? hero.position : Vector3.zero);
+                heroPositionForSave);
 
             GamePersistenceService.Save(saveData);
         }
@@ -814,6 +814,138 @@ namespace MinerUnity.Terrain
             heroRigidbody.angularVelocity = 0f;
             Physics2D.SyncTransforms();
             heroRigidbody.simulated = true;
+        }
+
+        private void SnapCameraToHeroImmediate()
+        {
+            if (cameraFollow == null && worldCamera != null)
+            {
+                cameraFollow = worldCamera.GetComponent<CameraFollow>();
+            }
+
+            if (cameraFollow != null)
+            {
+                cameraFollow.SnapToTarget();
+            }
+        }
+
+        public void PrepareForSceneTransition()
+        {
+            if (!Application.isPlaying || !runtimeInitialized)
+            {
+                return;
+            }
+
+            SaveRuntimeState();
+        }
+
+        private void CacheDefaultHeroSpawnPosition()
+        {
+            if (hero == null)
+            {
+                return;
+            }
+
+            defaultHeroSpawnPosition = hero.position;
+            hasDefaultHeroSpawnPosition = true;
+            heroRigidbody ??= hero.GetComponent<Rigidbody2D>();
+        }
+
+        private Vector3 ResolveLoadedHeroPosition(Vector3 candidate)
+        {
+            if (IsHeroPositionSafeForLoad(candidate))
+            {
+                return candidate;
+            }
+
+            Vector3 fallback = hasDefaultHeroSpawnPosition ? defaultHeroSpawnPosition : candidate;
+            Diag.Warning(
+                "Hero",
+                "InvalidSavedPosition",
+                "Saved hero position was invalid for the loaded world. Falling back to the scene spawn.",
+                this,
+                ("savedPosition", candidate),
+                ("fallbackPosition", fallback));
+
+            return fallback;
+        }
+
+        private Vector3 ResolveHeroPositionForSave()
+        {
+            Vector3 fallback = saveData != null
+                ? GamePersistenceService.GetHeroPositionOrDefault(
+                    saveData,
+                    hasDefaultHeroSpawnPosition ? defaultHeroSpawnPosition : Vector3.zero)
+                : (hasDefaultHeroSpawnPosition ? defaultHeroSpawnPosition : Vector3.zero);
+
+            if (hero == null)
+            {
+                return fallback;
+            }
+
+            Vector3 candidate = hero.position;
+            if (IsHeroPositionSafeForSave(candidate))
+            {
+                return candidate;
+            }
+
+            Diag.Warning(
+                "Hero",
+                "SkippedInvalidSavePosition",
+                "Current hero position is invalid during save. Keeping the last known safe position.",
+                this,
+                ("candidatePosition", candidate),
+                ("fallbackPosition", fallback));
+
+            return fallback;
+        }
+
+        private bool IsHeroPositionSafeForLoad(Vector3 position)
+        {
+            return IsHeroPositionInsideWorld(position) && IsHeroStandingCellPassable(position);
+        }
+
+        private bool IsHeroPositionSafeForSave(Vector3 position)
+        {
+            return IsHeroPositionInsideWorld(position) && IsHeroStandingCellPassable(position);
+        }
+
+        private bool IsHeroPositionInsideWorld(Vector3 position)
+        {
+            if (worldData == null || !IsFinite(position))
+            {
+                return false;
+            }
+
+            Vector2Int cell = WorldToCell(position);
+            return cell.x >= 0
+                && cell.x < worldData.Width
+                && cell.y >= 0
+                && cell.y < worldData.Height;
+        }
+
+        private bool IsHeroStandingCellPassable(Vector3 position)
+        {
+            if (worldRuntime == null || worldData == null)
+            {
+                return false;
+            }
+
+            Vector2Int cell = WorldToCell(position);
+            if (cell.x < 0 || cell.x >= worldData.Width || cell.y < 0 || cell.y >= worldData.Height)
+            {
+                return false;
+            }
+
+            TileID tile = worldRuntime.GetTile(cell.x, cell.y);
+            return tile == TileID.Empty || tile == TileID.Tunnel || tile == TileID.Ladder;
+        }
+
+        private static bool IsFinite(Vector3 value)
+        {
+            return float.IsFinite(value.x)
+                && float.IsFinite(value.y)
+                && float.IsFinite(value.z);
         }
     }
 }

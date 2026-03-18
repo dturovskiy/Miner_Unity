@@ -18,13 +18,16 @@ public class CameraFollow : MonoBehaviour
     private float shakeDuration;
     private float shakeAmplitude;
     private float lastShakeRequestTime = -999f;
+    private bool hasOffset;
 
     private void Awake()
     {
-        if (target != null)
-        {
-            offset = transform.position - target.position;
-        }
+        TryInitializeOffset();
+    }
+
+    private void Start()
+    {
+        SnapToTarget();
     }
 
     /// <summary>
@@ -56,11 +59,31 @@ public class CameraFollow : MonoBehaviour
         shakeAmplitude = amplitude;
     }
 
+    public void SnapToTarget()
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        if (!hasOffset)
+        {
+            TryInitializeOffset();
+        }
+
+        transform.position = target.position + offset;
+    }
+
     private void LateUpdate()
     {
         if (target == null)
         {
             return;
+        }
+
+        if (!hasOffset)
+        {
+            TryInitializeOffset();
         }
 
         Vector3 targetCamPos = target.position + offset;
@@ -90,5 +113,17 @@ public class CameraFollow : MonoBehaviour
         float y = (Mathf.PerlinNoise(0f, Time.time * shakeFrequency) - 0.5f) * 2f * currentAmplitude;
 
         return new Vector3(x, y, 0f);
+    }
+
+    private bool TryInitializeOffset()
+    {
+        if (target == null)
+        {
+            return false;
+        }
+
+        offset = transform.position - target.position;
+        hasOffset = true;
+        return true;
     }
 }

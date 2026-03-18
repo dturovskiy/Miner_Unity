@@ -1,10 +1,10 @@
-using UnityEngine;
 using MinerUnity.Terrain;
+using UnityEngine;
 
 /// <summary>
 /// Міст між твоєю поточною генерацією світу і новою логічною сіткою.
 /// Цей скрипт не генерує світ сам.
-/// Його задача — записати результат завантаження або генерації в WorldGridService.
+/// Його задача — дочекатися появи runtime світу і позначити grid facade як готовий.
 /// </summary>
 public sealed class TerrainToGridBootstrap : MonoBehaviour
 {
@@ -17,72 +17,25 @@ public sealed class TerrainToGridBootstrap : MonoBehaviour
     {
         if (isSynced) return;
         
-        if (chunkManager != null)
+        if (chunkManager != null && chunkManager.GetWorldRuntime() != null)
         {
-            WorldData data = chunkManager.GetWorldData();
-            if (data != null && data.Width > 0)
-            {
-                SyncWorldToGrid();
-                isSynced = true;
-            }
+            SyncWorldToGrid();
+            isSynced = true;
         }
     }
 
     public void SyncWorldToGrid()
     {
-        WorldData data = chunkManager.GetWorldData();
-        if (data == null) return;
-
-        Debug.Log($"[TerrainToGridBootstrap] Syncing {data.Width}x{data.Height} map to grid...");
-
-        // Переініціалізуємо сітку під реальний розмір даних
-        worldGrid.Initialize(data.Width, data.Height);
-
-        for (int y = 0; y < data.Height; y++)
+        if (worldGrid == null || chunkManager == null || chunkManager.GetWorldRuntime() == null)
         {
-            for (int x = 0; x < data.Width; x++)
-            {
-                TileID id = data.GetTile(x, y);
-                WorldCellType type = MapTileIDToWorldCellType(id);
-                worldGrid.SetCellType(new Vector2Int(x, y), type);
-            }
+            return;
         }
+
+        Debug.Log("[TerrainToGridBootstrap] Runtime world is ready. Marking grid facade ready...");
+
+        worldGrid.Initialize(chunkManager.GetWorldRuntime().Width, chunkManager.GetWorldRuntime().Height);
 
         worldGrid.MarkReady();
-        Debug.Log("[TerrainToGridBootstrap] Sync complete!");
-    }
-
-    private WorldCellType MapTileIDToWorldCellType(TileID id)
-    {
-        switch (id)
-        {
-            case TileID.Empty: return WorldCellType.Empty;
-            case TileID.Tunnel: return WorldCellType.Empty;
-            
-            case TileID.Dirt: return WorldCellType.Dirt;
-            case TileID.Coal: return WorldCellType.Dirt;
-            case TileID.Iron: return WorldCellType.Dirt;
-            case TileID.Gold: return WorldCellType.Dirt;
-            case TileID.Diamond: return WorldCellType.Dirt;
-            case TileID.Uranus: return WorldCellType.Dirt;
-            case TileID.Topaz: return WorldCellType.Dirt;
-            case TileID.Silver: return WorldCellType.Dirt;
-            case TileID.Ruby: return WorldCellType.Dirt;
-            case TileID.Platinum: return WorldCellType.Dirt;
-            case TileID.Opal: return WorldCellType.Dirt;
-            case TileID.Nephritis: return WorldCellType.Dirt;
-            case TileID.Map: return WorldCellType.Dirt;
-            case TileID.Lazurite: return WorldCellType.Dirt;
-            case TileID.Emerald: return WorldCellType.Dirt;
-            case TileID.Artifact: return WorldCellType.Dirt;
-            case TileID.Amethyst: return WorldCellType.Dirt;
-
-            case TileID.Stone: return WorldCellType.Stone;
-            case TileID.Edge: return WorldCellType.Stone;
-
-            case TileID.Ladder: return WorldCellType.Ladder;
-
-            default: return WorldCellType.Empty;
-        }
+        Debug.Log("[TerrainToGridBootstrap] Grid facade ready.");
     }
 }

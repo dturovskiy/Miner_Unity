@@ -1,4 +1,5 @@
 using AwesomeTools.Scene;
+using MinerUnity.Runtime;
 using AwesomeTools.UI;
 using System;
 using System.Collections;
@@ -16,6 +17,8 @@ namespace AwesomeTools.MainScene
 
         public void GoToMainScene()
         {
+            GamePersistenceService.DeleteSave();
+
             string path = System.IO.Path.Combine(Application.persistentDataPath, "world_grid.dat");
             if (System.IO.File.Exists(path)) System.IO.File.Delete(path);
 

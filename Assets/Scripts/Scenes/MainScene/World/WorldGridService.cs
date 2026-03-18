@@ -1,3 +1,5 @@
+using MinerUnity.Runtime;
+using MinerUnity.Terrain;
 using UnityEngine;
 
 public sealed class WorldGridService : MonoBehaviour
@@ -12,13 +14,15 @@ public sealed class WorldGridService : MonoBehaviour
     [SerializeField] private float cellSize = 1f;
 
     [SerializeField] private Vector2 origin = Vector2.zero;
+    [SerializeField] private ChunkManager chunkManager;
 
     private WorldCellType[,] cells;
     private bool isReady = false;
+    private WorldRuntime worldRuntime;
 
     public static WorldGridService Instance { get; private set; }
 
-    public bool IsReady => isReady;
+    public bool IsReady => isReady && GetWorldRuntime() != null;
     public float CellSize => cellSize;
     public Vector2 Origin => origin;
 
@@ -31,6 +35,7 @@ public sealed class WorldGridService : MonoBehaviour
         }
 
         Instance = this;
+        chunkManager ??= FindFirstObjectByType<ChunkManager>();
 
         if (cells == null)
         {
@@ -101,12 +106,26 @@ public sealed class WorldGridService : MonoBehaviour
             if (cell.y >= height) return WorldCellType.Empty;
             return WorldCellType.Stone;
         }
+
+        WorldRuntime runtime = GetWorldRuntime();
+        if (isReady && runtime != null)
+        {
+            return MapTileIdToCellType(runtime.GetTile(cell.x, cell.y));
+        }
+
         return cells[cell.x, cell.y];
     }
 
     public void SetCellType(Vector2Int cell, WorldCellType newType)
     {
         if (!IsInsideBounds(cell)) return;
+
+        WorldRuntime runtime = GetWorldRuntime();
+        if (isReady && runtime != null && TryMapCellTypeToTileId(newType, out TileID tileId))
+        {
+            runtime.TryPlaceTile(cell.x, cell.y, tileId);
+        }
+
         cells[cell.x, cell.y] = newType;
     }
 
@@ -114,5 +133,89 @@ public sealed class WorldGridService : MonoBehaviour
     public bool IsPassable(Vector2Int cell) => WorldCellRules.IsPassable(GetCellType(cell));
     public bool IsClimbable(Vector2Int cell) => WorldCellRules.IsClimbable(GetCellType(cell));
     public bool IsMineable(Vector2Int cell) => WorldCellRules.IsMineable(GetCellType(cell));
-}
 
+    private WorldRuntime GetWorldRuntime()
+    {
+        if (worldRuntime != null)
+        {
+            return worldRuntime;
+        }
+
+        if (chunkManager == null)
+        {
+            chunkManager = FindFirstObjectByType<ChunkManager>();
+        }
+
+        if (chunkManager != null)
+        {
+            worldRuntime = chunkManager.GetWorldRuntime();
+        }
+
+        return worldRuntime;
+    }
+
+    private static WorldCellType MapTileIdToCellType(TileID id)
+    {
+        switch (id)
+        {
+            case TileID.Empty:
+            case TileID.Tunnel:
+                return WorldCellType.Empty;
+
+            case TileID.Dirt:
+            case TileID.Coal:
+            case TileID.Iron:
+            case TileID.Gold:
+            case TileID.Diamond:
+            case TileID.Uranus:
+            case TileID.Topaz:
+            case TileID.Silver:
+            case TileID.Ruby:
+            case TileID.Platinum:
+            case TileID.Opal:
+            case TileID.Nephritis:
+            case TileID.Map:
+            case TileID.Lazurite:
+            case TileID.Emerald:
+            case TileID.Artifact:
+            case TileID.Amethyst:
+                return WorldCellType.Dirt;
+
+            case TileID.Stone:
+            case TileID.Edge:
+                return WorldCellType.Stone;
+
+            case TileID.Ladder:
+                return WorldCellType.Ladder;
+
+            default:
+                return WorldCellType.Empty;
+        }
+    }
+
+    private static bool TryMapCellTypeToTileId(WorldCellType type, out TileID tileId)
+    {
+        switch (type)
+        {
+            case WorldCellType.Empty:
+                tileId = TileID.Empty;
+                return true;
+
+            case WorldCellType.Dirt:
+                tileId = TileID.Dirt;
+                return true;
+
+            case WorldCellType.Stone:
+                tileId = TileID.Stone;
+                return true;
+
+            case WorldCellType.Ladder:
+                tileId = TileID.Ladder;
+                return true;
+
+            default:
+                tileId = TileID.Empty;
+                return false;
+        }
+    }
+}

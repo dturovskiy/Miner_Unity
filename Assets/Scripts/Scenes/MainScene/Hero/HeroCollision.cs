@@ -84,7 +84,7 @@ public sealed class HeroCollision : MonoBehaviour
 
     public Vector2Int GetCurrentCell()
     {
-        if (worldGrid == null)
+        if (worldGrid == null || !worldGrid.IsReady)
         {
             return Vector2Int.zero;
         }
@@ -94,7 +94,7 @@ public sealed class HeroCollision : MonoBehaviour
 
     public Vector2Int GetFootCell()
     {
-        if (worldGrid == null)
+        if (worldGrid == null || !worldGrid.IsReady)
         {
             return Vector2Int.zero;
         }
@@ -106,7 +106,7 @@ public sealed class HeroCollision : MonoBehaviour
 
     public WorldCellType GetFootCellType()
     {
-        if (worldGrid == null)
+        if (worldGrid == null || !worldGrid.IsReady)
         {
             return WorldCellType.Empty;
         }

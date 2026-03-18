@@ -32,7 +32,7 @@
 - [x] introduce the initial `GameSaveData` root save model
 - [ ] document the final world mutation path
 - [ ] align every gameplay `WorldToCell` contract to one coordinate system
-- [ ] make hero cell readers depend on explicit world readiness
+- [x] make hero cell readers depend on explicit world readiness
 - [ ] ensure dig and stone mutations go through one runtime authority
 
 ### Scene Cleanup

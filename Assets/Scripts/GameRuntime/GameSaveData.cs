@@ -29,6 +29,7 @@ namespace MinerUnity.Runtime
     [Serializable]
     public sealed class HeroSaveData
     {
+        public bool hasPosition;
         public float positionX;
         public float positionY;
         public float positionZ;

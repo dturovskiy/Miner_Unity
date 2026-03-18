@@ -59,6 +59,7 @@ namespace MinerUnity.Terrain
         private Vector2Int lastHeroPos = new Vector2Int(-999, -999);
         private Vector2Int lastCameraPos = new Vector2Int(-999, -999);
         private bool? lastFogInCaveState;
+        private GameSaveData saveData;
 
         public WorldData GetWorldData() => worldData;
         public WorldRuntime GetWorldRuntime() => worldRuntime;
@@ -72,10 +73,18 @@ namespace MinerUnity.Terrain
                 generator.GenerateIfMissing();
             }
 
-            // 2. Load the world data from disk into memory
-            string path = System.IO.Path.Combine(Application.persistentDataPath, "world_grid.dat");
             worldRuntime = new WorldRuntime(new WorldData());
-            bool worldLoaded = worldRuntime.LoadFromFile(path);
+            bool loadedFromGameSave = TryLoadGameSave();
+            bool worldLoaded = loadedFromGameSave;
+
+            string worldSourcePath = GamePersistenceService.SaveFilePath;
+            if (!loadedFromGameSave)
+            {
+                // 2. Fallback to the legacy world file until migration is complete.
+                worldSourcePath = System.IO.Path.Combine(Application.persistentDataPath, "world_grid.dat");
+                worldLoaded = worldRuntime.LoadFromFile(worldSourcePath);
+            }
+
             if (!worldLoaded)
             {
                 Debug.LogError("ChunkManager: Failed to load world grid! Make sure FastTerrainGenerator ran.");
@@ -84,49 +93,74 @@ namespace MinerUnity.Terrain
             Diag.Event(
                 "World",
                 "Loaded",
-                worldLoaded ? "World data loaded." : "World data failed to load.",
+                worldLoaded ? (loadedFromGameSave ? "World data loaded from game save." : "World data loaded from legacy file.") : "World data failed to load.",
                 this,
-                ("path", path),
+                ("path", worldSourcePath),
                 ("success", worldLoaded),
+                ("source", loadedFromGameSave ? "gameSave" : "legacyWorldFile"),
                 ("width", worldData.Width),
                 ("height", worldData.Height));
 
             // Load Fog state
             fogGrid = new byte[worldData.Width * worldData.Height];
-            fogPath = System.IO.Path.Combine(Application.persistentDataPath, "fog_grid.dat");
+            fogPath = GamePersistenceService.SaveFilePath;
 
             bool fogLoaded = false;
-            if (System.IO.File.Exists(fogPath))
+            if (loadedFromGameSave && saveData != null)
             {
-                fogGrid = System.IO.File.ReadAllBytes(fogPath);
+                fogGrid = GamePersistenceService.CreateFogCopy(saveData, worldData.Width * worldData.Height);
                 fogLoaded = true;
-
-                // Clear already explored fog at start setup
-                if (hiddenAreaFog != null)
+            }
+            else
+            {
+                string legacyFogPath = System.IO.Path.Combine(Application.persistentDataPath, "fog_grid.dat");
+                if (System.IO.File.Exists(legacyFogPath))
                 {
-                    for (int x = 0; x < worldData.Width; x++)
+                    byte[] legacyFog = System.IO.File.ReadAllBytes(legacyFogPath);
+                    if (legacyFog.Length == fogGrid.Length)
                     {
-                        for (int y = 0; y < worldData.Height; y++)
+                        fogGrid = legacyFog;
+                        fogLoaded = true;
+                    }
+                }
+            }
+
+            // Clear already explored fog at start setup
+            if (hiddenAreaFog != null)
+            {
+                for (int x = 0; x < worldData.Width; x++)
+                {
+                    for (int y = 0; y < worldData.Height; y++)
+                    {
+                        if (fogGrid[y * worldData.Width + x] == 1)
                         {
-                            if (fogGrid[y * worldData.Width + x] == 1)
-                            {
-                                hiddenAreaFog.SetTile(new Vector3Int(x, y, 0), null);
-                            }
+                            hiddenAreaFog.SetTile(new Vector3Int(x, y, 0), null);
                         }
                     }
                 }
             }
 
+            if (hero != null && saveData != null)
+            {
+                hero.position = GamePersistenceService.GetHeroPositionOrDefault(saveData, hero.position);
+            }
+
             Diag.Event(
                 "Fog",
                 "Loaded",
-                fogLoaded ? "Fog data loaded." : "Fog data file not found. Starting with hidden fog.",
+                fogLoaded ? (loadedFromGameSave ? "Fog data loaded from game save." : "Fog data loaded from legacy file.") : "Fog data file not found. Starting with hidden fog.",
                 this,
                 ("path", fogPath),
                 ("success", fogLoaded),
+                ("source", loadedFromGameSave ? "gameSave" : "legacyFogFile"),
                 ("bytes", fogGrid != null ? fogGrid.Length : 0),
                 ("exploredCount", CountExploredFogCells()),
                 ("tilemapAssigned", hiddenAreaFog != null));
+
+            if (!loadedFromGameSave && worldLoaded)
+            {
+                SaveGameData();
+            }
 
             // 3. Clear fog of war logic around starting area immediately
             ForceUpdateChunks();
@@ -600,16 +634,16 @@ namespace MinerUnity.Terrain
         }
 
         private void SaveWorldData()
-        {
-            string path = System.IO.Path.Combine(Application.persistentDataPath, "world_grid.dat");
-            worldRuntime?.SaveToFile(path);
+        {            
+            SaveGameData();
 
             Diag.Event(
                 "World",
                 "Saved",
                 "World data saved.",
                 this,
-                ("path", path),
+                ("path", GamePersistenceService.SaveFilePath),
+                ("format", "GameSaveData"),
                 ("width", worldData.Width),
                 ("height", worldData.Height));
         }
@@ -621,7 +655,7 @@ namespace MinerUnity.Terrain
                 return;
             }
 
-            System.IO.File.WriteAllBytes(fogPath, fogGrid);
+            SaveGameData();
             fogDirty = false;
             nextFogSaveTime = Time.time + fogSaveInterval;
 
@@ -630,7 +664,8 @@ namespace MinerUnity.Terrain
                 "Saved",
                 "Fog data saved.",
                 this,
-                ("path", fogPath),
+                ("path", GamePersistenceService.SaveFilePath),
+                ("format", "GameSaveData"),
                 ("bytes", fogGrid.Length),
                 ("exploredCount", CountExploredFogCells()),
                 ("nextSaveTime", nextFogSaveTime));
@@ -682,6 +717,38 @@ namespace MinerUnity.Terrain
             }
 
             return count;
+        }
+
+        private bool TryLoadGameSave()
+        {
+            if (!GamePersistenceService.TryLoad(out saveData))
+            {
+                saveData = null;
+                return false;
+            }
+
+            return GamePersistenceService.TryRestoreWorld(saveData, worldRuntime.WorldData);
+        }
+
+        private void SaveGameData()
+        {
+            if (worldRuntime == null || worldData == null)
+            {
+                return;
+            }
+
+            saveData ??= GamePersistenceService.CreateFromRuntime(
+                worldData,
+                fogGrid,
+                hero != null ? hero.position : Vector3.zero);
+
+            GamePersistenceService.ApplyRuntimeState(
+                saveData,
+                worldData,
+                fogGrid,
+                hero != null ? hero.position : Vector3.zero);
+
+            GamePersistenceService.Save(saveData);
         }
     }
 }

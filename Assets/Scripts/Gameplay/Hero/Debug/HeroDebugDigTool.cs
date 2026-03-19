@@ -13,13 +13,11 @@ public sealed class HeroDebugDigTool : MonoBehaviour
 
     private HeroCollision heroCollision;
     private ChunkManager chunkManager;
-    private WorldGridService worldGrid;
 
     private void Awake()
     {
         heroCollision = GetComponent<HeroCollision>();
         chunkManager = FindFirstObjectByType<ChunkManager>();
-        worldGrid = WorldGridService.Instance;
     }
 
     private void Update()
@@ -41,9 +39,9 @@ public sealed class HeroDebugDigTool : MonoBehaviour
     {
         heroCollision ??= GetComponent<HeroCollision>();
         chunkManager ??= FindFirstObjectByType<ChunkManager>();
-        worldGrid ??= WorldGridService.Instance;
+        WorldRuntime runtime = chunkManager != null ? chunkManager.GetWorldRuntime() : null;
 
-        if (heroCollision == null || chunkManager == null || worldGrid == null || !worldGrid.IsReady)
+        if (heroCollision == null || chunkManager == null || runtime == null)
         {
             Diag.Warning(
                 "Debug",
@@ -53,14 +51,14 @@ public sealed class HeroDebugDigTool : MonoBehaviour
                 ("direction", directionName),
                 ("hasHeroCollision", heroCollision != null),
                 ("hasChunkManager", chunkManager != null),
-                ("hasWorldGrid", worldGrid != null),
-                ("worldReady", worldGrid != null && worldGrid.IsReady));
+                ("hasWorldRuntime", runtime != null),
+                ("worldReady", heroCollision != null && heroCollision.IsWorldReady()));
             return;
         }
 
-        Vector2Int currentCell = heroCollision.GetCurrentCell();
+        Vector2Int currentCell = WorldCellCoordinates.WorldToCell(transform.position);
         Vector2Int targetCell = currentCell + direction;
-        if (!worldGrid.IsInsideBounds(targetCell))
+        if (targetCell.x < 0 || targetCell.x >= runtime.Width || targetCell.y < 0 || targetCell.y >= runtime.Height)
         {
             Diag.Warning(
                 "Debug",
@@ -69,19 +67,6 @@ public sealed class HeroDebugDigTool : MonoBehaviour
                 this,
                 ("direction", directionName),
                 ("currentCell", currentCell),
-                ("targetCell", targetCell));
-            return;
-        }
-
-        WorldRuntime runtime = chunkManager.GetWorldRuntime();
-        if (runtime == null)
-        {
-            Diag.Warning(
-                "Debug",
-                "DigBlocked",
-                "Debug dig skipped because world runtime is missing.",
-                this,
-                ("direction", directionName),
                 ("targetCell", targetCell));
             return;
         }

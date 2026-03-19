@@ -38,12 +38,13 @@ public sealed class HeroDebugSnapshotProvider : MonoBehaviour, IDiagSnapshotProv
 
         if (heroCollision != null)
         {
-            bool worldReady = heroCollision.WorldGrid != null && heroCollision.WorldGrid.IsReady;
+            bool worldReady = heroCollision.IsWorldReady();
             fields.Add(new DiagField("worldReady", DiagFieldBag.Stringify(worldReady)));
-            fields.Add(new DiagField("grounded", DiagFieldBag.Stringify(heroCollision.IsGrounded())));
+            fields.Add(new DiagField("bootstrapPending", DiagFieldBag.Stringify(!worldReady)));
 
             if (worldReady)
             {
+                fields.Add(new DiagField("grounded", DiagFieldBag.Stringify(heroCollision.IsGrounded())));
                 fields.Add(new DiagField("cell", heroCollision.GetCurrentCell().ToString()));
                 fields.Add(new DiagField("footCell", heroCollision.GetFootCell().ToString()));
                 fields.Add(new DiagField("footType", heroCollision.GetFootCellType().ToString()));

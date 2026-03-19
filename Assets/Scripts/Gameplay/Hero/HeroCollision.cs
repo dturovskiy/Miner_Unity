@@ -48,6 +48,11 @@ public sealed class HeroCollision : MonoBehaviour
         return groundSensor != null && groundSensor.IsGrounded();
     }
 
+    public bool IsWorldReady()
+    {
+        return ResolveWorldGrid() != null && worldGrid.IsReady;
+    }
+
     public bool IsBlockedHorizontally(float direction)
     {
         wallSensor ??= GetComponent<HeroWallSensor>();
@@ -56,7 +61,7 @@ public sealed class HeroCollision : MonoBehaviour
 
     public Vector2Int GetCurrentCell()
     {
-        if (worldGrid == null || !worldGrid.IsReady)
+        if (ResolveWorldGrid() == null || !worldGrid.IsReady)
         {
             return Vector2Int.zero;
         }
@@ -66,7 +71,7 @@ public sealed class HeroCollision : MonoBehaviour
 
     public Vector2Int GetFootCell()
     {
-        if (worldGrid == null || !worldGrid.IsReady)
+        if (ResolveWorldGrid() == null || !worldGrid.IsReady)
         {
             return Vector2Int.zero;
         }
@@ -78,12 +83,18 @@ public sealed class HeroCollision : MonoBehaviour
 
     public WorldCellType GetFootCellType()
     {
-        if (worldGrid == null || !worldGrid.IsReady)
+        if (ResolveWorldGrid() == null || !worldGrid.IsReady)
         {
             return WorldCellType.Empty;
         }
 
         return worldGrid.GetCellType(GetFootCell());
+    }
+
+    private WorldGridService ResolveWorldGrid()
+    {
+        worldGrid ??= WorldGridService.Instance;
+        return worldGrid;
     }
 
 #if UNITY_EDITOR

@@ -26,11 +26,14 @@ public sealed class HeroController : MonoBehaviour
     [Header("Diagnostics")]
     [SerializeField] private bool logInputChanges = true;
     [SerializeField] private bool logBlockedMovement = true;
+    [SerializeField, Min(0)] private int fixedFramesToWaitAfterWorldReady = 1;
 
     private float horizontalInput;
     private float previousInput;
     private bool wasGrounded;
     private bool wasBlocked;
+    private bool locomotionBootstrapApplied;
+    private int readyFixedFrames;
 
     public float HorizontalInput => horizontalInput;
     public float CurrentSpeedX => motor != null ? motor.CurrentSpeedX : 0f;
@@ -120,6 +123,17 @@ public sealed class HeroController : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (!IsGameplayLoopReady())
+        {
+            ResetBootstrapState();
+            return;
+        }
+
+        if (!EnsureBootstrappedState())
+        {
+            return;
+        }
+
         bool grounded = groundSensor != null && groundSensor.IsGrounded();
         if (grounded != wasGrounded)
         {
@@ -167,6 +181,46 @@ public sealed class HeroController : MonoBehaviour
         UpdateState(grounded, Mathf.Abs(velocityX) > 0.01f);
     }
 
+    private bool IsGameplayLoopReady()
+    {
+        if (motor == null || groundSensor == null || wallSensor == null || collision == null || state == null)
+        {
+            return false;
+        }
+
+        return collision.IsWorldReady();
+    }
+
+    private bool EnsureBootstrappedState()
+    {
+        if (locomotionBootstrapApplied)
+        {
+            return true;
+        }
+
+        readyFixedFrames++;
+        if (readyFixedFrames <= fixedFramesToWaitAfterWorldReady)
+        {
+            return false;
+        }
+
+        bool grounded = groundSensor.IsGrounded();
+        bool blocked = wallSensor.IsBlockedHorizontally(horizontalInput);
+        wasGrounded = grounded;
+        wasBlocked = blocked;
+        state.SetLocomotionSilently(ResolveLocomotionState(grounded, Mathf.Abs(horizontalInput) > inputDeadZone && !blocked));
+        locomotionBootstrapApplied = true;
+        return true;
+    }
+
+    private void ResetBootstrapState()
+    {
+        locomotionBootstrapApplied = false;
+        readyFixedFrames = 0;
+        wasGrounded = false;
+        wasBlocked = false;
+    }
+
     private float ReadHorizontalInput()
     {
         float x = 0f;
@@ -195,19 +249,22 @@ public sealed class HeroController : MonoBehaviour
 
     private void UpdateState(bool grounded, bool moving)
     {
+        state.SetLocomotion(ResolveLocomotionState(grounded, moving));
+    }
+
+    private static HeroLocomotionState ResolveLocomotionState(bool grounded, bool moving)
+    {
         if (!grounded)
         {
-            state.SetLocomotion(HeroLocomotionState.Falling);
-            return;
+            return HeroLocomotionState.Falling;
         }
 
         if (moving)
         {
-            state.SetLocomotion(HeroLocomotionState.Moving);
-            return;
+            return HeroLocomotionState.Moving;
         }
 
-        state.SetLocomotion(HeroLocomotionState.Idle);
+        return HeroLocomotionState.Idle;
     }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD

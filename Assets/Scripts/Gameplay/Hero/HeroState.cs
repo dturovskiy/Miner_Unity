@@ -37,4 +37,9 @@ public sealed class HeroState : MonoBehaviour
 
         return true;
     }
+
+    public void SetLocomotionSilently(HeroLocomotionState next)
+    {
+        locomotion = next;
+    }
 }

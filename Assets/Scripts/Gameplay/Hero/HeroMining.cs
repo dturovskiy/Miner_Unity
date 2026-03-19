@@ -288,10 +288,26 @@ public sealed class HeroMining : MonoBehaviour
         }
 
         int hitsRequired = GetHitsRequired(currentTile);
-        int hitsApplied = Mathf.Min(runtime.GetMiningHits(target.Cell.x, target.Cell.y) + 1, hitsRequired);
-        runtime.SetMiningHits(target.Cell.x, target.Cell.y, hitsApplied);
-        int crackStage = hitsApplied >= hitsRequired ? 0 : WorldRuntime.GetCrackStage(hitsApplied, hitsRequired);
-        UpdateTargetCrackStage(target.Cell, crackStage);
+        if (!runtime.TryApplyMiningHit(target.Cell.x, target.Cell.y, hitsRequired, out WorldRuntime.MiningHitResult hitResult))
+        {
+            EmitDigBlockedOnce("applyHitFailed", target.DirectionName, target.Cell, currentTile);
+            StopMining();
+            return;
+        }
+
+        UpdateTargetCrackStage(target.Cell, hitResult.CrackStage);
+
+        Diag.Event(
+            "World",
+            "MiningHitApplied",
+            "Mining hit was applied through the world runtime.",
+            chunkManager != null ? (Object)chunkManager : this,
+            ("cell", hitResult.Cell),
+            ("tile", hitResult.TileId.ToString()),
+            ("hitIndex", hitResult.HitsApplied),
+            ("hitsRequired", hitResult.HitsRequired),
+            ("crackStage", hitResult.CrackStage),
+            ("destroyed", hitResult.Destroyed));
 
         Diag.Event(
             "Hero",
@@ -303,21 +319,25 @@ public sealed class HeroMining : MonoBehaviour
             ("currentCell", heroCollision.GetCurrentCell()),
             ("targetCell", target.Cell),
             ("tile", currentTile.ToString()),
-            ("hitIndex", hitsApplied),
-            ("hitsRequired", hitsRequired),
-            ("crackStage", crackStage));
+            ("hitIndex", hitResult.HitsApplied),
+            ("hitsRequired", hitResult.HitsRequired),
+            ("crackStage", hitResult.CrackStage));
 
-        if (hitsApplied < hitsRequired)
+        if (!hitResult.Destroyed)
         {
             return;
         }
 
-        if (!chunkManager.DestroyTileInWorld(target.Cell.x, target.Cell.y))
-        {
-            EmitDigBlockedOnce("destroyFailed", target.DirectionName, target.Cell, currentTile);
-            StopMining();
-            return;
-        }
+        Diag.Event(
+            "World",
+            "TileDestroyed",
+            "World tile was destroyed through the mining runtime path.",
+            chunkManager != null ? (Object)chunkManager : this,
+            ("cell", hitResult.Cell),
+            ("tile", hitResult.TileId.ToString()),
+            ("hitsRequired", hitResult.HitsRequired));
+
+        chunkManager.ApplyDestroyedTileView(target.Cell.x, target.Cell.y);
 
         Diag.Event(
             "Hero",
@@ -328,8 +348,8 @@ public sealed class HeroMining : MonoBehaviour
             ("inputSource", heroController.UsesMovementJoystick ? "movementJoystick" : "keyboardFallback"),
             ("currentCell", heroCollision.GetCurrentCell()),
             ("targetCell", target.Cell),
-            ("tile", currentTile.ToString()),
-            ("hitsRequired", hitsRequired));
+            ("tile", hitResult.TileId.ToString()),
+            ("hitsRequired", hitResult.HitsRequired));
 
         StopMining();
     }

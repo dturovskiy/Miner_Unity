@@ -10,6 +10,26 @@ namespace MinerUnity.Runtime
     /// </summary>
     public sealed class WorldRuntime
     {
+        public readonly struct MiningHitResult
+        {
+            public MiningHitResult(int x, int y, TileID tileId, int hitsApplied, int hitsRequired, int crackStage, bool destroyed)
+            {
+                Cell = new UnityEngine.Vector2Int(x, y);
+                TileId = tileId;
+                HitsApplied = hitsApplied;
+                HitsRequired = hitsRequired;
+                CrackStage = crackStage;
+                Destroyed = destroyed;
+            }
+
+            public UnityEngine.Vector2Int Cell { get; }
+            public TileID TileId { get; }
+            public int HitsApplied { get; }
+            public int HitsRequired { get; }
+            public int CrackStage { get; }
+            public bool Destroyed { get; }
+        }
+
         private readonly WorldData worldData;
         private readonly StoneGravityService stoneGravityService;
         private readonly Dictionary<UnityEngine.Vector2Int, int> miningHits = new();
@@ -135,6 +155,38 @@ namespace MinerUnity.Runtime
 
             miningHits[key] = hitsApplied;
             return hitsApplied;
+        }
+
+        public bool TryApplyMiningHit(int x, int y, int hitsRequired, out MiningHitResult result)
+        {
+            result = default;
+
+            if (!worldData.IsValidCoordinate(x, y) || !IsMineable(x, y))
+            {
+                return false;
+            }
+
+            TileID tileId = worldData.GetTile(x, y);
+            int normalizedHitsRequired = UnityEngine.Mathf.Max(1, hitsRequired);
+            int hitsApplied = UnityEngine.Mathf.Min(GetMiningHits(x, y) + 1, normalizedHitsRequired);
+
+            bool destroyed = hitsApplied >= normalizedHitsRequired;
+            int crackStage = destroyed ? 0 : GetCrackStage(hitsApplied, normalizedHitsRequired);
+
+            if (destroyed)
+            {
+                if (!TryDestroyTile(x, y, out _))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                SetMiningHits(x, y, hitsApplied);
+            }
+
+            result = new MiningHitResult(x, y, tileId, hitsApplied, normalizedHitsRequired, crackStage, destroyed);
+            return true;
         }
 
         public void ClearMiningHits(int x, int y)

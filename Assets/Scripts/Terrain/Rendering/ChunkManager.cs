@@ -65,6 +65,8 @@ namespace MinerUnity.Terrain
         private Vector3 defaultHeroSpawnPosition;
         private bool hasDefaultHeroSpawnPosition;
         private bool runtimeInitialized;
+        private Vector3 lastKnownSafeHeroPosition;
+        private bool hasLastKnownSafeHeroPosition;
 
         public WorldData GetWorldData() => worldData;
         public WorldRuntime GetWorldRuntime() => worldRuntime;
@@ -192,6 +194,7 @@ namespace MinerUnity.Terrain
             // 3. Clear fog of war logic around starting area immediately
             ForceUpdateChunks();
             FinalizeHeroBootstrapState();
+            RefreshLastKnownSafeHeroPosition();
             SnapCameraToHeroImmediate();
             runtimeInitialized = true;
         }
@@ -217,6 +220,8 @@ namespace MinerUnity.Terrain
                 lastHeroPos = heroCell;
                 RevealFogAroundHero(heroCell);
             }
+
+            RefreshLastKnownSafeHeroPosition();
 
             ProcessScheduledStoneFalls();
 
@@ -544,16 +549,20 @@ namespace MinerUnity.Terrain
                 return false;
             }
 
-            Vector2Int removedPos = new Vector2Int(x, y);
-            if (spawnedTiles.TryGetValue(removedPos, out GameObject removedGo))
-            {
-                spawnedTiles.Remove(removedPos);
-                Destroy(removedGo);
-            }
+            Diag.Event(
+                "World",
+                "TileDestroyed",
+                "World tile was destroyed through the runtime mutation path.",
+                this,
+                ("cell", new Vector2Int(x, y)));
 
-            TryScheduleStoneAfterSupportLoss(x, y + 1);
-            SaveWorldData();
+            ApplyDestroyedTileView(new Vector2Int(x, y));
             return true;
+        }
+
+        public void ApplyDestroyedTileView(int x, int y)
+        {
+            ApplyDestroyedTileView(new Vector2Int(x, y));
         }
 
         public void PlaceTileInWorld(int x, int y, TileID id)
@@ -562,6 +571,14 @@ namespace MinerUnity.Terrain
             {
                 return;
             }
+
+            Diag.Event(
+                "World",
+                "TilePlaced",
+                "World tile was placed through the runtime mutation path.",
+                this,
+                ("cell", new Vector2Int(x, y)),
+                ("tile", id.ToString()));
 
             if (IsCellInsideLoadedArea(new Vector2Int(x, y)))
             {
@@ -652,6 +669,15 @@ namespace MinerUnity.Terrain
                 MoveSpawnedStoneView(result.From, result.To);
 
                 Diag.Event(
+                    "World",
+                    "TileMoved",
+                    "World tile moved because of stone gravity.",
+                    this,
+                    ("from", result.From),
+                    ("to", result.To),
+                    ("tile", TileID.Stone.ToString()));
+
+                Diag.Event(
                     "Stone",
                     "FallExecuted",
                     "Stone fall executed.",
@@ -694,6 +720,18 @@ namespace MinerUnity.Terrain
                 tb.gridX = to.x;
                 tb.gridY = to.y;
             }
+        }
+
+        private void ApplyDestroyedTileView(Vector2Int removedPos)
+        {
+            if (spawnedTiles.TryGetValue(removedPos, out GameObject removedGo))
+            {
+                spawnedTiles.Remove(removedPos);
+                Destroy(removedGo);
+            }
+
+            TryScheduleStoneAfterSupportLoss(removedPos.x, removedPos.y + 1);
+            SaveWorldData();
         }
 
         private void SaveWorldData()
@@ -903,6 +941,8 @@ namespace MinerUnity.Terrain
             }
 
             defaultHeroSpawnPosition = hero.position;
+            lastKnownSafeHeroPosition = defaultHeroSpawnPosition;
+            hasLastKnownSafeHeroPosition = true;
             hasDefaultHeroSpawnPosition = true;
             heroRigidbody ??= hero.GetComponent<Rigidbody2D>();
         }
@@ -914,7 +954,22 @@ namespace MinerUnity.Terrain
                 return candidate;
             }
 
-            Vector3 fallback = hasDefaultHeroSpawnPosition ? defaultHeroSpawnPosition : candidate;
+            if (TryFindNearestSafeHeroPosition(candidate, 4, out Vector3 adjustedPosition))
+            {
+                Diag.Event(
+                    "Hero",
+                    "AdjustedSavedPosition",
+                    "Saved hero position was adjusted to the nearest safe cell.",
+                    this,
+                    ("savedPosition", candidate),
+                    ("adjustedPosition", adjustedPosition),
+                    ("savedCell", WorldToCell(candidate)),
+                    ("adjustedCell", WorldToCell(adjustedPosition)));
+
+                return adjustedPosition;
+            }
+
+            Vector3 fallback = ResolveSafeHeroFallbackPosition(candidate);
             Diag.Warning(
                 "Hero",
                 "InvalidSavedPosition",
@@ -928,11 +983,8 @@ namespace MinerUnity.Terrain
 
         private Vector3 ResolveHeroPositionForSave()
         {
-            Vector3 fallback = saveData != null
-                ? GamePersistenceService.GetHeroPositionOrDefault(
-                    saveData,
-                    hasDefaultHeroSpawnPosition ? defaultHeroSpawnPosition : Vector3.zero)
-                : (hasDefaultHeroSpawnPosition ? defaultHeroSpawnPosition : Vector3.zero);
+            Vector3 fallback = ResolveSafeHeroFallbackPosition(
+                hasLastKnownSafeHeroPosition ? lastKnownSafeHeroPosition : defaultHeroSpawnPosition);
 
             if (hero == null)
             {
@@ -942,6 +994,8 @@ namespace MinerUnity.Terrain
             Vector3 candidate = hero.position;
             if (IsHeroPositionSafeForSave(candidate))
             {
+                lastKnownSafeHeroPosition = candidate;
+                hasLastKnownSafeHeroPosition = true;
                 return candidate;
             }
 
@@ -958,12 +1012,12 @@ namespace MinerUnity.Terrain
 
         private bool IsHeroPositionSafeForLoad(Vector3 position)
         {
-            return IsHeroPositionInsideWorld(position) && IsHeroStandingCellPassable(position);
+            return IsHeroPositionInsideWorld(position) && IsHeroCellSafeForPersistence(WorldToCell(position));
         }
 
         private bool IsHeroPositionSafeForSave(Vector3 position)
         {
-            return IsHeroPositionInsideWorld(position) && IsHeroStandingCellPassable(position);
+            return IsHeroPositionInsideWorld(position) && IsHeroCellSafeForPersistence(WorldToCell(position));
         }
 
         private bool IsHeroPositionInsideWorld(Vector3 position)
@@ -980,20 +1034,143 @@ namespace MinerUnity.Terrain
                 && cell.y < worldData.Height;
         }
 
-        private bool IsHeroStandingCellPassable(Vector3 position)
+        private bool IsHeroCellSafeForPersistence(Vector2Int cell)
         {
             if (worldRuntime == null || worldData == null)
             {
                 return false;
             }
 
-            Vector2Int cell = WorldToCell(position);
             if (cell.x < 0 || cell.x >= worldData.Width || cell.y < 0 || cell.y >= worldData.Height)
             {
                 return false;
             }
 
             TileID tile = worldRuntime.GetTile(cell.x, cell.y);
+            if (!IsHeroPassableTile(tile))
+            {
+                return false;
+            }
+
+            if (tile == TileID.Ladder)
+            {
+                return true;
+            }
+
+            int supportY = cell.y - 1;
+            if (supportY < 0)
+            {
+                return false;
+            }
+
+            TileID supportTile = worldRuntime.GetTile(cell.x, supportY);
+            return !IsHeroPassableTile(supportTile);
+        }
+
+        private void RefreshLastKnownSafeHeroPosition()
+        {
+            if (hero == null)
+            {
+                return;
+            }
+
+            Vector3 candidate = hero.position;
+            if (!IsHeroPositionSafeForSave(candidate))
+            {
+                return;
+            }
+
+            lastKnownSafeHeroPosition = candidate;
+            hasLastKnownSafeHeroPosition = true;
+        }
+
+        private Vector3 ResolveSafeHeroFallbackPosition(Vector3 preferredFallback)
+        {
+            if (TryResolveSafeHeroFallbackCandidate(preferredFallback, out Vector3 resolved))
+            {
+                return resolved;
+            }
+
+            if (hasLastKnownSafeHeroPosition && TryResolveSafeHeroFallbackCandidate(lastKnownSafeHeroPosition, out resolved))
+            {
+                return resolved;
+            }
+
+            if (saveData != null)
+            {
+                Vector3 persistedHeroPosition = GamePersistenceService.GetHeroPositionOrDefault(
+                    saveData,
+                    hasDefaultHeroSpawnPosition ? defaultHeroSpawnPosition : preferredFallback);
+
+                if (TryResolveSafeHeroFallbackCandidate(persistedHeroPosition, out resolved))
+                {
+                    return resolved;
+                }
+            }
+
+            if (hasDefaultHeroSpawnPosition && TryResolveSafeHeroFallbackCandidate(defaultHeroSpawnPosition, out resolved))
+            {
+                return resolved;
+            }
+
+            return hasDefaultHeroSpawnPosition ? defaultHeroSpawnPosition : preferredFallback;
+        }
+
+        private bool TryResolveSafeHeroFallbackCandidate(Vector3 candidate, out Vector3 resolved)
+        {
+            if (IsHeroPositionSafeForLoad(candidate))
+            {
+                resolved = candidate;
+                return true;
+            }
+
+            return TryFindNearestSafeHeroPosition(candidate, 4, out resolved);
+        }
+
+        private bool TryFindNearestSafeHeroPosition(Vector3 origin, int maxRadius, out Vector3 safePosition)
+        {
+            safePosition = default;
+
+            if (worldRuntime == null || worldData == null || !IsFinite(origin))
+            {
+                return false;
+            }
+
+            Vector2Int originCell = WorldToCell(origin);
+            if (!worldData.IsValidCoordinate(originCell.x, originCell.y))
+            {
+                return false;
+            }
+
+            int searchRadius = Mathf.Max(0, maxRadius);
+            for (int radius = 0; radius <= searchRadius; radius++)
+            {
+                for (int dy = -radius; dy <= radius; dy++)
+                {
+                    for (int dx = -radius; dx <= radius; dx++)
+                    {
+                        if (Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dy)) != radius)
+                        {
+                            continue;
+                        }
+
+                        Vector2Int cell = new Vector2Int(originCell.x + dx, originCell.y + dy);
+                        if (!worldData.IsValidCoordinate(cell.x, cell.y) || !IsHeroCellSafeForPersistence(cell))
+                        {
+                            continue;
+                        }
+
+                        safePosition = new Vector3(cell.x + 0.5f, cell.y + 0.5f, origin.z);
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsHeroPassableTile(TileID tile)
+        {
             return tile == TileID.Empty || tile == TileID.Tunnel || tile == TileID.Ladder;
         }
 

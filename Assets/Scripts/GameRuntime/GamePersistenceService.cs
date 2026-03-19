@@ -74,21 +74,28 @@ namespace MinerUnity.Runtime
             File.WriteAllText(SaveFilePath, json);
         }
 
-        public static GameSaveData CreateFromRuntime(WorldData worldData, byte[] fogGrid, Vector3 heroPosition)
+        public static GameSaveData CreateFromRuntime(WorldRuntime worldRuntime, byte[] fogGrid, Vector3 heroPosition)
         {
             var saveData = new GameSaveData();
-            ApplyRuntimeState(saveData, worldData, fogGrid, heroPosition);
+            ApplyRuntimeState(saveData, worldRuntime, fogGrid, heroPosition);
             return saveData;
         }
 
-        public static void ApplyRuntimeState(GameSaveData saveData, WorldData worldData, byte[] fogGrid, Vector3 heroPosition)
+        public static void ApplyRuntimeState(GameSaveData saveData, WorldRuntime worldRuntime, byte[] fogGrid, Vector3 heroPosition)
         {
             EnsureInitialized(saveData);
+            if (worldRuntime == null)
+            {
+                return;
+            }
+
+            WorldData worldData = worldRuntime.WorldData;
 
             saveData.world.width = worldData.Width;
             saveData.world.height = worldData.Height;
             saveData.world.tiles = worldData.ToByteArray();
             saveData.world.fog = CloneOrEmpty(fogGrid);
+            saveData.world.miningDamage = worldRuntime.CreateMiningDamageSnapshot();
 
             saveData.hero.positionX = heroPosition.x;
             saveData.hero.positionY = heroPosition.y;
@@ -167,6 +174,7 @@ namespace MinerUnity.Runtime
 
             saveData.world.tiles ??= Array.Empty<byte>();
             saveData.world.fog ??= Array.Empty<byte>();
+            saveData.world.miningDamage ??= new System.Collections.Generic.List<MiningDamageData>();
             saveData.world.placedObjects ??= new System.Collections.Generic.List<PlacedObjectData>();
 
             saveData.hero.equippedToolId ??= string.Empty;

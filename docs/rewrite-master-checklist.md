@@ -96,14 +96,28 @@
 
 ### Structure
 
-- [ ] introduce `HeroMining`
-- [ ] target cell selection uses current hero cell and dominant input axis
-- [ ] mining reads from runtime instead of scene helpers
+- [x] introduce `HeroMining`
+- [x] target selection is driven by the same joystick that drives movement
+- [x] mining target selection depends on contact or near-contact rules, not on free button directions
+- [x] mining reads from runtime instead of scene helpers
+- [x] hit progress is owned by runtime or hero mining logic, not by spawned tile views
+- [x] crack rendering is view-only and follows runtime hit progress
+- [x] hero mining animation is driven by mining intent and hit loop, not by separate scene hacks
 - [ ] mining writes through one world mutation API
 
 ### Behavior
 
 - [ ] only mineable cells can be dug
+- [ ] hero starts mining when joystick direction points into a valid nearby block
+- [ ] side mining works when the hero presses into a neighboring wall block
+- [ ] downward mining works when the hero is close enough to the floor block below
+- [ ] upward mining works when the hero presses toward a nearby ceiling block
+- [ ] mining does not fire while the hero is simply walking with no valid target
+- [ ] default pickaxe breaks a dirt block in 4 hits
+- [ ] crack stages update consistently during the hit loop
+- [ ] partial mining damage persists when the hero leaves the block
+- [ ] partial mining damage survives save and load
+- [ ] tool power can change required hits without changing mining flow
 - [ ] blocked digs report why they were rejected
 - [ ] runtime and view stay in sync after a dig
 - [ ] movement behavior remains unchanged while mining is added
@@ -111,6 +125,7 @@
 ### Logging
 
 - [ ] `DigStarted` exists and is meaningful
+- [ ] `DigHit` exists and shows target, hit index, and crack stage
 - [ ] `DigBlocked` exists and explains the block reason
 - [ ] `DigCompleted` exists and reflects a real world mutation
 

@@ -2,142 +2,101 @@ using UnityEngine;
 
 public class TileBehaviour : MonoBehaviour
 {
-    private bool isBroken;
-    private int hitsRemaining = 4;
-
-    private float lastHitTime = 0f;
-    private float timeBetweenHits = 0.8f;
-
-    public bool IsBroken => isBroken;
-
-    // Added for new Terrain Architecture
     public int gridX;
     public int gridY;
 
-    public GameObject crackPrefab;
-    public Crack crackClass;
+    [SerializeField] private Crack crackView;
+    [SerializeField, Range(0, 3)] private int crackStage;
 
-    private void Awake()
+    public void SetCrackStage(int stage)
     {
-        crackPrefab = Resources.Load<GameObject>("Crack");
-    }
-
-    private bool CanHit()
-    {
-        return Time.time - lastHitTime >= timeBetweenHits;
-    }
-
-    public void BreakTile()
-    {
-        if (isBroken)
+        int normalizedStage = Mathf.Clamp(stage, 0, 3);
+        if (normalizedStage == crackStage)
         {
             return;
         }
 
-        isBroken = true;
+        crackStage = normalizedStage;
+        if (crackStage <= 0)
+        {
+            ClearCrack();
+            return;
+        }
+
+        EnsureCrackView();
+        crackView?.SetStage(crackStage);
+        string crackSprite = crackView != null ? crackView.CurrentSpriteName : "None";
 
         Diag.Event(
             "Tile",
-            "Destroyed",
-            null,
+            "CrackStageChanged",
+            "Tile crack stage updated.",
             this,
             ("cellX", gridX),
             ("cellY", gridY),
-            ("hitsRemaining", hitsRemaining));
+            ("crackStage", crackStage),
+            ("crackSprite", crackSprite));
+    }
 
-        // Notify the new terrain system to permanently remove this block
+    public void ClearCrack()
+    {
+        bool hadCrack = crackStage > 0 || crackView != null;
+        crackStage = 0;
+        if (crackView != null)
+        {
+            crackView.gameObject.SetActive(false);
+            Destroy(crackView.gameObject);
+            crackView = null;
+        }
+
+        if (hadCrack)
+        {
+            Diag.Event(
+                "Tile",
+                "CrackCleared",
+                "Tile crack visuals cleared.",
+                this,
+                ("cellX", gridX),
+                ("cellY", gridY));
+        }
+    }
+
+    public void BreakTile()
+    {
         var chunkManager = GetComponentInParent<MinerUnity.Terrain.ChunkManager>();
         if (chunkManager != null)
         {
             chunkManager.DestroyTileInWorld(gridX, gridY);
         }
-        else
-        {
-            Diag.Warning(
-                "Tile",
-                "DestroyWorldMissing",
-                "ChunkManager not found while breaking tile.",
-                this,
-                ("cellX", gridX),
-                ("cellY", gridY));
-        }
     }
 
-    public void HitTile(TileBehaviour tile)
+    private void EnsureCrackView()
     {
-        if (tile == null)
-        {
-            Diag.Warning(
-                "Tile",
-                "HitRejected",
-                "Tile reference is null.",
-                this,
-                ("cellX", gridX),
-                ("cellY", gridY),
-                ("reason", "null_target"));
-            return;
-        }
-
-        if (isBroken)
+        if (crackView != null)
         {
             return;
         }
 
-        if (!CanHit())
+        GameObject crackObject = new GameObject("Crack");
+        crackObject.layer = gameObject.layer;
+        crackObject.transform.SetParent(transform);
+        crackObject.transform.localPosition = Vector3.zero;
+        crackObject.transform.localRotation = Quaternion.identity;
+        crackObject.transform.localScale = Vector3.one;
+
+        SpriteRenderer tileRenderer = GetComponent<SpriteRenderer>();
+        SpriteRenderer crackRenderer = crackObject.AddComponent<SpriteRenderer>();
+        crackRenderer.color = Color.white;
+
+        if (tileRenderer != null)
         {
-            return;
+            crackRenderer.sortingLayerID = tileRenderer.sortingLayerID;
+            crackRenderer.sortingOrder = tileRenderer.sortingOrder + 1;
+            crackRenderer.sharedMaterial = tileRenderer.sharedMaterial;
+            crackRenderer.maskInteraction = tileRenderer.maskInteraction;
+            crackRenderer.spriteSortPoint = tileRenderer.spriteSortPoint;
         }
 
-        if (hitsRemaining == 4)
-        {
-            CreateCrack();
-        }
-
-        hitsRemaining--;
-
-        Diag.Event(
-            "Tile",
-            "Hit",
-            null,
-            this,
-            ("cellX", gridX),
-            ("cellY", gridY),
-            ("hitsRemaining", hitsRemaining));
-
-        HitAndCrack(hitsRemaining);
-
-        // Break after the required number of hits.
-        if (hitsRemaining <= 0)
-        {
-            tile.BreakTile();
-        }
-    }
-
-    private void HitAndCrack(int hits)
-    {
-        crackClass.HitCrack(hits);
-        lastHitTime = Time.time;
-    }
-
-    private void CreateCrack()
-    {
-        if (crackPrefab != null)
-        {
-            GameObject crack = Instantiate(crackPrefab, transform.position, Quaternion.identity);
-            crack.transform.parent = transform;
-            crackClass = crack.GetComponent<Crack>();
-        }
-        else
-        {
-            Diag.Error(
-                "Tile",
-                "CrackPrefabMissing",
-                "CrackPrefab not found in Resources.",
-                this,
-                ("cellX", gridX),
-                ("cellY", gridY));
-
-            Debug.LogError("CrackPrefab not found in Resources!");
-        }
+        crackView = crackObject.AddComponent<Crack>();
     }
 }

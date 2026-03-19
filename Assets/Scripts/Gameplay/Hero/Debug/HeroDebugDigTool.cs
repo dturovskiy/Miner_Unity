@@ -95,7 +95,19 @@ public sealed class HeroDebugDigTool : MonoBehaviour
             ("targetCell", targetCell),
             ("tile", targetTile.ToString()));
 
-        chunkManager.DestroyTileInWorld(targetCell.x, targetCell.y);
+        if (!chunkManager.DestroyTileInWorld(targetCell.x, targetCell.y))
+        {
+            Diag.Warning(
+                "Debug",
+                "DigBlocked",
+                "Debug dig failed during world mutation.",
+                this,
+                ("direction", directionName),
+                ("targetCell", targetCell),
+                ("tile", targetTile.ToString()),
+                ("reason", "destroyFailed"));
+            return;
+        }
 
         Diag.Event(
             "Debug",
@@ -142,8 +154,13 @@ public sealed class HeroDebugDigTool : MonoBehaviour
         return false;
     }
 
-    private static bool IsDebugToolEnabled()
+    private bool IsDebugToolEnabled()
     {
+        if (GetComponent<HeroMining>() != null)
+        {
+            return false;
+        }
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         return true;
 #else

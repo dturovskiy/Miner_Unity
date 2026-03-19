@@ -23,6 +23,7 @@ namespace MinerUnity.Runtime
         public int height = 255;
         public byte[] tiles = Array.Empty<byte>();
         public byte[] fog = Array.Empty<byte>();
+        public List<MiningDamageData> miningDamage = new();
         public List<PlacedObjectData> placedObjects = new();
     }
 
@@ -60,5 +61,13 @@ namespace MinerUnity.Runtime
     {
         public string itemId = string.Empty;
         public int count;
+    }
+
+    [Serializable]
+    public sealed class MiningDamageData
+    {
+        public int cellX;
+        public int cellY;
+        public int hitsApplied;
     }
 }

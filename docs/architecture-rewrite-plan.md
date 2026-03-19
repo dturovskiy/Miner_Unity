@@ -48,7 +48,7 @@ Not started yet:
 - [ ] root save model implementation finished
 - [ ] single world authority implementation finished
 - [x] Stage 1 ground core refactor
-- [ ] Stage 2 mining rewrite
+- [x] Stage 2 mining rewrite started
 - [ ] Stage 3 ladder rewrite
 - [ ] Stage 4 save and UI reintegration
 
@@ -344,7 +344,7 @@ Stage 1 close-out:
 
 Status:
 
-`Blocked by Stage 1`
+`Started`
 
 Goals:
 
@@ -359,11 +359,44 @@ Work packages:
 4. apply dig through a single world mutation API
 5. log `DigStarted`, `DigBlocked`, `DigCompleted`
 
+Current Stage 2 progress:
+
+1. `HeroMining` was added as a separate hero component and wired into `Hero.prefab`
+2. `HeroController` now exposes one shared movement input vector so mining intent can read the same joystick or keyboard fallback that already drives movement
+3. mining target selection now follows near-contact rules: wall contact for side mining, floor proximity for downward mining, and ceiling probe for upward mining
+4. mining validation reads tile data from `WorldRuntime`
+5. the mining loop is now hit-based inside `HeroMining` with configurable hit cadence and default required hits
+6. `TileBehaviour` and `Crack` were rewritten as view-only crack-stage helpers instead of owning mining progress
+7. hero animator parameters are now driven in runtime code: `IsWalking` from movement state and `IsMining` from the active mining loop
+8. mining now keeps a target lock while the same nearby block is still being pressed, which prevents crack progress from resetting on minor joystick wobble
+9. mining is explicitly blocked outside playable cave space, so surface-side digging outside the cave entrance is ignored
+10. partial mining damage is now stored in runtime and save data instead of living only on the active hero target
+11. debug dig is automatically disabled when `HeroMining` is present so logs do not double-fire
+
 Exit criteria:
 
 1. only mineable cells can be dug
 2. cell destruction updates runtime and view consistently
 3. ground movement behavior remains unchanged
+
+Locked Stage 2 design decisions:
+
+1. there is only one gameplay joystick for the hero
+2. mining is not triggered by separate action buttons in the final design
+3. mining intent comes from joystick direction plus spatial eligibility near the target block
+4. side mining should happen when the hero presses into an adjacent mineable wall block
+5. downward mining should happen when the hero is close enough to the block below and pushes the joystick downward
+6. the mining loop is hit-based, not instant, and should support configurable tool strength
+7. the default pickaxe target is `4` hits per normal dirt block unless later tuning changes it
+8. crack visuals are view-only and should not be the authority for hit progress or block destruction
+9. partial crack or hit progress should be owned by runtime-facing mining logic, not by `TileBehaviour` alone
+10. hero locomotion state should stay separate from mining action state; mining animation should be driven by a dedicated action or animator bridge instead of overloading locomotion
+
+Legacy references that informed the redesign:
+
+1. [TileBehaviour.cs](/e:/Projects/miner_unity/Assets/Scripts/Terrain/Rendering/TileBehaviour.cs) already contains hit counting and crack spawning, but it currently places hit ownership on the spawned tile view, which is not suitable as the final authority
+2. [Crack.cs](/e:/Projects/miner_unity/Assets/Scripts/Terrain/Rendering/Crack.cs) already matches the three crack stages and can stay as a view helper
+3. [MiningController.cs](/e:/Projects/miner_unity/Assets/Scripts/Gameplay/Mining/Legacy/MiningController.cs) confirms the old project once coupled mining to joystick direction and an animator flag, but it assumes a separate mining joystick and should be treated only as a reference
 
 ## Stage 3 - Ladder
 

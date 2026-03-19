@@ -7,6 +7,8 @@ public sealed class HeroController : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private HeroGroundCore groundCore;
+    [SerializeField] private HeroState heroState;
+    [SerializeField] private Animator animator;
     [SerializeField] private Joystick movementJoystick;
 
     [Header("Movement")]
@@ -21,15 +23,20 @@ public sealed class HeroController : MonoBehaviour
     [SerializeField, Min(0)] private int fixedFramesToWaitAfterWorldReady = 1;
 
     private float horizontalInput;
-    private float previousInput;
+    private Vector2 movementInput;
+    private Vector2 previousMovementInput;
 
     public float HorizontalInput => horizontalInput;
+    public Vector2 MovementInput => movementInput;
+    public bool UsesMovementJoystick => movementJoystick != null;
     public float CurrentSpeedX => groundCore != null ? groundCore.CurrentSpeedX : 0f;
     public float CurrentSpeedY => groundCore != null ? groundCore.CurrentSpeedY : 0f;
 
     private void Reset()
     {
         groundCore = GetComponent<HeroGroundCore>();
+        heroState = GetComponent<HeroState>();
+        animator = GetComponent<Animator>();
     }
 
     private void OnValidate()
@@ -51,42 +58,47 @@ public sealed class HeroController : MonoBehaviour
     private void Update()
     {
         ResolveMovementJoystickIfNeeded();
-        horizontalInput = ReadHorizontalInput();
+        movementInput = ReadMovementInput();
+        horizontalInput = movementInput.x;
 
-        if (logInputChanges && Mathf.Abs(horizontalInput - previousInput) > 0.2f)
+        if (logInputChanges && Vector2.Distance(movementInput, previousMovementInput) > 0.2f)
         {
             Diag.Event(
                 "Hero",
                 "MoveInput",
                 null,
                 this,
-                ("x", horizontalInput),
+                ("x", movementInput.x),
+                ("y", movementInput.y),
                 ("source", movementJoystick != null ? "joystick" : "keyboard"));
         }
 
-        previousInput = horizontalInput;
+        previousMovementInput = movementInput;
         groundCore?.SetDesiredHorizontalInput(horizontalInput);
+        SyncAnimator();
     }
 
-    private float ReadHorizontalInput()
+    private Vector2 ReadMovementInput()
     {
-        float x = 0f;
+        Vector2 input = Vector2.zero;
 
         if (movementJoystick != null)
         {
-            x = movementJoystick.Horizontal;
+            input = movementJoystick.Direction;
         }
         else if (useKeyboardFallback)
         {
-            x = Input.GetAxisRaw("Horizontal");
+            input = new Vector2(
+                Input.GetAxisRaw("Horizontal"),
+                Input.GetAxisRaw("Vertical"));
         }
 
-        if (Mathf.Abs(x) < inputDeadZone)
+        if (input.sqrMagnitude < inputDeadZone * inputDeadZone)
         {
-            return 0f;
+            return Vector2.zero;
         }
 
-        return Mathf.Clamp(x, -1f, 1f);
+        return Vector2.ClampMagnitude(input, 1f);
     }
 
     private void ResolveReferences()
@@ -94,6 +106,16 @@ public sealed class HeroController : MonoBehaviour
         if (groundCore == null)
         {
             groundCore = GetComponent<HeroGroundCore>();
+        }
+
+        if (heroState == null)
+        {
+            heroState = GetComponent<HeroState>();
+        }
+
+        if (animator == null)
+        {
+            animator = GetComponent<Animator>();
         }
 
         groundCore ??= gameObject.AddComponent<HeroGroundCore>();
@@ -117,6 +139,16 @@ public sealed class HeroController : MonoBehaviour
 
         groundCore.ConfigureMovement(moveSpeed, inputDeadZone, flipSpriteByScale);
         groundCore.ConfigureDiagnostics(logBlockedMovement, fixedFramesToWaitAfterWorldReady);
+    }
+
+    private void SyncAnimator()
+    {
+        if (animator == null || heroState == null)
+        {
+            return;
+        }
+
+        animator.SetBool("IsWalking", heroState.IsMoving);
     }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD

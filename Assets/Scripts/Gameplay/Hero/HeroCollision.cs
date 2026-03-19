@@ -70,6 +70,36 @@ public sealed class HeroCollision : MonoBehaviour
         return worldGrid.WorldToCell(transform.position);
     }
 
+    public bool TryGetOpenAnchorCell(out Vector2Int cell)
+    {
+        cell = Vector2Int.zero;
+        if (ResolveWorldGrid() == null || !worldGrid.IsReady || capsule == null)
+        {
+            return false;
+        }
+
+        Bounds bounds = capsule.bounds;
+        Vector2[] samplePoints =
+        {
+            bounds.center,
+            new Vector2(bounds.center.x - bounds.extents.x * 0.35f, bounds.center.y),
+            new Vector2(bounds.center.x + bounds.extents.x * 0.35f, bounds.center.y),
+            new Vector2(bounds.center.x, bounds.center.y + bounds.extents.y * 0.2f)
+        };
+
+        for (int i = 0; i < samplePoints.Length; i++)
+        {
+            Vector2Int candidate = worldGrid.WorldToCell(samplePoints[i]);
+            if (WorldCellRules.IsPassable(worldGrid.GetTileId(candidate)))
+            {
+                cell = candidate;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public Vector2Int WorldToCell(Vector2 worldPosition)
     {
         if (ResolveWorldGrid() == null || !worldGrid.IsReady)
@@ -89,6 +119,18 @@ public sealed class HeroCollision : MonoBehaviour
 
         Bounds bounds = capsule.bounds;
         Vector2 probe = new Vector2(bounds.center.x, bounds.min.y - 0.02f);
+        return worldGrid.WorldToCell(probe);
+    }
+
+    public Vector2Int GetCeilingProbeCell()
+    {
+        if (ResolveWorldGrid() == null || !worldGrid.IsReady)
+        {
+            return Vector2Int.zero;
+        }
+
+        Bounds bounds = capsule.bounds;
+        Vector2 probe = new Vector2(bounds.center.x, bounds.max.y + 0.02f);
         return worldGrid.WorldToCell(probe);
     }
 
@@ -151,6 +193,26 @@ public sealed class HeroCollision : MonoBehaviour
         }
 
         return worldGrid.GetTileId(GetGroundProbeCell());
+    }
+
+    public WorldCellType GetCeilingProbeCellType()
+    {
+        if (ResolveWorldGrid() == null || !worldGrid.IsReady)
+        {
+            return WorldCellType.Empty;
+        }
+
+        return worldGrid.GetCellType(GetCeilingProbeCell());
+    }
+
+    public TileID GetCeilingProbeTileId()
+    {
+        if (ResolveWorldGrid() == null || !worldGrid.IsReady)
+        {
+            return TileID.Empty;
+        }
+
+        return worldGrid.GetTileId(GetCeilingProbeCell());
     }
 
     public WorldCellType GetWallProbeCellType(float direction)

@@ -201,7 +201,7 @@ namespace MinerUnity.Terrain
             if (hero == null) return;
             if (worldCamera == null) worldCamera = Camera.main;
 
-            Vector2Int heroCell = WorldToCell(hero.position);
+            Vector2Int heroCell = ResolveHeroVisibilityCell();
             Vector2Int cameraCell = worldCamera != null ? WorldToCell(worldCamera.transform.position) : heroCell;
 
             // 1. Підвантаження рахуємо по камері
@@ -236,7 +236,7 @@ namespace MinerUnity.Terrain
             if (hero == null) return;
             if (worldCamera == null) worldCamera = Camera.main;
 
-            Vector2Int heroCell = WorldToCell(hero.position);
+            Vector2Int heroCell = ResolveHeroVisibilityCell();
             Vector2Int cameraCell = worldCamera != null ? WorldToCell(worldCamera.transform.position) : heroCell;
 
             lastHeroPos = heroCell;
@@ -382,7 +382,7 @@ namespace MinerUnity.Terrain
                 return;
             }
 
-            bool inCave = worldData.GetTile(center.x, center.y) == TileID.Tunnel;
+            bool inCave = worldRuntime != null && worldRuntime.IsInsideMiningArea(center.x, center.y);
             if (!inCave)
             {
                 if (lastFogInCaveState != false)
@@ -446,6 +446,22 @@ namespace MinerUnity.Terrain
             }
         }
 
+        private Vector2Int ResolveHeroVisibilityCell()
+        {
+            if (hero == null)
+            {
+                return Vector2Int.zero;
+            }
+
+            HeroCollision heroCollision = hero.GetComponent<HeroCollision>();
+            if (heroCollision != null && heroCollision.TryGetOpenAnchorCell(out Vector2Int openCell))
+            {
+                return openCell;
+            }
+
+            return WorldToCell(hero.position);
+        }
+
         private void SpawnTileGameObject(Vector2Int pos, TileID id)
         {
             TileClass tClass = TileRegistry.Instance.GetTileClass(id);
@@ -499,14 +515,33 @@ namespace MinerUnity.Terrain
             tb.gridX = pos.x;
             tb.gridY = pos.y;
 
+            int savedHits = worldRuntime != null ? worldRuntime.GetMiningHits(pos.x, pos.y) : 0;
+            if (savedHits > 0)
+            {
+                tb.SetCrackStage(WorldRuntime.GetCrackStage(savedHits, GetHitsRequiredForTile(id)));
+            }
+
             spawnedTiles[pos] = newTile;
         }
 
-        public void DestroyTileInWorld(int x, int y)
+        public bool TryGetSpawnedTileBehaviour(int x, int y, out TileBehaviour tileBehaviour)
+        {
+            tileBehaviour = null;
+            Vector2Int cell = new Vector2Int(x, y);
+            if (!spawnedTiles.TryGetValue(cell, out GameObject tileObject) || tileObject == null)
+            {
+                return false;
+            }
+
+            tileBehaviour = tileObject.GetComponent<TileBehaviour>();
+            return tileBehaviour != null;
+        }
+
+        public bool DestroyTileInWorld(int x, int y)
         {
             if (worldRuntime == null || !worldRuntime.TryDestroyTile(x, y, out _))
             {
-                return;
+                return false;
             }
 
             Vector2Int removedPos = new Vector2Int(x, y);
@@ -518,6 +553,7 @@ namespace MinerUnity.Terrain
 
             TryScheduleStoneAfterSupportLoss(x, y + 1);
             SaveWorldData();
+            return true;
         }
 
         public void PlaceTileInWorld(int x, int y, TileID id)
@@ -752,7 +788,13 @@ namespace MinerUnity.Terrain
                 return false;
             }
 
-            return GamePersistenceService.TryRestoreWorld(saveData, worldRuntime.WorldData);
+            bool restored = GamePersistenceService.TryRestoreWorld(saveData, worldRuntime.WorldData);
+            if (restored)
+            {
+                worldRuntime.RestoreMiningDamage(saveData.world.miningDamage);
+            }
+
+            return restored;
         }
 
         private void SaveGameData()
@@ -765,17 +807,22 @@ namespace MinerUnity.Terrain
             Vector3 heroPositionForSave = ResolveHeroPositionForSave();
 
             saveData ??= GamePersistenceService.CreateFromRuntime(
-                worldData,
+                worldRuntime,
                 fogGrid,
                 heroPositionForSave);
 
             GamePersistenceService.ApplyRuntimeState(
                 saveData,
-                worldData,
+                worldRuntime,
                 fogGrid,
                 heroPositionForSave);
 
             GamePersistenceService.Save(saveData);
+        }
+
+        private int GetHitsRequiredForTile(TileID tileId)
+        {
+            return WorldCellRules.IsMineable(tileId) ? 4 : 1;
         }
 
         private void SaveRuntimeState()

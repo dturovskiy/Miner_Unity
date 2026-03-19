@@ -100,7 +100,7 @@ public sealed class WorldGridService : MonoBehaviour
         WorldRuntime runtime = GetWorldRuntime();
         if (isReady && runtime != null)
         {
-            return MapTileIdToCellType(runtime.GetTile(cell.x, cell.y));
+            return WorldCellRules.GetCellType(runtime.GetTile(cell.x, cell.y));
         }
 
         return cells[cell.x, cell.y];
@@ -124,7 +124,7 @@ public sealed class WorldGridService : MonoBehaviour
             return runtime.GetTile(cell.x, cell.y);
         }
 
-        return TryMapCellTypeToTileId(cells[cell.x, cell.y], out TileID tileId)
+        return WorldCellRules.TryGetDefaultTileId(cells[cell.x, cell.y], out TileID tileId)
             ? tileId
             : TileID.Empty;
     }
@@ -137,7 +137,7 @@ public sealed class WorldGridService : MonoBehaviour
         }
 
         WorldRuntime runtime = GetWorldRuntime();
-        if (isReady && runtime != null && TryMapCellTypeToTileId(newType, out TileID tileId))
+        if (isReady && runtime != null && WorldCellRules.TryGetDefaultTileId(newType, out TileID tileId))
         {
             runtime.TryPlaceTile(cell.x, cell.y, tileId);
         }
@@ -168,70 +168,5 @@ public sealed class WorldGridService : MonoBehaviour
         }
 
         return worldRuntime;
-    }
-
-    private static WorldCellType MapTileIdToCellType(TileID id)
-    {
-        switch (id)
-        {
-            case TileID.Empty:
-            case TileID.Tunnel:
-                return WorldCellType.Empty;
-
-            case TileID.Dirt:
-            case TileID.Coal:
-            case TileID.Iron:
-            case TileID.Gold:
-            case TileID.Diamond:
-            case TileID.Uranus:
-            case TileID.Topaz:
-            case TileID.Silver:
-            case TileID.Ruby:
-            case TileID.Platinum:
-            case TileID.Opal:
-            case TileID.Nephritis:
-            case TileID.Map:
-            case TileID.Lazurite:
-            case TileID.Emerald:
-            case TileID.Artifact:
-            case TileID.Amethyst:
-                return WorldCellType.Dirt;
-
-            case TileID.Stone:
-            case TileID.Edge:
-                return WorldCellType.Stone;
-
-            case TileID.Ladder:
-                return WorldCellType.Ladder;
-
-            default:
-                return WorldCellType.Empty;
-        }
-    }
-
-    private static bool TryMapCellTypeToTileId(WorldCellType type, out TileID tileId)
-    {
-        switch (type)
-        {
-            case WorldCellType.Empty:
-                tileId = TileID.Empty;
-                return true;
-
-            case WorldCellType.Dirt:
-                tileId = TileID.Dirt;
-                return true;
-
-            case WorldCellType.Stone:
-                tileId = TileID.Stone;
-                return true;
-
-            case WorldCellType.Ladder:
-                tileId = TileID.Ladder;
-                return true;
-
-            default:
-                tileId = TileID.Empty;
-                return false;
-        }
     }
 }

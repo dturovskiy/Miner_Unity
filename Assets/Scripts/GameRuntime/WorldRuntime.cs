@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using MinerUnity.Terrain;
 
 namespace MinerUnity.Runtime
@@ -11,6 +12,8 @@ namespace MinerUnity.Runtime
     {
         private readonly WorldData worldData;
         private readonly StoneGravityService stoneGravityService;
+        private readonly Dictionary<UnityEngine.Vector2Int, int> miningHits = new();
+        private int? highestTunnelRow;
 
         public WorldRuntime(WorldData worldData)
         {
@@ -38,6 +41,43 @@ namespace MinerUnity.Runtime
             return worldData.GetTile(x, y);
         }
 
+        public bool IsInsideBounds(int x, int y)
+        {
+            return worldData.IsValidCoordinate(x, y);
+        }
+
+        public bool IsMineable(int x, int y)
+        {
+            if (!worldData.IsValidCoordinate(x, y))
+            {
+                return false;
+            }
+
+            return WorldCellRules.IsMineable(worldData.GetTile(x, y));
+        }
+
+        public bool IsInsideMiningArea(int x, int y)
+        {
+            if (!worldData.IsValidCoordinate(x, y))
+            {
+                return false;
+            }
+
+            TileID tile = worldData.GetTile(x, y);
+            if (tile == TileID.Tunnel || tile == TileID.Ladder)
+            {
+                return true;
+            }
+
+            if (tile != TileID.Empty)
+            {
+                return false;
+            }
+
+            int tunnelRow = GetHighestTunnelRow();
+            return tunnelRow >= 0 && y < tunnelRow;
+        }
+
         public bool TryPlaceTile(int x, int y, TileID tileId)
         {
             if (!worldData.IsValidCoordinate(x, y))
@@ -45,7 +85,10 @@ namespace MinerUnity.Runtime
                 return false;
             }
 
+            TileID previousTile = worldData.GetTile(x, y);
             worldData.SetTile(x, y, tileId);
+            ClearMiningHits(x, y);
+            InvalidateCachedRowsIfNeeded(previousTile, tileId);
             return true;
         }
 
@@ -58,7 +101,137 @@ namespace MinerUnity.Runtime
             }
 
             worldData.SetTile(x, y, TileID.Empty);
+            ClearMiningHits(x, y);
+            InvalidateCachedRowsIfNeeded(previousTile, TileID.Empty);
             return true;
+        }
+
+        public int GetMiningHits(int x, int y)
+        {
+            if (!worldData.IsValidCoordinate(x, y))
+            {
+                return 0;
+            }
+
+            return miningHits.TryGetValue(new UnityEngine.Vector2Int(x, y), out int hitsApplied)
+                ? hitsApplied
+                : 0;
+        }
+
+        public int SetMiningHits(int x, int y, int hitsApplied)
+        {
+            if (!worldData.IsValidCoordinate(x, y) || !IsMineable(x, y))
+            {
+                ClearMiningHits(x, y);
+                return 0;
+            }
+
+            UnityEngine.Vector2Int key = new UnityEngine.Vector2Int(x, y);
+            if (hitsApplied <= 0)
+            {
+                miningHits.Remove(key);
+                return 0;
+            }
+
+            miningHits[key] = hitsApplied;
+            return hitsApplied;
+        }
+
+        public void ClearMiningHits(int x, int y)
+        {
+            miningHits.Remove(new UnityEngine.Vector2Int(x, y));
+        }
+
+        public List<MiningDamageData> CreateMiningDamageSnapshot()
+        {
+            var snapshot = new List<MiningDamageData>(miningHits.Count);
+            foreach (var pair in miningHits)
+            {
+                if (!worldData.IsValidCoordinate(pair.Key.x, pair.Key.y) || !IsMineable(pair.Key.x, pair.Key.y) || pair.Value <= 0)
+                {
+                    continue;
+                }
+
+                snapshot.Add(new MiningDamageData
+                {
+                    cellX = pair.Key.x,
+                    cellY = pair.Key.y,
+                    hitsApplied = pair.Value
+                });
+            }
+
+            return snapshot;
+        }
+
+        public void RestoreMiningDamage(IReadOnlyList<MiningDamageData> savedDamage)
+        {
+            miningHits.Clear();
+            if (savedDamage == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < savedDamage.Count; i++)
+            {
+                MiningDamageData entry = savedDamage[i];
+                if (entry == null || entry.hitsApplied <= 0)
+                {
+                    continue;
+                }
+
+                if (!worldData.IsValidCoordinate(entry.cellX, entry.cellY) || !IsMineable(entry.cellX, entry.cellY))
+                {
+                    continue;
+                }
+
+                miningHits[new UnityEngine.Vector2Int(entry.cellX, entry.cellY)] = entry.hitsApplied;
+            }
+        }
+
+        public static int GetCrackStage(int hitsApplied, int hitsRequired)
+        {
+            if (hitsApplied <= 0 || hitsRequired <= 0)
+            {
+                return 0;
+            }
+
+            if (hitsRequired <= 1)
+            {
+                return 3;
+            }
+
+            return UnityEngine.Mathf.Clamp(UnityEngine.Mathf.CeilToInt(hitsApplied * 3f / hitsRequired), 1, 3);
+        }
+
+        private int GetHighestTunnelRow()
+        {
+            if (highestTunnelRow.HasValue)
+            {
+                return highestTunnelRow.Value;
+            }
+
+            int highest = -1;
+            for (int y = 0; y < worldData.Height; y++)
+            {
+                for (int x = 0; x < worldData.Width; x++)
+                {
+                    if (worldData.GetTile(x, y) == TileID.Tunnel && y > highest)
+                    {
+                        highest = y;
+                    }
+                }
+            }
+
+            highestTunnelRow = highest;
+            return highest;
+        }
+
+        private void InvalidateCachedRowsIfNeeded(TileID previousTile, TileID nextTile)
+        {
+            if (previousTile == TileID.Tunnel || nextTile == TileID.Tunnel)
+            {
+                highestTunnelRow = null;
+            }
         }
 
         public bool CanStoneStartFalling(int x, int y)

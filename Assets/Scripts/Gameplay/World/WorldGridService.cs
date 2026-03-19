@@ -106,6 +106,29 @@ public sealed class WorldGridService : MonoBehaviour
         return cells[cell.x, cell.y];
     }
 
+    public TileID GetTileId(Vector2Int cell)
+    {
+        if (!IsInsideBounds(cell))
+        {
+            if (cell.y >= height)
+            {
+                return TileID.Empty;
+            }
+
+            return TileID.Edge;
+        }
+
+        WorldRuntime runtime = GetWorldRuntime();
+        if (isReady && runtime != null)
+        {
+            return runtime.GetTile(cell.x, cell.y);
+        }
+
+        return TryMapCellTypeToTileId(cells[cell.x, cell.y], out TileID tileId)
+            ? tileId
+            : TileID.Empty;
+    }
+
     public void SetCellType(Vector2Int cell, WorldCellType newType)
     {
         if (!IsInsideBounds(cell))

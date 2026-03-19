@@ -1,3 +1,4 @@
+using MinerUnity.Terrain;
 using UnityEngine;
 
 [RequireComponent(typeof(CapsuleCollider2D))]
@@ -89,6 +90,91 @@ public sealed class HeroCollision : MonoBehaviour
         }
 
         return worldGrid.GetCellType(GetFootCell());
+    }
+
+    public TileID GetFootTileId()
+    {
+        if (ResolveWorldGrid() == null || !worldGrid.IsReady)
+        {
+            return TileID.Empty;
+        }
+
+        return worldGrid.GetTileId(GetFootCell());
+    }
+
+    public WorldCellType GetCellType(Vector2Int cell)
+    {
+        if (ResolveWorldGrid() == null || !worldGrid.IsReady)
+        {
+            return WorldCellType.Empty;
+        }
+
+        return worldGrid.GetCellType(cell);
+    }
+
+    public TileID GetTileId(Vector2Int cell)
+    {
+        if (ResolveWorldGrid() == null || !worldGrid.IsReady)
+        {
+            return TileID.Empty;
+        }
+
+        return worldGrid.GetTileId(cell);
+    }
+
+    public bool TryGetColliderCell(Collider2D collider, out Vector2Int cell)
+    {
+        cell = Vector2Int.zero;
+        if (ResolveWorldGrid() == null || !worldGrid.IsReady || collider == null)
+        {
+            return false;
+        }
+
+        if (collider.isTrigger)
+        {
+            return false;
+        }
+
+        TileBehaviour tileBehaviour = collider.GetComponent<TileBehaviour>();
+        if (tileBehaviour != null)
+        {
+            cell = new Vector2Int(tileBehaviour.gridX, tileBehaviour.gridY);
+            return true;
+        }
+
+        cell = worldGrid.WorldToCell(collider.bounds.center);
+        return true;
+    }
+
+    public bool TryDescribeCollider(Collider2D collider, out Vector2Int cell, out TileID tileId, out WorldCellType cellType)
+    {
+        cell = Vector2Int.zero;
+        tileId = TileID.Empty;
+        cellType = WorldCellType.Empty;
+
+        if (!TryGetColliderCell(collider, out cell))
+        {
+            return false;
+        }
+
+        tileId = GetTileId(cell);
+        cellType = GetCellType(cell);
+        return true;
+    }
+
+    public bool TryGetCurrentSupportInfo(out Collider2D supportCollider, out Vector2Int supportCell, out TileID supportTileId, out WorldCellType supportCellType)
+    {
+        supportCollider = null;
+        supportCell = Vector2Int.zero;
+        supportTileId = TileID.Empty;
+        supportCellType = WorldCellType.Empty;
+
+        if (groundSensor == null || !groundSensor.TryGetGroundHit(out supportCollider))
+        {
+            return false;
+        }
+
+        return TryDescribeCollider(supportCollider, out supportCell, out supportTileId, out supportCellType);
     }
 
     private WorldGridService ResolveWorldGrid()

@@ -9,6 +9,8 @@ public sealed class HeroGroundSensor : MonoBehaviour
     [SerializeField, Min(0.005f)] private float groundProbeDistance = 0.08f;
     [SerializeField, Range(0.1f, 1f)] private float probeWidthFactor = 0.9f;
 
+    private readonly Collider2D[] overlapHits = new Collider2D[8];
+
     public CapsuleCollider2D Capsule => capsule;
     public LayerMask SolidMask => solidMask;
     public float GroundProbeDistance => groundProbeDistance;
@@ -38,8 +40,26 @@ public sealed class HeroGroundSensor : MonoBehaviour
         }
 
         GetGroundProbe(out Vector2 center, out Vector2 size);
-        hit = Physics2D.OverlapBox(center, size, 0f, solidMask);
-        return hit != null && hit != capsule;
+        ContactFilter2D filter = new ContactFilter2D
+        {
+            useLayerMask = true,
+            layerMask = solidMask,
+            useTriggers = false
+        };
+
+        int hitCount = Physics2D.OverlapBox(center, size, 0f, filter, overlapHits);
+        for (int i = 0; i < hitCount; i++)
+        {
+            Collider2D candidate = overlapHits[i];
+            if (candidate != null && candidate != capsule)
+            {
+                hit = candidate;
+                return true;
+            }
+        }
+
+        hit = null;
+        return false;
     }
 
     public void GetGroundProbe(out Vector2 center, out Vector2 size)

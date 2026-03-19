@@ -27,9 +27,16 @@ namespace MinerUnity.Runtime
 
         public static GameStartMode ConsumePendingStartMode(GameStartMode fallback = GameStartMode.Continue)
         {
-            GameStartMode result = pendingStartMode == GameStartMode.Unspecified
-                ? fallback
-                : pendingStartMode;
+            return ConsumePendingStartMode(out _, fallback);
+        }
+
+        public static GameStartMode ConsumePendingStartMode(out bool wasExplicitRequest, GameStartMode fallback = GameStartMode.Continue)
+        {
+            wasExplicitRequest = pendingStartMode != GameStartMode.Unspecified;
+
+            GameStartMode result = wasExplicitRequest
+                ? pendingStartMode
+                : fallback;
 
             pendingStartMode = GameStartMode.Unspecified;
             return result;

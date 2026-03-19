@@ -320,7 +320,10 @@ Current Stage 1 progress:
 1. `HeroMotor`, `HeroGroundSensor`, and `HeroWallSensor` were introduced as separate runtime components
 2. `HeroGroundCore` now owns the fixed-step ground loop, sensor-driven locomotion decisions, and movement diagnostics
 3. `HeroController` is reduced to input capture, input logging, and debug-tool bootstrap
-4. runtime behavior still needs play-mode verification before Stage 1 can be considered complete
+4. diagnostics now distinguish probe cells from actual support or blocker colliders, which makes movement logs easier to trust
+5. ground sensing ignores trigger-only colliders such as cave background geometry
+6. gameplay boot now logs the resolved launch mode so `Continue`, `NewGame`, and fallback starts are explicit in session logs
+7. runtime behavior still needs play-mode verification before Stage 1 can be considered complete
 
 Exit criteria:
 

@@ -1,3 +1,4 @@
+using MinerUnity.Terrain;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -95,6 +96,12 @@ public sealed class HeroGroundCore : MonoBehaviour
         bool grounded = groundSensor.TryGetGroundHit(out Collider2D groundHit);
         if (grounded != wasGrounded)
         {
+            Vector2Int supportCell = Vector2Int.zero;
+            TileID supportTileId = TileID.Empty;
+            WorldCellType supportCellType = WorldCellType.Empty;
+            bool hasSupportInfo = grounded
+                && collision.TryDescribeCollider(groundHit, out supportCell, out supportTileId, out supportCellType);
+
             Diag.Event(
                 "Hero",
                 "GroundedChanged",
@@ -102,10 +109,14 @@ public sealed class HeroGroundCore : MonoBehaviour
                 this,
                 ("grounded", grounded),
                 ("velocityY", CurrentSpeedY),
-                ("support", grounded ? groundHit.name : "None"),
-                ("supportLayer", grounded ? LayerMask.LayerToName(groundHit.gameObject.layer) : "None"),
-                ("footCell", collision.GetFootCell().ToString()),
-                ("footType", collision.GetFootCellType().ToString()));
+                ("groundSupportObject", grounded ? groundHit.name : "None"),
+                ("groundSupportLayer", grounded ? LayerMask.LayerToName(groundHit.gameObject.layer) : "None"),
+                ("groundSupportCell", hasSupportInfo ? supportCell.ToString() : "None"),
+                ("groundSupportTile", hasSupportInfo ? supportTileId.ToString() : "None"),
+                ("groundSupportType", hasSupportInfo ? supportCellType.ToString() : "None"),
+                ("groundProbeCell", collision.GetFootCell().ToString()),
+                ("groundProbeTile", collision.GetFootTileId().ToString()),
+                ("groundProbeType", collision.GetFootCellType().ToString()));
 
             if (grounded)
             {
@@ -122,6 +133,15 @@ public sealed class HeroGroundCore : MonoBehaviour
         bool blocked = wallSensor.TryGetHorizontalBlockHit(desiredHorizontalInput, out RaycastHit2D blockHit);
         if (blocked && logBlockedMovement && Mathf.Abs(desiredHorizontalInput) > inputDeadZone && !wasBlocked)
         {
+            Vector2Int blockerCell = Vector2Int.zero;
+            TileID blockerTileId = TileID.Empty;
+            WorldCellType blockerCellType = WorldCellType.Empty;
+            bool hasBlockerInfo = collision.TryDescribeCollider(
+                blockHit.collider,
+                out blockerCell,
+                out blockerTileId,
+                out blockerCellType);
+
             Diag.Warning(
                 "Hero",
                 "MoveBlocked",
@@ -130,10 +150,13 @@ public sealed class HeroGroundCore : MonoBehaviour
                 ("x", desiredHorizontalInput),
                 ("blocker", blockHit.collider != null ? blockHit.collider.name : "None"),
                 ("blockerLayer", blockHit.collider != null ? LayerMask.LayerToName(blockHit.collider.gameObject.layer) : "None"),
+                ("blockerCell", hasBlockerInfo ? blockerCell.ToString() : "None"),
+                ("blockerTile", hasBlockerInfo ? blockerTileId.ToString() : "None"),
+                ("blockerType", hasBlockerInfo ? blockerCellType.ToString() : "None"),
                 ("blockDistance", blockHit.distance),
-                ("cell", collision.GetCurrentCell().ToString()),
-                ("footCell", collision.GetFootCell().ToString()),
-                ("footType", collision.GetFootCellType().ToString()));
+                ("wallProbeCell", collision.GetFootCell().ToString()),
+                ("wallProbeTile", collision.GetFootTileId().ToString()),
+                ("wallProbeType", collision.GetFootCellType().ToString()));
         }
 
         wasBlocked = blocked;

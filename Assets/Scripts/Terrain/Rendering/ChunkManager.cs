@@ -73,7 +73,16 @@ namespace MinerUnity.Terrain
         {
             CacheDefaultHeroSpawnPosition();
 
-            GameStartMode startMode = GameLaunchContext.ConsumePendingStartMode();
+            GameStartMode startMode = GameLaunchContext.ConsumePendingStartMode(out bool explicitStartModeRequest);
+            Diag.Event(
+                "Game",
+                "LaunchModeResolved",
+                "Gameplay scene launch mode resolved.",
+                this,
+                ("mode", startMode.ToString()),
+                ("explicitRequest", explicitStartModeRequest),
+                ("fallbackMode", GameStartMode.Continue.ToString()));
+
             if (startMode == GameStartMode.NewGame)
             {
                 GamePersistenceService.ResetForNewGame();

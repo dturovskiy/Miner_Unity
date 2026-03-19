@@ -41,6 +41,7 @@ public sealed class HeroDebugContextProvider : MonoBehaviour, IDiagContextProvid
             {
                 fields.Add(new DiagField("cell", heroCollision.GetCurrentCell().ToString()));
                 fields.Add(new DiagField("footCell", heroCollision.GetFootCell().ToString()));
+                fields.Add(new DiagField("footTile", heroCollision.GetFootTileId().ToString()));
                 fields.Add(new DiagField("footType", heroCollision.GetFootCellType().ToString()));
             }
         }

@@ -47,7 +47,21 @@ public sealed class HeroDebugSnapshotProvider : MonoBehaviour, IDiagSnapshotProv
                 fields.Add(new DiagField("grounded", DiagFieldBag.Stringify(heroCollision.IsGrounded())));
                 fields.Add(new DiagField("cell", heroCollision.GetCurrentCell().ToString()));
                 fields.Add(new DiagField("footCell", heroCollision.GetFootCell().ToString()));
+                fields.Add(new DiagField("footTile", heroCollision.GetFootTileId().ToString()));
                 fields.Add(new DiagField("footType", heroCollision.GetFootCellType().ToString()));
+
+                if (heroCollision.TryGetCurrentSupportInfo(
+                    out Collider2D supportCollider,
+                    out Vector2Int supportCell,
+                    out MinerUnity.Terrain.TileID supportTileId,
+                    out WorldCellType supportCellType))
+                {
+                    fields.Add(new DiagField("supportObject", supportCollider != null ? supportCollider.name : "None"));
+                    fields.Add(new DiagField("supportLayer", supportCollider != null ? LayerMask.LayerToName(supportCollider.gameObject.layer) : "None"));
+                    fields.Add(new DiagField("supportCell", supportCell.ToString()));
+                    fields.Add(new DiagField("supportTile", supportTileId.ToString()));
+                    fields.Add(new DiagField("supportType", supportCellType.ToString()));
+                }
             }
         }
     }

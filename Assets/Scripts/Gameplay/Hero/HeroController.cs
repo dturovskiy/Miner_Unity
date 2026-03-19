@@ -2,12 +2,17 @@ using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(CapsuleCollider2D))]
+[RequireComponent(typeof(HeroMotor))]
+[RequireComponent(typeof(HeroGroundSensor))]
+[RequireComponent(typeof(HeroWallSensor))]
 [RequireComponent(typeof(HeroCollision))]
 [RequireComponent(typeof(HeroState))]
 public sealed class HeroController : MonoBehaviour
 {
     [Header("References")]
-    [SerializeField] private Rigidbody2D rb;
+    [SerializeField] private HeroMotor motor;
+    [SerializeField] private HeroGroundSensor groundSensor;
+    [SerializeField] private HeroWallSensor wallSensor;
     [SerializeField] private HeroCollision collision;
     [SerializeField] private HeroState state;
     [SerializeField] private Joystick movementJoystick;
@@ -28,21 +33,48 @@ public sealed class HeroController : MonoBehaviour
     private bool wasBlocked;
 
     public float HorizontalInput => horizontalInput;
-    public float CurrentSpeedX => rb != null ? rb.linearVelocity.x : 0f;
-    public float CurrentSpeedY => rb != null ? rb.linearVelocity.y : 0f;
+    public float CurrentSpeedX => motor != null ? motor.CurrentSpeedX : 0f;
+    public float CurrentSpeedY => motor != null ? motor.CurrentSpeedY : 0f;
 
     private void Reset()
     {
-        rb = GetComponent<Rigidbody2D>();
+        motor = GetComponent<HeroMotor>();
+        groundSensor = GetComponent<HeroGroundSensor>();
+        wallSensor = GetComponent<HeroWallSensor>();
         collision = GetComponent<HeroCollision>();
         state = GetComponent<HeroState>();
     }
 
     private void Awake()
     {
-        if (rb == null)
+        if (motor == null)
         {
-            rb = GetComponent<Rigidbody2D>();
+            motor = GetComponent<HeroMotor>();
+        }
+
+        if (motor == null)
+        {
+            motor = gameObject.AddComponent<HeroMotor>();
+        }
+
+        if (groundSensor == null)
+        {
+            groundSensor = GetComponent<HeroGroundSensor>();
+        }
+
+        if (groundSensor == null)
+        {
+            groundSensor = gameObject.AddComponent<HeroGroundSensor>();
+        }
+
+        if (wallSensor == null)
+        {
+            wallSensor = GetComponent<HeroWallSensor>();
+        }
+
+        if (wallSensor == null)
+        {
+            wallSensor = gameObject.AddComponent<HeroWallSensor>();
         }
 
         if (collision == null)
@@ -60,9 +92,7 @@ public sealed class HeroController : MonoBehaviour
             movementJoystick = FindFirstObjectByType<Joystick>();
         }
 
-        rb.bodyType = RigidbodyType2D.Dynamic;
-        rb.gravityScale = Mathf.Max(0.01f, rb.gravityScale);
-        rb.freezeRotation = true;
+        motor.ConfigureBody();
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         EnsureDebugTools();
@@ -90,7 +120,7 @@ public sealed class HeroController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        bool grounded = collision.IsGrounded();
+        bool grounded = groundSensor != null && groundSensor.IsGrounded();
         if (grounded != wasGrounded)
         {
             Diag.Event(
@@ -99,23 +129,23 @@ public sealed class HeroController : MonoBehaviour
                 grounded ? "Hero is grounded." : "Hero left ground.",
                 this,
                 ("grounded", grounded),
-                ("velocityY", rb.linearVelocity.y),
+                ("velocityY", CurrentSpeedY),
                 ("footCell", collision.GetFootCell().ToString()),
                 ("footType", collision.GetFootCellType().ToString()));
 
             if (grounded)
             {
-                Diag.Event("Hero", "Landed", null, this, ("velocityY", rb.linearVelocity.y));
+                Diag.Event("Hero", "Landed", null, this, ("velocityY", CurrentSpeedY));
             }
             else
             {
-                Diag.Event("Hero", "FallStarted", null, this, ("velocityY", rb.linearVelocity.y));
+                Diag.Event("Hero", "FallStarted", null, this, ("velocityY", CurrentSpeedY));
             }
 
             wasGrounded = grounded;
         }
 
-        bool blocked = collision.IsBlockedHorizontally(horizontalInput);
+        bool blocked = wallSensor != null && wallSensor.IsBlockedHorizontally(horizontalInput);
         if (blocked && logBlockedMovement && Mathf.Abs(horizontalInput) > inputDeadZone && !wasBlocked)
         {
             Diag.Warning(
@@ -130,23 +160,11 @@ public sealed class HeroController : MonoBehaviour
         }
         wasBlocked = blocked;
 
-        Vector2 velocity = rb.linearVelocity;
+        float velocityX = motor != null
+            ? motor.ApplyHorizontalMovement(horizontalInput, blocked, inputDeadZone, moveSpeed)
+            : 0f;
 
-        if (Mathf.Abs(horizontalInput) <= inputDeadZone)
-        {
-            velocity.x = 0f;
-        }
-        else if (blocked)
-        {
-            velocity.x = 0f;
-        }
-        else
-        {
-            velocity.x = horizontalInput * moveSpeed;
-        }
-
-        rb.linearVelocity = velocity;
-        UpdateState(grounded, Mathf.Abs(velocity.x) > 0.01f);
+        UpdateState(grounded, Mathf.Abs(velocityX) > 0.01f);
     }
 
     private float ReadHorizontalInput()
@@ -172,14 +190,7 @@ public sealed class HeroController : MonoBehaviour
 
     private void UpdateFacing()
     {
-        if (!flipSpriteByScale || Mathf.Abs(horizontalInput) <= inputDeadZone)
-        {
-            return;
-        }
-
-        Vector3 scale = transform.localScale;
-        scale.x = Mathf.Abs(scale.x) * (horizontalInput >= 0f ? -1f : 1f);
-        transform.localScale = scale;
+        motor?.UpdateFacing(horizontalInput, inputDeadZone, flipSpriteByScale);
     }
 
     private void UpdateState(bool grounded, bool moving)

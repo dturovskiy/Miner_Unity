@@ -301,7 +301,7 @@ Stage 0 close-out:
 
 Status:
 
-`Ready to start`
+`Started`
 
 Goals:
 
@@ -314,6 +314,12 @@ Work packages:
 1. separate motor logic from sensing logic
 2. make locomotion state transitions depend only on trusted sensors
 3. keep logs focused on input, grounding, blocking, and locomotion state
+
+Current Stage 1 progress:
+
+1. `HeroMotor`, `HeroGroundSensor`, and `HeroWallSensor` were introduced as separate runtime components
+2. `HeroController` now orchestrates input and state while delegating sensing and horizontal motion
+3. runtime behavior still needs play-mode verification before Stage 1 can be considered complete
 
 Exit criteria:
 

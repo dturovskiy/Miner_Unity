@@ -72,11 +72,11 @@
 
 ### Structure
 
-- [ ] introduce `HeroMotor`
-- [ ] introduce `HeroGroundSensor`
-- [ ] introduce `HeroWallSensor`
+- [x] introduce `HeroMotor`
+- [x] introduce `HeroGroundSensor`
+- [x] introduce `HeroWallSensor`
 - [ ] shrink or replace `HeroController`
-- [ ] keep `HeroState` locomotion-only
+- [x] keep `HeroState` locomotion-only
 
 ### Behavior
 

@@ -47,7 +47,7 @@ Not started yet:
 
 - [ ] root save model implementation finished
 - [ ] single world authority implementation finished
-- [ ] Stage 1 ground core refactor
+- [x] Stage 1 ground core refactor
 - [ ] Stage 2 mining rewrite
 - [ ] Stage 3 ladder rewrite
 - [ ] Stage 4 save and UI reintegration
@@ -301,7 +301,7 @@ Stage 0 close-out:
 
 Status:
 
-`Started`
+`Completed`
 
 Goals:
 
@@ -320,11 +320,12 @@ Current Stage 1 progress:
 1. `HeroMotor`, `HeroGroundSensor`, and `HeroWallSensor` were introduced as separate runtime components
 2. `HeroGroundCore` now owns the fixed-step ground loop, sensor-driven locomotion decisions, and movement diagnostics
 3. `HeroController` is reduced to input capture, input logging, and debug-tool bootstrap
-4. diagnostics now distinguish probe cells from actual support or blocker colliders, which makes movement logs easier to trust
-5. ground sensing ignores trigger-only colliders such as cave background geometry
-6. gameplay boot now logs the resolved launch mode so `Continue`, `NewGame`, and fallback starts are explicit in session logs
-7. `StateChanged` and `MoveBlocked` volumes should still be monitored in long stress sessions, even though the current logs remain deterministic and non-blocking
-8. runtime behavior still needs play-mode verification before Stage 1 can be considered complete
+4. `HeroGroundCore` now evaluates ground and wall state through explicit per-frame snapshots instead of mixing probe reads and logging inline
+5. diagnostics now distinguish probe cells from actual support or blocker colliders, including a dedicated wall probe cell
+6. ground sensing ignores trigger-only colliders such as cave background geometry
+7. gameplay boot now logs the resolved launch mode so `Continue`, `NewGame`, and fallback starts are explicit in session logs
+8. `StateChanged` and `MoveBlocked` volumes should still be monitored in long stress sessions, even though the current logs remain deterministic and non-blocking
+9. latest stress-session logs confirm stable movement, deterministic blocking, deterministic falling, and readable diagnostics
 
 Exit criteria:
 
@@ -332,6 +333,12 @@ Exit criteria:
 2. hero stands on solid cells consistently
 3. hero falls only when support is absent
 4. hero does not move through solid cells on X
+
+Stage 1 close-out:
+
+1. ground movement now runs through separated motor, sensor, collision, and state responsibilities
+2. stress-session logs show deterministic `MoveBlocked`, `GroundedChanged`, `FallStarted`, and `Landed`
+3. `Stage 2 - Mining` can start on top of a stable ground core
 
 ## Stage 2 - Mining
 

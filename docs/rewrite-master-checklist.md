@@ -21,7 +21,7 @@
 - [x] script layout cleanup applied without breaking the local build
 - [ ] visibility and fog of war design documented and staged
 - [x] Stage 0 completed
-- [ ] Stage 1 completed
+- [x] Stage 1 completed
 - [ ] Stage 2 completed
 - [ ] Stage 3 completed
 - [ ] Stage 4 completed
@@ -80,16 +80,16 @@
 
 ### Behavior
 
-- [ ] hero does not start airborne without cause
-- [ ] hero stands on solid cells consistently
-- [ ] hero falls only when support is absent
-- [ ] hero does not move through solid cells on X
+- [x] hero does not start airborne without cause
+- [x] hero stands on solid cells consistently
+- [x] hero falls only when support is absent
+- [x] hero does not move through solid cells on X
 
 ### Logging
 
-- [ ] locomotion logs are limited to useful gameplay events
-- [ ] movement blocking is explained by deterministic sensor results
-- [ ] grounded changes are easy to read in a short log session
+- [x] locomotion logs are limited to useful gameplay events
+- [x] movement blocking is explained by deterministic sensor results
+- [x] grounded changes are easy to read in a short log session
 - [-] monitor `StateChanged` and `MoveBlocked` volume in long stress sessions; current counts are not a blocker while events remain deterministic
 
 ## Stage 2 - Mining

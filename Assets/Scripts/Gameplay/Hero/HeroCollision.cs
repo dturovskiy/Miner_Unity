@@ -70,6 +70,16 @@ public sealed class HeroCollision : MonoBehaviour
         return worldGrid.WorldToCell(transform.position);
     }
 
+    public Vector2Int WorldToCell(Vector2 worldPosition)
+    {
+        if (ResolveWorldGrid() == null || !worldGrid.IsReady)
+        {
+            return Vector2Int.zero;
+        }
+
+        return worldGrid.WorldToCell(worldPosition);
+    }
+
     public Vector2Int GetFootCell()
     {
         if (ResolveWorldGrid() == null || !worldGrid.IsReady)
@@ -80,6 +90,27 @@ public sealed class HeroCollision : MonoBehaviour
         Bounds bounds = capsule.bounds;
         Vector2 probe = new Vector2(bounds.center.x, bounds.min.y - 0.02f);
         return worldGrid.WorldToCell(probe);
+    }
+
+    public Vector2Int GetGroundProbeCell()
+    {
+        if (ResolveWorldGrid() == null || !worldGrid.IsReady || groundSensor == null)
+        {
+            return Vector2Int.zero;
+        }
+
+        groundSensor.GetGroundProbe(out Vector2 center, out _);
+        return worldGrid.WorldToCell(center);
+    }
+
+    public Vector2Int GetWallProbeCell(float direction)
+    {
+        if (ResolveWorldGrid() == null || !worldGrid.IsReady || wallSensor == null || Mathf.Approximately(direction, 0f))
+        {
+            return Vector2Int.zero;
+        }
+
+        return worldGrid.WorldToCell(wallSensor.GetHorizontalProbePoint(direction));
     }
 
     public WorldCellType GetFootCellType()
@@ -100,6 +131,46 @@ public sealed class HeroCollision : MonoBehaviour
         }
 
         return worldGrid.GetTileId(GetFootCell());
+    }
+
+    public WorldCellType GetGroundProbeCellType()
+    {
+        if (ResolveWorldGrid() == null || !worldGrid.IsReady)
+        {
+            return WorldCellType.Empty;
+        }
+
+        return worldGrid.GetCellType(GetGroundProbeCell());
+    }
+
+    public TileID GetGroundProbeTileId()
+    {
+        if (ResolveWorldGrid() == null || !worldGrid.IsReady)
+        {
+            return TileID.Empty;
+        }
+
+        return worldGrid.GetTileId(GetGroundProbeCell());
+    }
+
+    public WorldCellType GetWallProbeCellType(float direction)
+    {
+        if (ResolveWorldGrid() == null || !worldGrid.IsReady)
+        {
+            return WorldCellType.Empty;
+        }
+
+        return worldGrid.GetCellType(GetWallProbeCell(direction));
+    }
+
+    public TileID GetWallProbeTileId(float direction)
+    {
+        if (ResolveWorldGrid() == null || !worldGrid.IsReady)
+        {
+            return TileID.Empty;
+        }
+
+        return worldGrid.GetTileId(GetWallProbeCell(direction));
     }
 
     public WorldCellType GetCellType(Vector2Int cell)

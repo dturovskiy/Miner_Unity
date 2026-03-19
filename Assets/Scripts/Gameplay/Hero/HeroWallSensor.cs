@@ -57,4 +57,18 @@ public sealed class HeroWallSensor : MonoBehaviour
         hit = default;
         return false;
     }
+
+    public Vector2 GetHorizontalProbePoint(float direction)
+    {
+        if (capsule == null || Mathf.Approximately(direction, 0f))
+        {
+            return Vector2.zero;
+        }
+
+        Bounds bounds = capsule.bounds;
+        float sign = Mathf.Sign(direction);
+        return new Vector2(
+            bounds.center.x + sign * (bounds.extents.x + wallProbeDistance),
+            bounds.center.y);
+    }
 }

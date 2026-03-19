@@ -318,8 +318,9 @@ Work packages:
 Current Stage 1 progress:
 
 1. `HeroMotor`, `HeroGroundSensor`, and `HeroWallSensor` were introduced as separate runtime components
-2. `HeroController` now orchestrates input and state while delegating sensing and horizontal motion
-3. runtime behavior still needs play-mode verification before Stage 1 can be considered complete
+2. `HeroGroundCore` now owns the fixed-step ground loop, sensor-driven locomotion decisions, and movement diagnostics
+3. `HeroController` is reduced to input capture, input logging, and debug-tool bootstrap
+4. runtime behavior still needs play-mode verification before Stage 1 can be considered complete
 
 Exit criteria:
 

@@ -26,13 +26,19 @@ public sealed class HeroGroundSensor : MonoBehaviour
 
     public bool IsGrounded()
     {
+        return TryGetGroundHit(out _);
+    }
+
+    public bool TryGetGroundHit(out Collider2D hit)
+    {
         if (capsule == null)
         {
+            hit = null;
             return false;
         }
 
         GetGroundProbe(out Vector2 center, out Vector2 size);
-        Collider2D hit = Physics2D.OverlapBox(center, size, 0f, solidMask);
+        hit = Physics2D.OverlapBox(center, size, 0f, solidMask);
         return hit != null && hit != capsule;
     }
 

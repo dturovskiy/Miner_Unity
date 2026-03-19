@@ -75,7 +75,7 @@
 - [x] introduce `HeroMotor`
 - [x] introduce `HeroGroundSensor`
 - [x] introduce `HeroWallSensor`
-- [ ] shrink or replace `HeroController`
+- [x] shrink or replace `HeroController`
 - [x] keep `HeroState` locomotion-only
 
 ### Behavior

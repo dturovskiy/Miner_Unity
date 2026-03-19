@@ -26,8 +26,14 @@ public sealed class HeroWallSensor : MonoBehaviour
 
     public bool IsBlockedHorizontally(float direction)
     {
+        return TryGetHorizontalBlockHit(direction, out _);
+    }
+
+    public bool TryGetHorizontalBlockHit(float direction, out RaycastHit2D hit)
+    {
         if (capsule == null || Mathf.Approximately(direction, 0f))
         {
+            hit = default;
             return false;
         }
 
@@ -43,10 +49,12 @@ public sealed class HeroWallSensor : MonoBehaviour
         {
             if (castHits[i].collider != null && castHits[i].collider != capsule)
             {
+                hit = castHits[i];
                 return true;
             }
         }
 
+        hit = default;
         return false;
     }
 }

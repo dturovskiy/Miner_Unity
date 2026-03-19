@@ -90,6 +90,7 @@
 - [ ] locomotion logs are limited to useful gameplay events
 - [ ] movement blocking is explained by deterministic sensor results
 - [ ] grounded changes are easy to read in a short log session
+- [-] monitor `StateChanged` and `MoveBlocked` volume in long stress sessions; current counts are not a blocker while events remain deterministic
 
 ## Stage 2 - Mining
 

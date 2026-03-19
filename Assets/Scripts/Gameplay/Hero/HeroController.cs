@@ -32,22 +32,16 @@ public sealed class HeroController : MonoBehaviour
         groundCore = GetComponent<HeroGroundCore>();
     }
 
+    private void OnValidate()
+    {
+        ResolveReferences();
+        ApplyGroundCoreConfiguration();
+    }
+
     private void Awake()
     {
-        if (groundCore == null)
-        {
-            groundCore = GetComponent<HeroGroundCore>();
-        }
-
-        groundCore ??= gameObject.AddComponent<HeroGroundCore>();
-
-        if (movementJoystick == null)
-        {
-            movementJoystick = FindFirstObjectByType<Joystick>();
-        }
-
-        groundCore.ConfigureMovement(moveSpeed, inputDeadZone, flipSpriteByScale);
-        groundCore.ConfigureDiagnostics(logBlockedMovement, fixedFramesToWaitAfterWorldReady);
+        ResolveReferences();
+        ApplyGroundCoreConfiguration();
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         EnsureDebugTools();
@@ -56,6 +50,7 @@ public sealed class HeroController : MonoBehaviour
 
     private void Update()
     {
+        ResolveMovementJoystickIfNeeded();
         horizontalInput = ReadHorizontalInput();
 
         if (logInputChanges && Mathf.Abs(horizontalInput - previousInput) > 0.2f)
@@ -71,8 +66,6 @@ public sealed class HeroController : MonoBehaviour
 
         previousInput = horizontalInput;
         groundCore?.SetDesiredHorizontalInput(horizontalInput);
-        groundCore?.ConfigureMovement(moveSpeed, inputDeadZone, flipSpriteByScale);
-        groundCore?.ConfigureDiagnostics(logBlockedMovement, fixedFramesToWaitAfterWorldReady);
     }
 
     private float ReadHorizontalInput()
@@ -95,6 +88,37 @@ public sealed class HeroController : MonoBehaviour
 
         return Mathf.Clamp(x, -1f, 1f);
     }
+
+    private void ResolveReferences()
+    {
+        if (groundCore == null)
+        {
+            groundCore = GetComponent<HeroGroundCore>();
+        }
+
+        groundCore ??= gameObject.AddComponent<HeroGroundCore>();
+        ResolveMovementJoystickIfNeeded();
+    }
+
+    private void ResolveMovementJoystickIfNeeded()
+    {
+        if (movementJoystick == null)
+        {
+            movementJoystick = FindFirstObjectByType<Joystick>();
+        }
+    }
+
+    private void ApplyGroundCoreConfiguration()
+    {
+        if (groundCore == null)
+        {
+            return;
+        }
+
+        groundCore.ConfigureMovement(moveSpeed, inputDeadZone, flipSpriteByScale);
+        groundCore.ConfigureDiagnostics(logBlockedMovement, fixedFramesToWaitAfterWorldReady);
+    }
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
     private void EnsureDebugTools()
     {

@@ -323,7 +323,8 @@ Current Stage 1 progress:
 4. diagnostics now distinguish probe cells from actual support or blocker colliders, which makes movement logs easier to trust
 5. ground sensing ignores trigger-only colliders such as cave background geometry
 6. gameplay boot now logs the resolved launch mode so `Continue`, `NewGame`, and fallback starts are explicit in session logs
-7. runtime behavior still needs play-mode verification before Stage 1 can be considered complete
+7. `StateChanged` and `MoveBlocked` volumes should still be monitored in long stress sessions, even though the current logs remain deterministic and non-blocking
+8. runtime behavior still needs play-mode verification before Stage 1 can be considered complete
 
 Exit criteria:
 

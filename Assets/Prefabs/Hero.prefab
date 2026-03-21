@@ -21,6 +21,10 @@ GameObject:
   - component: {fileID: 6637812054419201133}
   - component: {fileID: 4074647476582498815}
   - component: {fileID: 1767804235948839445}
+  - component: {fileID: 3038580098345736866}
+  - component: {fileID: 4261468780952288892}
+  - component: {fileID: 6142742312646185520}
+  - component: {fileID: 2806903647853965476}
   m_Layer: 3
   m_Name: Hero
   m_TagString: Player
@@ -175,6 +179,8 @@ MonoBehaviour:
   snapshotName: Heartbeat
   intervalSeconds: 0.5
   emitOnEnable: 1
+  minimumHeartbeatIntervalSeconds: 2
+  suppressUnchangedHeartbeats: 1
 --- !u!114 &8140039062436213594
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -187,15 +193,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737ab440048de794eb6e3e1876d3fa55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HeroCollision
-  rb: {fileID: 4573596400054799793}
   capsule: {fileID: 462460703696282872}
   worldGrid: {fileID: 0}
-  solidMask:
-    serializedVersion: 2
-    m_Bits: 1
-  groundProbeDistance: 0.08
-  probeWidthFactor: 0.9
-  wallProbeDistance: 0.05
+  groundSensor: {fileID: 0}
+  wallSensor: {fileID: 0}
 --- !u!114 &378698898247785166
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -221,9 +222,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 800440a87512add4384788e8aba5e9c4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HeroController
-  rb: {fileID: 4573596400054799793}
-  collision: {fileID: 8140039062436213594}
-  state: {fileID: 378698898247785166}
+  groundCore: {fileID: 2806903647853965476}
+  heroState: {fileID: 378698898247785166}
+  animator: {fileID: 8219802501390070605}
   movementJoystick: {fileID: 0}
   moveSpeed: 3
   useKeyboardFallback: 1
@@ -231,6 +232,7 @@ MonoBehaviour:
   flipSpriteByScale: 1
   logInputChanges: 1
   logBlockedMovement: 1
+  fixedFramesToWaitAfterWorldReady: 1
 --- !u!114 &6637812054419201133
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -243,15 +245,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fb79497219c3401aa6de161f0917936e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HeroMining
+  heroController: {fileID: 0}
   heroCollision: {fileID: 8140039062436213594}
+  heroState: {fileID: 0}
   chunkManager: {fileID: 0}
-  miningJoystick: {fileID: 0}
-  useKeyboardFallback: 1
+  animator: {fileID: 0}
   inputDeadZone: 0.35
-  mineUpKey: 105
-  mineDownKey: 107
-  mineLeftKey: 106
-  mineRightKey: 108
+  hitIntervalSeconds: 0.4
+  defaultHitsToBreak: 4
+  pickaxePowerBonus: 0
 --- !u!114 &4074647476582498815
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -283,6 +285,76 @@ MonoBehaviour:
   heroController: {fileID: 8325242555248039030}
   heroState: {fileID: 378698898247785166}
   heroCollision: {fileID: 8140039062436213594}
+--- !u!114 &3038580098345736866
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 180661555027601269}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eebfe885664ac04478b175eeea1134c4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HeroGroundSensor
+  capsule: {fileID: 462460703696282872}
+  solidMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  groundProbeDistance: 0.08
+  probeWidthFactor: 0.9
+--- !u!114 &4261468780952288892
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 180661555027601269}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 089208d97045c794f9d7fbfcd9a65e3f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HeroWallSensor
+  capsule: {fileID: 462460703696282872}
+  solidMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  wallProbeDistance: 0.05
+--- !u!114 &6142742312646185520
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 180661555027601269}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1854fe6b1ae71094ab22d72592643753, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HeroMotor
+  rb: {fileID: 4573596400054799793}
+--- !u!114 &2806903647853965476
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 180661555027601269}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a9d462c44b24eefb8838bafe1628ff1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HeroGroundCore
+  motor: {fileID: 6142742312646185520}
+  groundSensor: {fileID: 3038580098345736866}
+  wallSensor: {fileID: 4261468780952288892}
+  collision: {fileID: 8140039062436213594}
+  state: {fileID: 378698898247785166}
+  moveSpeed: 3
+  inputDeadZone: 0.15
+  flipSpriteByScale: 1
+  logBlockedMovement: 1
+  fixedFramesToWaitAfterWorldReady: 1
 --- !u!1 &1088475223798242320
 GameObject:
   m_ObjectHideFlags: 0
@@ -634,7 +706,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1447582193
-  m_SortingLayer: 0
+  m_SortingLayer: 3
   m_SortingOrder: 3
   m_MaskInteraction: 0
   m_Sprite: {fileID: 1616634130, guid: 1b3d73f8c79eb064f925c18474e49123, type: 3}
@@ -907,7 +979,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1447582193
-  m_SortingLayer: 0
+  m_SortingLayer: 3
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: -1437236559, guid: 1b3d73f8c79eb064f925c18474e49123, type: 3}

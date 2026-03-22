@@ -3,7 +3,28 @@ guid: e3e2b2e82d567db489def4e6f1ce6312
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - grass: {fileID: 11400000, guid: ee06e08d808bc4245926145fccdfe872, type: 2}
+  - dirt: {fileID: 11400000, guid: 9f39ae6b6d1957549b92adfe510258df, type: 2}
+  - stone: {fileID: 11400000, guid: f007af2b4d2b3a546b8db358f59a1a4b, type: 2}
+  - tunnel: {fileID: 11400000, guid: 20d8515ab265c824c90fa3c45edbaa32, type: 2}
+  - ladder: {fileID: 11400000, guid: 1429e3dd3232d73478f636c4cb724cc9, type: 2}
+  - coal: {fileID: 11400000, guid: 76671bfac2653c440bd451969df0e4d8, type: 2}
+  - iron: {fileID: 11400000, guid: c9c5ecb83f80ed84bacc4b2e7c563686, type: 2}
+  - gold: {fileID: 11400000, guid: d758535b26312bc48a48b986b6972864, type: 2}
+  - diamond: {fileID: 11400000, guid: 7a63bab2309f6e6409bbd6402eee91b6, type: 2}
+  - silver: {fileID: 11400000, guid: 12b4a0d225f31a24290f8793205e74a0, type: 2}
+  - platinum: {fileID: 11400000, guid: 10546113849104a4b970ff233498d087, type: 2}
+  - uranus: {fileID: 11400000, guid: ba40be9da0b731e449789bb44ccd882a, type: 2}
+  - lazurite: {fileID: 11400000, guid: 1b85a18d7201bf14fb244c1a3297e9a1, type: 2}
+  - topaz: {fileID: 11400000, guid: 24abd7082a4d8e447b6f79ca1f74bdc0, type: 2}
+  - emerald: {fileID: 11400000, guid: ad8abac992cfdf24e8c64beff861ee39, type: 2}
+  - nephritis: {fileID: 11400000, guid: 6aba656f4c4b4594394b59d60d4fd111, type: 2}
+  - ruby: {fileID: 11400000, guid: 65a58d2dec1bd47479bc346a0b39aff7, type: 2}
+  - amethyst: {fileID: 11400000, guid: 3d07b8d493b813f4496388711eaa0982, type: 2}
+  - opal: {fileID: 11400000, guid: b9236e6b38563a244a2c3f5b2aac4a7e, type: 2}
+  - map: {fileID: 11400000, guid: ca99654d8beac704597e2646bcac414f, type: 2}
+  - artifact: {fileID: 11400000, guid: a3308d4624256e64f9661b2b2daedd8f, type: 2}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 

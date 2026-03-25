@@ -7,6 +7,7 @@ using UnityEngine;
 [RequireComponent(typeof(HeroWallSensor))]
 [RequireComponent(typeof(HeroCollision))]
 [RequireComponent(typeof(HeroState))]
+[RequireComponent(typeof(HeroLadder))]
 public sealed class HeroGroundCore : MonoBehaviour
 {
     private readonly struct GroundEvaluation
@@ -88,6 +89,7 @@ public sealed class HeroGroundCore : MonoBehaviour
     [SerializeField] private HeroWallSensor wallSensor;
     [SerializeField] private HeroCollision collision;
     [SerializeField] private HeroState state;
+    [SerializeField] private HeroLadder ladder;
 
     [Header("Movement")]
     [SerializeField, Min(0f)] private float moveSpeed = 5f;
@@ -115,6 +117,7 @@ public sealed class HeroGroundCore : MonoBehaviour
         wallSensor = GetComponent<HeroWallSensor>();
         collision = GetComponent<HeroCollision>();
         state = GetComponent<HeroState>();
+        ladder = GetComponent<HeroLadder>();
     }
 
     private void Awake()
@@ -124,6 +127,7 @@ public sealed class HeroGroundCore : MonoBehaviour
         wallSensor ??= GetComponent<HeroWallSensor>();
         collision ??= GetComponent<HeroCollision>();
         state ??= GetComponent<HeroState>();
+        ladder ??= GetComponent<HeroLadder>();
 
         if (motor == null)
         {
@@ -150,11 +154,23 @@ public sealed class HeroGroundCore : MonoBehaviour
             state = gameObject.AddComponent<HeroState>();
         }
 
+        if (ladder == null)
+        {
+            ladder = gameObject.AddComponent<HeroLadder>();
+        }
+
         motor.ConfigureBody();
     }
 
     private void FixedUpdate()
     {
+        if (ladder != null && ladder.ShouldSuppressOtherMovement)
+        {
+            state.SetLocomotionSilently(HeroLocomotionState.Idle);
+            ResetBootstrapState();
+            return;
+        }
+
         if (!IsGameplayLoopReady())
         {
             ResetBootstrapState();
@@ -278,6 +294,14 @@ public sealed class HeroGroundCore : MonoBehaviour
         WorldCellType supportCellType = WorldCellType.Empty;
         bool hasSupportInfo = grounded
             && collision.TryDescribeCollider(groundHit, out supportCell, out supportTileId, out supportCellType);
+
+        if (!grounded
+            && ladder != null
+            && ladder.TryGetPassiveSupportInfo(out supportCell, out supportTileId, out supportCellType))
+        {
+            grounded = true;
+            hasSupportInfo = true;
+        }
 
         return new GroundEvaluation(
             grounded,

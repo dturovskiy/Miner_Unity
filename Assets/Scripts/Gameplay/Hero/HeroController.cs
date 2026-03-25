@@ -148,7 +148,7 @@ public sealed class HeroController : MonoBehaviour
             return;
         }
 
-        animator.SetBool("IsWalking", heroState.IsMoving);
+        animator.SetBool("IsWalking", heroState.IsMoving && !heroState.IsOnLadder);
     }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD

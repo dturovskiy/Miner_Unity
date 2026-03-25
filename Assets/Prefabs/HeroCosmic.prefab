@@ -299,7 +299,7 @@ Transform:
   m_GameObject: {fileID: 4624017390657197357}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: 0.011685269, w: -0.99993175}
-  m_LocalPosition: {x: -0.067, y: 0.129, z: 0}
+  m_LocalPosition: {x: -0.067, y: 0.029, z: 0}
   m_LocalScale: {x: 0.39999998, y: 0.39999998, z: 0.39999998}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -387,6 +387,7 @@ GameObject:
   - component: {fileID: 5599112207249851537}
   - component: {fileID: 2259001807262633423}
   - component: {fileID: 2437614690142414786}
+  - component: {fileID: 4069912736457281941}
   - component: {fileID: 1877280033431839237}
   - component: {fileID: 61509678246983959}
   m_Layer: 3
@@ -560,7 +561,7 @@ MonoBehaviour:
   capsule: {fileID: 5228529605429698027}
   solidMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 1
   groundProbeDistance: 0.08
   probeWidthFactor: 0.9
 --- !u!114 &2217783307299781603
@@ -578,7 +579,7 @@ MonoBehaviour:
   capsule: {fileID: 5228529605429698027}
   solidMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 1
   wallProbeDistance: 0.05
 --- !u!114 &8571359287416895096
 MonoBehaviour:
@@ -609,6 +610,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HeroState
   locomotion: 0
+  traversalMode: 0
 --- !u!114 &7362395604046055424
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -639,6 +641,7 @@ MonoBehaviour:
   wallSensor: {fileID: 2217783307299781603}
   collision: {fileID: 8571359287416895096}
   state: {fileID: 5182282197110586062}
+  ladder: {fileID: 0}
   moveSpeed: 5
   inputDeadZone: 0.15
   flipSpriteByScale: 1
@@ -682,12 +685,34 @@ MonoBehaviour:
   heroController: {fileID: 2259001807262633423}
   heroCollision: {fileID: 8571359287416895096}
   heroState: {fileID: 5182282197110586062}
+  heroLadder: {fileID: 0}
   chunkManager: {fileID: 0}
   animator: {fileID: 7786647554269757845}
   inputDeadZone: 0.35
   hitIntervalSeconds: 0.4
   defaultHitsToBreak: 4
   pickaxePowerBonus: 0
+--- !u!114 &4069912736457281941
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4652719634642206675}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0f4c0b9c614c4f3594d2dcb726ca8ef3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HeroLadder
+  heroController: {fileID: 2259001807262633423}
+  heroState: {fileID: 5182282197110586062}
+  heroCollision: {fileID: 8571359287416895096}
+  heroMotor: {fileID: 7362395604046055424}
+  heroCollider: {fileID: 5228529605429698027}
+  climbSpeed: 3
+  inputDeadZone: 0.35
+  verticalIntentBias: 0.15
+  verticalMiningReachMargin: 0.04
 --- !u!114 &1877280033431839237
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -745,7 +770,7 @@ Transform:
   m_GameObject: {fileID: 6829172897670658231}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: 0.70784587, w: -0.7063669}
-  m_LocalPosition: {x: 0.184, y: 0.044, z: 0}
+  m_LocalPosition: {x: 0.184, y: -0.056, z: 0}
   m_LocalScale: {x: 0.13, y: 0.13, z: 0.13}
   m_ConstrainProportionsScale: 1
   m_Children:
@@ -928,7 +953,7 @@ Transform:
   m_GameObject: {fileID: 8210091785491439774}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: -0.1, z: 0}
   m_LocalScale: {x: 0.44000003, y: 0.44000003, z: 0.44000003}
   m_ConstrainProportionsScale: 1
   m_Children:

@@ -412,7 +412,7 @@ Legacy references that informed the redesign:
 
 Status:
 
-`Blocked by Stage 1`
+`Started`
 
 Goals:
 
@@ -426,6 +426,13 @@ Work packages:
 3. define vertical movement rules
 4. define side exit and top or bottom exit rules
 5. log `LadderEntered`, `LadderExited`, `LadderBlocked`
+
+Current implementation status:
+
+1. `HeroLadder` is introduced and owns explicit ladder mode over the existing hero runtime
+2. ladder entry is driven by joystick intent plus runtime cell queries, while `HeroGroundCore` and `HeroMining` now back off when ladder mode claims the input
+3. current ladder placement testing now routes through the existing HUD button and places a ladder only into the hero current cell
+4. behavior and logs still need play-mode verification before Stage 3 can be marked complete
 
 Exit criteria:
 

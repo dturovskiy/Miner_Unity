@@ -27,6 +27,7 @@ public sealed class HeroMining : MonoBehaviour
     [SerializeField] private HeroController heroController;
     [SerializeField] private HeroCollision heroCollision;
     [SerializeField] private HeroState heroState;
+    [SerializeField] private HeroLadder heroLadder;
     [SerializeField] private ChunkManager chunkManager;
     [SerializeField] private Animator animator;
 
@@ -51,11 +52,40 @@ public sealed class HeroMining : MonoBehaviour
 
     public bool IsMining => isMining;
 
+    public bool TryGetLockedVerticalTarget(Vector2 input, out Vector2Int targetCell)
+    {
+        targetCell = Vector2Int.zero;
+        if (!isMining || !hasCurrentTarget)
+        {
+            return false;
+        }
+
+        if (currentTargetDirection != Vector2Int.up && currentTargetDirection != Vector2Int.down)
+        {
+            return false;
+        }
+
+        if (input.sqrMagnitude < inputDeadZone * inputDeadZone)
+        {
+            return false;
+        }
+
+        Vector2 expectedDirection = new Vector2(currentTargetDirection.x, currentTargetDirection.y);
+        if (Vector2.Dot(input.normalized, expectedDirection) < 0.55f)
+        {
+            return false;
+        }
+
+        targetCell = currentTargetCell;
+        return true;
+    }
+
     private void Reset()
     {
         heroController = GetComponent<HeroController>();
         heroCollision = GetComponent<HeroCollision>();
         heroState = GetComponent<HeroState>();
+        heroLadder = GetComponent<HeroLadder>();
         animator = GetComponent<Animator>();
         chunkManager = FindFirstObjectByType<ChunkManager>();
     }
@@ -81,6 +111,14 @@ public sealed class HeroMining : MonoBehaviour
             return;
         }
 
+        Vector2 input = heroController.MovementInput;
+        if (heroLadder != null && heroLadder.ShouldSuppressMiningInput(input))
+        {
+            ClearRejectedLatch();
+            StopMining();
+            return;
+        }
+
         if (heroState.IsFalling)
         {
             ClearRejectedLatch();
@@ -88,7 +126,6 @@ public sealed class HeroMining : MonoBehaviour
             return;
         }
 
-        Vector2 input = heroController.MovementInput;
         if (input.sqrMagnitude < inputDeadZone * inputDeadZone)
         {
             ClearRejectedLatch();
@@ -243,7 +280,22 @@ public sealed class HeroMining : MonoBehaviour
         }
         else if (direction == Vector2Int.down)
         {
-            if (!heroCollision.GroundSensor.TryGetGroundHit(out _))
+            Vector2Int ladderTargetCell = Vector2Int.zero;
+            bool hasLadderVerticalContext = heroLadder != null && heroLadder.HasVerticalContext(input);
+            bool hasLadderVerticalTarget = hasLadderVerticalContext && heroLadder.TryGetVerticalMiningTarget(input, out ladderTargetCell);
+            if (hasLadderVerticalTarget)
+            {
+                targetCell = ladderTargetCell;
+            }
+            else if (hasLadderVerticalContext)
+            {
+                target = default;
+                blockedReason = "noDigTarget";
+                blockedCell = anchorCell + direction;
+                blockedTile = heroCollision.GetTileId(blockedCell);
+                return false;
+            }
+            else if (!heroCollision.GroundSensor.TryGetGroundHit(out _))
             {
                 target = default;
                 blockedReason = "noGroundContact";
@@ -252,11 +304,30 @@ public sealed class HeroMining : MonoBehaviour
                 return false;
             }
 
-            targetCell = anchorCell + direction;
+            if (!hasLadderVerticalTarget)
+            {
+                targetCell = anchorCell + direction;
+            }
         }
         else if (direction == Vector2Int.up)
         {
-            targetCell = anchorCell + direction;
+            bool hasLadderVerticalContext = heroLadder != null && heroLadder.HasVerticalContext(input);
+            if (hasLadderVerticalContext && heroLadder.TryGetVerticalMiningTarget(input, out Vector2Int ladderTargetCell))
+            {
+                targetCell = ladderTargetCell;
+            }
+            else if (hasLadderVerticalContext)
+            {
+                target = default;
+                blockedReason = "noDigTarget";
+                blockedCell = anchorCell + direction;
+                blockedTile = heroCollision.GetTileId(blockedCell);
+                return false;
+            }
+            else
+            {
+                targetCell = anchorCell + direction;
+            }
         }
 
         if (!runtime.IsInsideBounds(targetCell.x, targetCell.y))
@@ -450,6 +521,7 @@ public sealed class HeroMining : MonoBehaviour
         heroController ??= GetComponent<HeroController>();
         heroCollision ??= GetComponent<HeroCollision>();
         heroState ??= GetComponent<HeroState>();
+        heroLadder ??= GetComponent<HeroLadder>();
         animator ??= GetComponent<Animator>();
         chunkManager ??= FindFirstObjectByType<ChunkManager>();
     }
@@ -511,12 +583,22 @@ public sealed class HeroMining : MonoBehaviour
 
         if (direction == Vector2Int.down)
         {
+            if (heroLadder != null && heroLadder.TryGetVerticalMiningTarget(new Vector2(0f, -1f), out Vector2Int ladderTargetCell))
+            {
+                return ladderTargetCell == targetCell;
+            }
+
             return heroCollision.GroundSensor.TryGetGroundHit(out _)
                 && anchorCell + direction == targetCell;
         }
 
         if (direction == Vector2Int.up)
         {
+            if (heroLadder != null && heroLadder.TryGetVerticalMiningTarget(new Vector2(0f, 1f), out Vector2Int ladderTargetCell))
+            {
+                return ladderTargetCell == targetCell;
+            }
+
             return anchorCell + direction == targetCell;
         }
 

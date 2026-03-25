@@ -133,9 +133,9 @@
 
 ### Structure
 
-- [ ] introduce `HeroLadder`
-- [ ] ladder entry uses sensors and runtime queries
-- [ ] ladder mode is explicit in hero runtime
+- [x] introduce `HeroLadder`
+- [x] ladder entry uses sensors and runtime queries
+- [x] ladder mode is explicit in hero runtime
 
 ### Behavior
 

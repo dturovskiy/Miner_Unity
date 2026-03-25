@@ -1,16 +1,11 @@
 using UnityEngine;
 
-/// <summary>
-/// Дані конкретної драбини.
-/// Саме звідси мотор драбини бере:
-/// - центр по X
-/// - верхню точку виходу
-/// - нижню точку входу/виходу
-/// </summary>
 [RequireComponent(typeof(Collider2D))]
 public sealed class LadderBehaviour : MonoBehaviour
 {
     [SerializeField] private Collider2D ladderCollider;
+    [SerializeField, Min(0f)] private float topExitOffset = 0.01f;
+    [SerializeField, Min(0f)] private float bottomExitOffset = 0.01f;
 
     public Bounds Bounds
     {
@@ -31,16 +26,14 @@ public sealed class LadderBehaviour : MonoBehaviour
 
     public float GetTopStandY(Collider2D heroCollider)
     {
-        // Встановлюємо героя ТАК, щоб ноги були на 0.01 нижче за край драбини.
-        // Це гарантує миттєве спрацювання GroundCheck і запобігає підстрибуванню.
         float heroHalfHeight = heroCollider.bounds.extents.y;
-        return TopY + heroHalfHeight - 0.01f;
+        return TopY + heroHalfHeight - topExitOffset;
     }
 
     public float GetBottomStandY(Collider2D heroCollider)
     {
         float heroHalfHeight = heroCollider.bounds.extents.y;
-        return BottomY + heroHalfHeight;
+        return BottomY + heroHalfHeight + bottomExitOffset;
     }
 
     private void Reset()

@@ -62,12 +62,12 @@ public sealed class HeroCollision : MonoBehaviour
 
     public Vector2Int GetCurrentCell()
     {
-        if (ResolveWorldGrid() == null || !worldGrid.IsReady)
+        if (ResolveWorldGrid() == null || !worldGrid.IsReady || capsule == null)
         {
             return Vector2Int.zero;
         }
 
-        return worldGrid.WorldToCell(transform.position);
+        return worldGrid.WorldToCell(capsule.bounds.center);
     }
 
     public bool TryGetOpenAnchorCell(out Vector2Int cell)
@@ -108,6 +108,36 @@ public sealed class HeroCollision : MonoBehaviour
         }
 
         return worldGrid.WorldToCell(worldPosition);
+    }
+
+    public Vector2 CellToWorldCenter(Vector2Int cell)
+    {
+        if (ResolveWorldGrid() == null || !worldGrid.IsReady)
+        {
+            return Vector2.zero;
+        }
+
+        return worldGrid.CellToWorldCenter(cell);
+    }
+
+    public float GetCellTopY(int y)
+    {
+        if (ResolveWorldGrid() == null || !worldGrid.IsReady)
+        {
+            return 0f;
+        }
+
+        return worldGrid.GetCellTopY(y);
+    }
+
+    public float GetCellBottomY(int y)
+    {
+        if (ResolveWorldGrid() == null || !worldGrid.IsReady)
+        {
+            return 0f;
+        }
+
+        return worldGrid.GetCellBottomY(y);
     }
 
     public Vector2Int GetFootCell()
@@ -243,6 +273,16 @@ public sealed class HeroCollision : MonoBehaviour
         }
 
         return worldGrid.GetCellType(cell);
+    }
+
+    public bool IsClimbableCell(Vector2Int cell)
+    {
+        if (ResolveWorldGrid() == null || !worldGrid.IsReady)
+        {
+            return false;
+        }
+
+        return worldGrid.IsClimbable(cell);
     }
 
     public TileID GetTileId(Vector2Int cell)

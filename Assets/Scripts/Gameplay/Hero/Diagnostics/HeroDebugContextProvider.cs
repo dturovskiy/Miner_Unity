@@ -22,6 +22,7 @@ public sealed class HeroDebugContextProvider : MonoBehaviour, IDiagContextProvid
         if (heroState != null)
         {
             fields.Add(new DiagField("locomotion", heroState.Locomotion.ToString()));
+            fields.Add(new DiagField("traversal", heroState.TraversalMode.ToString()));
         }
 
         if (heroController != null)

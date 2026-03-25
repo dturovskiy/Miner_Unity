@@ -34,6 +34,7 @@ public sealed class HeroDebugSnapshotProvider : MonoBehaviour, IDiagSnapshotProv
         if (heroState != null)
         {
             fields.Add(new DiagField("locomotion", heroState.Locomotion.ToString()));
+            fields.Add(new DiagField("traversal", heroState.TraversalMode.ToString()));
         }
 
         if (heroCollision != null)

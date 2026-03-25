@@ -48,7 +48,7 @@ Not started yet:
 - [ ] root save model implementation finished
 - [ ] single world authority implementation finished
 - [x] Stage 1 ground core refactor
-- [x] Stage 2 mining rewrite started
+- [x] Stage 2 mining rewrite completed
 - [ ] Stage 3 ladder rewrite
 - [ ] Stage 4 save and UI reintegration
 
@@ -344,7 +344,7 @@ Stage 1 close-out:
 
 Status:
 
-`Started`
+`Completed`
 
 Goals:
 
@@ -372,12 +372,22 @@ Current Stage 2 progress:
 9. mining is explicitly blocked outside playable cave space, so surface-side digging outside the cave entrance is ignored
 10. partial mining damage is now stored in runtime and save data instead of living only on the active hero target
 11. debug dig is automatically disabled when `HeroMining` is present so logs do not double-fire
+12. mining now writes through `WorldRuntime` and uses `ChunkManager` only as the view and persistence sync layer after runtime mutation
+13. save fallback for hero position now adjusts to the nearest safe cell during mining-related world changes instead of writing obviously broken transient positions
+14. passive movement with no valid dig target should no longer emit noisy blocked-dig diagnostics
 
 Exit criteria:
 
 1. only mineable cells can be dug
 2. cell destruction updates runtime and view consistently
 3. ground movement behavior remains unchanged
+
+Stage 2 close-out:
+
+1. latest stress-session logs confirm side, down, and up mining through the same joystick-driven intent system
+2. `DigBlocked` now reports only meaningful rejection causes such as `notMineable` and `outsideMiningArea`
+3. crack stages, partial mining damage, save and load persistence, runtime mutation, and view sync all behave consistently in recent sessions
+4. transient save safety during downward digging is now handled through `AdjustedSavePosition` instead of writing broken hero positions
 
 Locked Stage 2 design decisions:
 

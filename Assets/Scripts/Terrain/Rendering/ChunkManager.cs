@@ -999,6 +999,24 @@ namespace MinerUnity.Terrain
                 return candidate;
             }
 
+            if (TryFindNearestSafeHeroPosition(candidate, 4, out Vector3 adjustedPosition))
+            {
+                lastKnownSafeHeroPosition = adjustedPosition;
+                hasLastKnownSafeHeroPosition = true;
+
+                Diag.Event(
+                    "Hero",
+                    "AdjustedSavePosition",
+                    "Current hero position was adjusted to the nearest safe cell during save.",
+                    this,
+                    ("candidatePosition", candidate),
+                    ("adjustedPosition", adjustedPosition),
+                    ("candidateCell", WorldToCell(candidate)),
+                    ("adjustedCell", WorldToCell(adjustedPosition)));
+
+                return adjustedPosition;
+            }
+
             Diag.Warning(
                 "Hero",
                 "SkippedInvalidSavePosition",

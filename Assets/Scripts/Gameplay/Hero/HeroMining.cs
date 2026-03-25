@@ -108,7 +108,15 @@ public sealed class HeroMining : MonoBehaviour
 
         if (!TryGetActiveMiningTarget(runtime, input, anchorCell, out MiningTarget target, out string blockedReason, out Vector2Int blockedCell, out TileID blockedTile))
         {
-            EmitDigBlockedOnce(blockedReason, GetDirectionName(GetDominantAxisDirection(input)), blockedCell, blockedTile);
+            if (ShouldEmitDigBlocked(blockedReason, blockedTile))
+            {
+                EmitDigBlockedOnce(blockedReason, GetDirectionName(GetDominantAxisDirection(input)), blockedCell, blockedTile);
+            }
+            else
+            {
+                ClearRejectedLatch();
+            }
+
             StopMining();
             return;
         }
@@ -264,7 +272,7 @@ public sealed class HeroMining : MonoBehaviour
         if (!runtime.IsMineable(targetCell.x, targetCell.y))
         {
             target = default;
-            blockedReason = "notMineable";
+            blockedReason = IsPassiveNoTargetTile(targetTile) ? "noDigTarget" : "notMineable";
             blockedCell = targetCell;
             blockedTile = targetTile;
             return false;
@@ -414,6 +422,27 @@ public sealed class HeroMining : MonoBehaviour
         lastRejectedReason = string.Empty;
         lastRejectedTarget = default;
         lastRejectedDirection = string.Empty;
+    }
+
+    private static bool ShouldEmitDigBlocked(string reason, TileID tile)
+    {
+        switch (reason)
+        {
+            case "outsideMiningArea":
+            case "notMineable":
+            case "applyHitFailed":
+            case "targetBecameInvalid":
+                return true;
+            case "outOfBounds":
+                return tile != TileID.Empty;
+            default:
+                return false;
+        }
+    }
+
+    private static bool IsPassiveNoTargetTile(TileID tile)
+    {
+        return tile == TileID.Empty || tile == TileID.Tunnel || tile == TileID.Ladder;
     }
 
     private void ResolveReferences()

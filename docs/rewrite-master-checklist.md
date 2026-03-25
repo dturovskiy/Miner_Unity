@@ -22,7 +22,7 @@
 - [ ] visibility and fog of war design documented and staged
 - [x] Stage 0 completed
 - [x] Stage 1 completed
-- [ ] Stage 2 completed
+- [x] Stage 2 completed
 - [ ] Stage 3 completed
 - [ ] Stage 4 completed
 
@@ -103,31 +103,31 @@
 - [x] hit progress is owned by runtime or hero mining logic, not by spawned tile views
 - [x] crack rendering is view-only and follows runtime hit progress
 - [x] hero mining animation is driven by mining intent and hit loop, not by separate scene hacks
-- [ ] mining writes through one world mutation API
+- [x] mining writes through one world mutation API
 
 ### Behavior
 
-- [ ] only mineable cells can be dug
-- [ ] hero starts mining when joystick direction points into a valid nearby block
-- [ ] side mining works when the hero presses into a neighboring wall block
-- [ ] downward mining works when the hero is close enough to the floor block below
-- [ ] upward mining works when the hero presses toward a nearby ceiling block
-- [ ] mining does not fire while the hero is simply walking with no valid target
-- [ ] default pickaxe breaks a dirt block in 4 hits
-- [ ] crack stages update consistently during the hit loop
-- [ ] partial mining damage persists when the hero leaves the block
-- [ ] partial mining damage survives save and load
-- [ ] tool power can change required hits without changing mining flow
-- [ ] blocked digs report why they were rejected
-- [ ] runtime and view stay in sync after a dig
-- [ ] movement behavior remains unchanged while mining is added
+- [x] only mineable cells can be dug
+- [x] hero starts mining when joystick direction points into a valid nearby block
+- [x] side mining works when the hero presses into a neighboring wall block
+- [x] downward mining works when the hero is close enough to the floor block below
+- [x] upward mining works when the hero presses toward a nearby ceiling block
+- [x] mining does not fire while the hero is simply walking with no valid target
+- [x] default pickaxe breaks a dirt block in 4 hits
+- [x] crack stages update consistently during the hit loop
+- [x] partial mining damage persists when the hero leaves the block
+- [x] partial mining damage survives save and load
+- [x] tool power can change required hits without changing mining flow
+- [x] blocked digs report why they were rejected
+- [x] runtime and view stay in sync after a dig
+- [x] movement behavior remains unchanged while mining is added
 
 ### Logging
 
-- [ ] `DigStarted` exists and is meaningful
-- [ ] `DigHit` exists and shows target, hit index, and crack stage
-- [ ] `DigBlocked` exists and explains the block reason
-- [ ] `DigCompleted` exists and reflects a real world mutation
+- [x] `DigStarted` exists and is meaningful
+- [x] `DigHit` exists and shows target, hit index, and crack stage
+- [x] `DigBlocked` exists and explains the block reason
+- [x] `DigCompleted` exists and reflects a real world mutation
 
 ## Stage 3 - Ladder
 

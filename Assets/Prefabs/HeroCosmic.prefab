@@ -709,6 +709,7 @@ MonoBehaviour:
   heroCollision: {fileID: 8571359287416895096}
   heroMotor: {fileID: 7362395604046055424}
   heroCollider: {fileID: 5228529605429698027}
+  heroMining: {fileID: 2437614690142414786}
   climbSpeed: 3
   inputDeadZone: 0.35
   verticalIntentBias: 0.15

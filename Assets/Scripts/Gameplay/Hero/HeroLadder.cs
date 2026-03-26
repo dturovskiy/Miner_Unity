@@ -10,25 +10,23 @@ using UnityEngine;
 [RequireComponent(typeof(CapsuleCollider2D))]
 public sealed class HeroLadder : MonoBehaviour
 {
-    private enum LadderVerticalActionType
+    private readonly struct LadderSupportContext
     {
-        None,
-        Climb,
-        Mine
-    }
-
-    private readonly struct LadderVerticalAction
-    {
-        public LadderVerticalAction(LadderVerticalActionType type, Vector2Int ladderCell, Vector2Int targetCell)
+        public LadderSupportContext(Vector2Int currentCell, Vector2Int footCell, bool currentIsLadder, bool footIsLadder, Vector2Int supportCell)
         {
-            Type = type;
-            LadderCell = ladderCell;
-            TargetCell = targetCell;
+            CurrentCell = currentCell;
+            FootCell = footCell;
+            CurrentIsLadder = currentIsLadder;
+            FootIsLadder = footIsLadder;
+            SupportCell = supportCell;
         }
 
-        public LadderVerticalActionType Type { get; }
-        public Vector2Int LadderCell { get; }
-        public Vector2Int TargetCell { get; }
+        public Vector2Int CurrentCell { get; }
+        public Vector2Int FootCell { get; }
+        public bool CurrentIsLadder { get; }
+        public bool FootIsLadder { get; }
+        public Vector2Int SupportCell { get; }
+        public bool IsTopStanding => !CurrentIsLadder && FootIsLadder;
     }
 
     [Header("References")]
@@ -37,36 +35,24 @@ public sealed class HeroLadder : MonoBehaviour
     [SerializeField] private HeroCollision heroCollision;
     [SerializeField] private HeroMotor heroMotor;
     [SerializeField] private CapsuleCollider2D heroCollider;
-    [SerializeField] private HeroMining heroMining;
 
     [Header("Movement")]
     [SerializeField, Min(0f)] private float climbSpeed = 3f;
     [SerializeField, Min(0f)] private float inputDeadZone = 0.35f;
     [SerializeField, Min(0f)] private float verticalIntentBias = 0.15f;
-    [SerializeField, Min(0f)] private float verticalMiningReachMargin = 0.04f;
+    [SerializeField, Min(0f)] private float topExitReachMargin = 0.01f;
+    [SerializeField, Min(0f)] private float bottomReachMargin = 0.03f;
+    [SerializeField, Min(0f)] private float topStandOffset = 0.01f;
 
     private bool isClimbing;
     private bool hasLadderSupport;
+    private bool hasClimbAction;
     private Vector2Int supportLadderCell;
-    private bool hasResolvedVerticalAction;
-    private LadderVerticalAction resolvedVerticalAction;
+    private LadderSupportContext cachedSupportContext;
 
     public bool IsOnLadder => isClimbing;
     public bool HasPassiveSupport => hasLadderSupport;
-    public bool ShouldSuppressOtherMovement
-    {
-        get
-        {
-            if (heroController == null || heroCollision == null || !heroCollision.IsWorldReady())
-            {
-                return false;
-            }
-
-            return IsVerticalIntent(heroController.MovementInput)
-                && hasResolvedVerticalAction
-                && resolvedVerticalAction.Type == LadderVerticalActionType.Climb;
-        }
-    }
+    public bool ShouldSuppressOtherMovement => hasClimbAction;
 
     private void Reset()
     {
@@ -75,7 +61,6 @@ public sealed class HeroLadder : MonoBehaviour
         heroCollision = GetComponent<HeroCollision>();
         heroMotor = GetComponent<HeroMotor>();
         heroCollider = GetComponent<CapsuleCollider2D>();
-        heroMining = GetComponent<HeroMining>();
     }
 
     private void Awake()
@@ -92,24 +77,23 @@ public sealed class HeroLadder : MonoBehaviour
 
     public bool ShouldSuppressMiningInput(Vector2 input)
     {
-        if (heroCollision == null || !heroCollision.IsWorldReady())
+        if (!IsVerticalIntent(input) || heroCollision == null || !heroCollision.IsWorldReady())
         {
             return false;
         }
 
-        return IsVerticalIntent(input)
-            && hasResolvedVerticalAction
-            && resolvedVerticalAction.Type == LadderVerticalActionType.Climb;
+        return hasClimbAction;
     }
 
     public bool HasVerticalContext(Vector2 input)
     {
-        if (heroCollision == null || !heroCollision.IsWorldReady() || !IsVerticalIntent(input))
-        {
-            return false;
-        }
+        return false;
+    }
 
-        return hasLadderSupport;
+    public bool TryGetVerticalMiningTarget(Vector2 input, out Vector2Int targetCell)
+    {
+        targetCell = Vector2Int.zero;
+        return false;
     }
 
     public bool TryGetPassiveSupportInfo(out Vector2Int supportCell, out TileID supportTileId, out WorldCellType supportCellType)
@@ -129,18 +113,6 @@ public sealed class HeroLadder : MonoBehaviour
         return WorldCellRules.IsClimbable(supportTileId);
     }
 
-    public bool TryGetVerticalMiningTarget(Vector2 input, out Vector2Int targetCell)
-    {
-        targetCell = Vector2Int.zero;
-        if (!IsVerticalIntent(input) || !hasResolvedVerticalAction || resolvedVerticalAction.Type != LadderVerticalActionType.Mine)
-        {
-            return false;
-        }
-
-        targetCell = resolvedVerticalAction.TargetCell;
-        return true;
-    }
-
     private void RunLadderLoop()
     {
         if (heroController == null || heroState == null || heroCollision == null || heroMotor == null)
@@ -154,39 +126,38 @@ public sealed class HeroLadder : MonoBehaviour
             return;
         }
 
-        Vector2 input = heroController.MovementInput;
-        hasLadderSupport = TryResolveSupportLadderCell(out supportLadderCell);
+        hasLadderSupport = TryResolveSupportContext(out LadderSupportContext supportContext);
+        cachedSupportContext = supportContext;
+        supportLadderCell = supportContext.SupportCell;
 
         if (!hasLadderSupport)
         {
-            hasResolvedVerticalAction = false;
-            resolvedVerticalAction = default;
+            hasClimbAction = false;
             ReleaseAllLadderState();
             return;
         }
 
-        hasResolvedVerticalAction = TryResolveVerticalActionInternal(input, supportLadderCell, out resolvedVerticalAction);
-        LadderVerticalAction action = resolvedVerticalAction;
-
-        if (hasResolvedVerticalAction && action.Type == LadderVerticalActionType.Climb)
+        Vector2 input = heroController.MovementInput;
+        hasClimbAction = TryResolveClimbAction(input, supportContext, out Vector2Int climbCell, out string directionName);
+        if (hasClimbAction)
         {
             if (!isClimbing)
             {
-                EnterClimb(action.LadderCell, input.y >= 0f ? "Up" : "Down");
+                EnterClimb(climbCell, directionName);
             }
 
-            heroMotor.SetVerticalAttachment(true, false);
-            SnapToLadderColumn(action.LadderCell);
+            supportLadderCell = climbCell;
+            heroState.SetTraversalModeSilently(HeroTraversalMode.Ladder);
+            heroState.SetLocomotionSilently(HeroLocomotionState.Idle);
+            heroMotor.SetVerticalAttachment(true, true);
+            SnapToLadderColumn(climbCell);
             heroMotor.ApplyLadderVelocity(input.y, climbSpeed);
             return;
         }
 
         if (isClimbing)
         {
-            string reason = action.Type == LadderVerticalActionType.Mine
-                ? "MiningPriority"
-                : (IsHorizontalIntent(input) ? "HorizontalReleased" : "Released");
-            ExitClimb(reason);
+            ExitClimbIntoSupport("ClimbStopped");
         }
 
         EnterPassiveSupport();
@@ -210,13 +181,18 @@ public sealed class HeroLadder : MonoBehaviour
             ("currentCell", heroCollision.GetCurrentCell()));
     }
 
-    private void ExitClimb(string reason)
+    private void ExitClimbIntoSupport(string reason)
     {
+        if (!isClimbing)
+        {
+            return;
+        }
+
         Vector2Int ladderCell = supportLadderCell;
         isClimbing = false;
         heroState.SetTraversalModeSilently(HeroTraversalMode.Ground);
         heroState.SetLocomotionSilently(HeroLocomotionState.Idle);
-        heroMotor.SetVerticalAttachment(false, false);
+        heroMotor.SetVerticalAttachment(true, true);
 
         Diag.Event(
             "Hero",
@@ -230,19 +206,27 @@ public sealed class HeroLadder : MonoBehaviour
 
     private void ReleaseAllLadderState()
     {
-        hasResolvedVerticalAction = false;
-        resolvedVerticalAction = default;
+        hasClimbAction = false;
         if (isClimbing)
         {
-            ExitClimb("LostContact");
-        }
-        else
-        {
-            heroMotor.SetVerticalAttachment(false, false);
+            Vector2Int ladderCell = supportLadderCell;
+            isClimbing = false;
             heroState.SetTraversalModeSilently(HeroTraversalMode.Ground);
+            heroState.SetLocomotionSilently(HeroLocomotionState.Idle);
+
+            Diag.Event(
+                "Hero",
+                "LadderExited",
+                "Hero exited ladder climb mode.",
+                this,
+                ("reason", "LostContact"),
+                ("ladderCell", ladderCell),
+                ("currentCell", heroCollision.GetCurrentCell()));
         }
 
+        heroMotor.SetVerticalAttachment(false, false);
         hasLadderSupport = false;
+        cachedSupportContext = default;
         supportLadderCell = Vector2Int.zero;
     }
 
@@ -251,70 +235,101 @@ public sealed class HeroLadder : MonoBehaviour
         isClimbing = false;
         heroState.SetTraversalModeSilently(HeroTraversalMode.Ground);
         heroMotor.SetVerticalAttachment(true, true);
+
+        if (cachedSupportContext.IsTopStanding)
+        {
+            SnapToTopStand(cachedSupportContext.SupportCell);
+        }
     }
 
-    private bool TryResolveSupportLadderCell(out Vector2Int ladderCell)
+    private bool TryResolveSupportContext(out LadderSupportContext context)
     {
-        ladderCell = Vector2Int.zero;
+        context = default;
         if (heroCollision == null || !heroCollision.IsWorldReady())
         {
             return false;
         }
 
         Vector2Int currentCell = heroCollision.GetCurrentCell();
-        if (heroCollision.IsClimbableCell(currentCell))
-        {
-            ladderCell = currentCell;
-            return true;
-        }
-
         Vector2Int footCell = heroCollision.GetFootCell();
-        if (heroCollision.IsClimbableCell(footCell))
-        {
-            ladderCell = footCell;
-            return true;
-        }
-
-        return false;
-    }
-
-    private bool TryResolveVerticalActionInternal(Vector2 input, Vector2Int ladderCell, out LadderVerticalAction action)
-    {
-        action = new LadderVerticalAction(LadderVerticalActionType.None, Vector2Int.zero, Vector2Int.zero);
-        if (heroCollision == null || !heroCollision.IsWorldReady() || !IsVerticalIntent(input))
+        bool currentIsLadder = heroCollision.IsClimbableCell(currentCell);
+        bool footIsLadder = heroCollision.IsClimbableCell(footCell);
+        if (!currentIsLadder && !footIsLadder)
         {
             return false;
         }
 
-        if (heroMining != null && heroMining.TryGetLockedVerticalTarget(input, out Vector2Int lockedTargetCell))
+        Vector2Int supportCell = currentIsLadder ? currentCell : footCell;
+        context = new LadderSupportContext(currentCell, footCell, currentIsLadder, footIsLadder, supportCell);
+        return true;
+    }
+
+    private bool TryResolveClimbAction(Vector2 input, LadderSupportContext context, out Vector2Int climbCell, out string directionName)
+    {
+        climbCell = context.SupportCell;
+        directionName = string.Empty;
+        if (!IsVerticalIntent(input))
         {
-            action = new LadderVerticalAction(LadderVerticalActionType.Mine, ladderCell, lockedTargetCell);
+            return false;
+        }
+
+        if (input.y > 0f)
+        {
+            directionName = "Up";
+            return TryResolveUpClimb(context, out climbCell);
+        }
+
+        directionName = "Down";
+        return TryResolveDownClimb(context, out climbCell);
+    }
+
+    private bool TryResolveUpClimb(LadderSupportContext context, out Vector2Int climbCell)
+    {
+        climbCell = context.SupportCell;
+
+        if (context.IsTopStanding)
+        {
+            if (!HasClearedTopEdge(context.SupportCell))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        if (HasMineableCeiling())
+        {
+            return false;
+        }
+
+        Vector2Int nextCell = context.CurrentIsLadder ? context.CurrentCell + Vector2Int.up : context.SupportCell + Vector2Int.up;
+        TileID nextTile = heroCollision.GetTileId(nextCell);
+        return heroCollision.IsClimbableCell(nextCell) || WorldCellRules.IsPassable(nextTile);
+    }
+
+    private bool TryResolveDownClimb(LadderSupportContext context, out Vector2Int climbCell)
+    {
+        climbCell = context.SupportCell;
+
+        if (context.IsTopStanding)
+        {
+            climbCell = context.FootCell;
             return true;
         }
 
-        Vector2Int direction = input.y > 0f ? Vector2Int.up : Vector2Int.down;
-        Vector2Int targetCell = ladderCell + direction;
-        TileID targetTile = heroCollision.GetTileId(targetCell);
-        bool nearMiningReach = input.y > 0f
-            ? IsNearTopMiningReach(ladderCell)
-            : IsNearBottomMiningReach(ladderCell);
-
-        if (WorldCellRules.IsMineable(targetTile))
+        if (HasMineableBelow())
         {
-            action = new LadderVerticalAction(
-                nearMiningReach ? LadderVerticalActionType.Mine : LadderVerticalActionType.Climb,
-                ladderCell,
-                targetCell);
+            return false;
+        }
+
+        Vector2Int nextCell = context.SupportCell + Vector2Int.down;
+        TileID nextTile = heroCollision.GetTileId(nextCell);
+        if (heroCollision.IsClimbableCell(nextCell) || WorldCellRules.IsPassable(nextTile))
+        {
             return true;
         }
 
-        if (heroCollision.IsClimbableCell(targetCell) || WorldCellRules.IsPassable(targetTile))
-        {
-            action = new LadderVerticalAction(LadderVerticalActionType.Climb, ladderCell, targetCell);
-            return true;
-        }
-
-        return false;
+        return !IsAtBottomReach(context.SupportCell);
     }
 
     private void SnapToLadderColumn(Vector2Int ladderCell)
@@ -324,6 +339,18 @@ public sealed class HeroLadder : MonoBehaviour
         heroMotor.SnapToPosition(new Vector2(targetX, currentPosition.y));
     }
 
+    private void SnapToTopStand(Vector2Int ladderCell)
+    {
+        if (heroCollider == null)
+        {
+            return;
+        }
+
+        Vector2 currentPosition = heroMotor.Rigidbody.position;
+        float targetY = heroCollision.GetCellTopY(ladderCell.y) + heroCollider.bounds.extents.y - topStandOffset;
+        heroMotor.SnapToPosition(new Vector2(currentPosition.x, targetY));
+    }
+
     private void ResolveReferences()
     {
         heroController ??= GetComponent<HeroController>();
@@ -331,7 +358,6 @@ public sealed class HeroLadder : MonoBehaviour
         heroCollision ??= GetComponent<HeroCollision>();
         heroMotor ??= GetComponent<HeroMotor>();
         heroCollider ??= GetComponent<CapsuleCollider2D>();
-        heroMining ??= GetComponent<HeroMining>();
     }
 
     private bool IsVerticalIntent(Vector2 input)
@@ -340,13 +366,25 @@ public sealed class HeroLadder : MonoBehaviour
             && Mathf.Abs(input.y) > Mathf.Abs(input.x) + verticalIntentBias;
     }
 
-    private bool IsHorizontalIntent(Vector2 input)
+    private bool HasMineableCeiling()
     {
-        return Mathf.Abs(input.x) > inputDeadZone
-            && Mathf.Abs(input.x) >= Mathf.Abs(input.y) + verticalIntentBias;
+        Vector2Int ceilingCell = heroCollision.GetCeilingProbeCell();
+        return WorldCellRules.IsMineable(heroCollision.GetTileId(ceilingCell));
     }
 
-    private bool IsNearTopMiningReach(Vector2Int ladderCell)
+    private bool HasMineableBelow()
+    {
+        Vector2Int footCell = heroCollision.GetFootCell();
+        if (WorldCellRules.IsMineable(heroCollision.GetTileId(footCell)))
+        {
+            return true;
+        }
+
+        Vector2Int probeCell = heroCollision.GetGroundProbeCell();
+        return probeCell != footCell && WorldCellRules.IsMineable(heroCollision.GetTileId(probeCell));
+    }
+
+    private bool HasClearedTopEdge(Vector2Int ladderCell)
     {
         if (heroCollider == null)
         {
@@ -355,10 +393,10 @@ public sealed class HeroLadder : MonoBehaviour
 
         float heroBottomY = heroCollider.bounds.min.y;
         float ladderTopY = heroCollision.GetCellTopY(ladderCell.y);
-        return heroBottomY >= ladderTopY - verticalMiningReachMargin;
+        return heroBottomY >= ladderTopY - topExitReachMargin;
     }
 
-    private bool IsNearBottomMiningReach(Vector2Int ladderCell)
+    private bool IsAtBottomReach(Vector2Int ladderCell)
     {
         if (heroCollider == null)
         {
@@ -367,6 +405,6 @@ public sealed class HeroLadder : MonoBehaviour
 
         float heroBottomY = heroCollider.bounds.min.y;
         float ladderBottomY = heroCollision.GetCellBottomY(ladderCell.y);
-        return heroBottomY <= ladderBottomY + verticalMiningReachMargin;
+        return heroBottomY <= ladderBottomY + bottomReachMargin;
     }
 }

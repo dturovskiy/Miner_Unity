@@ -280,54 +280,44 @@ public sealed class HeroMining : MonoBehaviour
         }
         else if (direction == Vector2Int.down)
         {
-            Vector2Int ladderTargetCell = Vector2Int.zero;
-            bool hasLadderVerticalContext = heroLadder != null && heroLadder.HasVerticalContext(input);
-            bool hasLadderVerticalTarget = hasLadderVerticalContext && heroLadder.TryGetVerticalMiningTarget(input, out ladderTargetCell);
-            if (hasLadderVerticalTarget)
+            Vector2Int footCell = heroCollision.GetFootCell();
+            TileID footTile = heroCollision.GetTileId(footCell);
+            if (WorldCellRules.IsMineable(footTile))
             {
-                targetCell = ladderTargetCell;
+                targetCell = footCell;
             }
-            else if (hasLadderVerticalContext)
+            else
             {
-                target = default;
-                blockedReason = "noDigTarget";
-                blockedCell = anchorCell + direction;
-                blockedTile = heroCollision.GetTileId(blockedCell);
-                return false;
-            }
-            else if (!heroCollision.GroundSensor.TryGetGroundHit(out _))
-            {
-                target = default;
-                blockedReason = "noGroundContact";
-                blockedCell = anchorCell + direction;
-                blockedTile = heroCollision.GetTileId(blockedCell);
-                return false;
-            }
-
-            if (!hasLadderVerticalTarget)
-            {
-                targetCell = anchorCell + direction;
+                Vector2Int groundProbeCell = heroCollision.GetGroundProbeCell();
+                TileID groundProbeTile = heroCollision.GetTileId(groundProbeCell);
+                if (WorldCellRules.IsMineable(groundProbeTile))
+                {
+                    targetCell = groundProbeCell;
+                }
+                else
+                {
+                    target = default;
+                    blockedReason = "noDigTarget";
+                    blockedCell = footCell;
+                    blockedTile = footTile;
+                    return false;
+                }
             }
         }
         else if (direction == Vector2Int.up)
         {
-            bool hasLadderVerticalContext = heroLadder != null && heroLadder.HasVerticalContext(input);
-            if (hasLadderVerticalContext && heroLadder.TryGetVerticalMiningTarget(input, out Vector2Int ladderTargetCell))
-            {
-                targetCell = ladderTargetCell;
-            }
-            else if (hasLadderVerticalContext)
+            Vector2Int upCell = anchorCell + Vector2Int.up;
+            TileID upTile = heroCollision.GetTileId(upCell);
+            if (!WorldCellRules.IsMineable(upTile))
             {
                 target = default;
                 blockedReason = "noDigTarget";
-                blockedCell = anchorCell + direction;
-                blockedTile = heroCollision.GetTileId(blockedCell);
+                blockedCell = upCell;
+                blockedTile = upTile;
                 return false;
             }
-            else
-            {
-                targetCell = anchorCell + direction;
-            }
+
+            targetCell = upCell;
         }
 
         if (!runtime.IsInsideBounds(targetCell.x, targetCell.y))
@@ -583,23 +573,21 @@ public sealed class HeroMining : MonoBehaviour
 
         if (direction == Vector2Int.down)
         {
-            if (heroLadder != null && heroLadder.TryGetVerticalMiningTarget(new Vector2(0f, -1f), out Vector2Int ladderTargetCell))
+            Vector2Int footCell = heroCollision.GetFootCell();
+            if (WorldCellRules.IsMineable(heroCollision.GetTileId(footCell)))
             {
-                return ladderTargetCell == targetCell;
+                return footCell == targetCell;
             }
 
-            return heroCollision.GroundSensor.TryGetGroundHit(out _)
-                && anchorCell + direction == targetCell;
+            Vector2Int groundProbeCell = heroCollision.GetGroundProbeCell();
+            return WorldCellRules.IsMineable(heroCollision.GetTileId(groundProbeCell))
+                && groundProbeCell == targetCell;
         }
 
         if (direction == Vector2Int.up)
         {
-            if (heroLadder != null && heroLadder.TryGetVerticalMiningTarget(new Vector2(0f, 1f), out Vector2Int ladderTargetCell))
-            {
-                return ladderTargetCell == targetCell;
-            }
-
-            return anchorCell + direction == targetCell;
+            return anchorCell + direction == targetCell
+                && WorldCellRules.IsMineable(heroCollision.GetTileId(targetCell));
         }
 
         return false;

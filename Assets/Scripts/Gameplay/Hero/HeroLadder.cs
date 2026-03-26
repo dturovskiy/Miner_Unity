@@ -43,6 +43,7 @@ public sealed class HeroLadder : MonoBehaviour
     [SerializeField, Min(0f)] private float topExitReachMargin = 0.01f;
     [SerializeField, Min(0f)] private float bottomReachMargin = 0.03f;
     [SerializeField, Min(0f)] private float topStandOffset = 0.01f;
+    [SerializeField, Min(0f)] private float upperMiningReachMargin = 0.03f;
 
     private bool isClimbing;
     private bool hasLadderSupport;
@@ -256,7 +257,14 @@ public sealed class HeroLadder : MonoBehaviour
         bool footIsLadder = heroCollision.IsClimbableCell(footCell);
         if (!currentIsLadder && !footIsLadder)
         {
-            return false;
+            Vector2Int belowCurrentCell = currentCell + Vector2Int.down;
+            if (!heroCollision.IsClimbableCell(belowCurrentCell) || !IsNearTopSupport(belowCurrentCell))
+            {
+                return false;
+            }
+
+            context = new LadderSupportContext(currentCell, belowCurrentCell, false, true, belowCurrentCell);
+            return true;
         }
 
         Vector2Int supportCell = currentIsLadder ? currentCell : footCell;
@@ -299,7 +307,7 @@ public sealed class HeroLadder : MonoBehaviour
 
         if (HasMineableCeiling())
         {
-            return false;
+            return !IsNearUpperMiningReach(context.SupportCell);
         }
 
         Vector2Int nextCell = context.CurrentIsLadder ? context.CurrentCell + Vector2Int.up : context.SupportCell + Vector2Int.up;
@@ -394,6 +402,31 @@ public sealed class HeroLadder : MonoBehaviour
         float heroBottomY = heroCollider.bounds.min.y;
         float ladderTopY = heroCollision.GetCellTopY(ladderCell.y);
         return heroBottomY >= ladderTopY - topExitReachMargin;
+    }
+
+    private bool IsNearUpperMiningReach(Vector2Int ladderCell)
+    {
+        if (heroCollider == null)
+        {
+            return false;
+        }
+
+        float heroTopY = heroCollider.bounds.max.y;
+        float ladderTopY = heroCollision.GetCellTopY(ladderCell.y);
+        return heroTopY >= ladderTopY - upperMiningReachMargin;
+    }
+
+    private bool IsNearTopSupport(Vector2Int ladderCell)
+    {
+        if (heroCollider == null)
+        {
+            return false;
+        }
+
+        float heroBottomY = heroCollider.bounds.min.y;
+        float ladderTopY = heroCollision.GetCellTopY(ladderCell.y);
+        return heroBottomY >= ladderTopY - 0.08f
+            && heroBottomY <= ladderTopY + 0.08f;
     }
 
     private bool IsAtBottomReach(Vector2Int ladderCell)

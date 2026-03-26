@@ -94,6 +94,11 @@ namespace MinerUnity.Runtime
                 return false;
             }
 
+            if (HasAdjacentMiningAccess(x, y))
+            {
+                return true;
+            }
+
             int tunnelRow = GetHighestTunnelRow();
             return tunnelRow >= 0 && y < tunnelRow;
         }
@@ -276,6 +281,25 @@ namespace MinerUnity.Runtime
 
             highestTunnelRow = highest;
             return highest;
+        }
+
+        private bool HasAdjacentMiningAccess(int x, int y)
+        {
+            return IsMiningAccessTile(x - 1, y)
+                || IsMiningAccessTile(x + 1, y)
+                || IsMiningAccessTile(x, y - 1)
+                || IsMiningAccessTile(x, y + 1);
+        }
+
+        private bool IsMiningAccessTile(int x, int y)
+        {
+            if (!worldData.IsValidCoordinate(x, y))
+            {
+                return false;
+            }
+
+            TileID tile = worldData.GetTile(x, y);
+            return tile == TileID.Tunnel || tile == TileID.Ladder;
         }
 
         private void InvalidateCachedRowsIfNeeded(TileID previousTile, TileID nextTile)

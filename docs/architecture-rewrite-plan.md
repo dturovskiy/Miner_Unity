@@ -20,6 +20,8 @@ Use these documents together:
 3. [Scene Cleanup Checklist](./scene-cleanup-checklist.md)
 4. [План очистки та реструктуризації](./cleanup-restructure-plan.md)
 
+5. [Logging Observability Checklist](./logging-observability-checklist.md)
+
 ## Current Status Snapshot
 
 Completed and verified:
@@ -50,6 +52,7 @@ Not started yet:
 - [x] Stage 1 ground core refactor
 - [x] Stage 2 mining rewrite completed
 - [x] Stage 3 ladder rewrite
+- [ ] observability hardening pass before Stage 4
 - [ ] Stage 4 save and UI reintegration
 
 ## Verified Baseline

@@ -186,6 +186,20 @@ namespace MinerUnity.Terrain
                 ("exploredCount", CountExploredFogCells()),
                 ("tilemapAssigned", hiddenAreaFog != null));
 
+            if (!loadedFromGameSave && (worldLoaded || fogLoaded))
+            {
+                Diag.Event(
+                    "Load",
+                    "MigrationUsed",
+                    "Legacy persistence files were used as the runtime load source.",
+                    this,
+                    ("worldSource", worldLoaded ? "legacyWorldFile" : "none"),
+                    ("fogSource", fogLoaded ? "legacyFogFile" : "none"),
+                    ("savePath", GamePersistenceService.SaveFilePath),
+                    ("legacyWorldPath", GamePersistenceService.LegacyWorldFilePath),
+                    ("legacyFogPath", GamePersistenceService.LegacyFogFilePath));
+            }
+
             if (!loadedFromGameSave && worldLoaded)
             {
                 SaveGameData();

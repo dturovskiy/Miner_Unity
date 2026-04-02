@@ -19,6 +19,13 @@ namespace AwesomeTools.UI
         // Navigates to name of scene which you have written
         public void GoToOtherScene()
         {
+            string targetScene = _data != null ? _data.Key : string.Empty;
+            Diag.Event(
+                "UI",
+                targetScene == "MenuScene" ? "BackRequested" : "SceneNavigationRequested",
+                "Scene navigation was requested from an exit button.",
+                this,
+                ("targetScene", targetScene));
             //Click();
             //EndCycle();
             StartCoroutine(LoadScene(_data));
@@ -36,23 +43,56 @@ namespace AwesomeTools.UI
         private IEnumerator LoadScene(SceneData type, bool isComplied = false)
         {
             yield return new WaitForSeconds(1);
+
+            if (type == null)
+            {
+                Diag.Error(
+                    "UI",
+                    "SceneNavigationRejected",
+                    "Scene navigation failed because SceneData is missing.",
+                    this,
+                    ("reason", "missingSceneData"));
+                yield break;
+            }
             
             if(type.Key == "")
             {
+                Diag.Error(
+                    "UI",
+                    "SceneNavigationRejected",
+                    "Scene navigation failed because SceneData is empty.",
+                    this,
+                    ("reason", "emptySceneData"));
                 Debug.LogError("SceneData is empty, please write the name of the scene");
             }
             else
             {
                 if(_sceneLoader != null)
+                {
                     _sceneLoader.LoadScene(type.Key, isComplied);
+                }
                 else
+                {
+                    Diag.Error(
+                        "UI",
+                        "SceneNavigationRejected",
+                        "Scene navigation failed because SceneLoader is missing.",
+                        this,
+                        ("reason", "missingSceneLoader"),
+                        ("targetScene", type.Key));
                     Debug.LogError("In ExitButton SceneLoader is null");
+                }
             }
         }
 
         // Exits the game
         public void ExitGame()
         {
+            Diag.Event(
+                "UI",
+                "ExitGameRequested",
+                "Application exit was requested from the UI.",
+                this);
             Debug.Log("Quit");
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;

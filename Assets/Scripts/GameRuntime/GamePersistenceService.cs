@@ -28,26 +28,69 @@ namespace MinerUnity.Runtime
 
         public static void DeleteSave()
         {
-            if (File.Exists(SaveFilePath))
+            bool existed = File.Exists(SaveFilePath);
+            if (!existed)
             {
-                File.Delete(SaveFilePath);
+                Diag.Event(
+                    "Save",
+                    "Skipped",
+                    "Save deletion skipped because the save file does not exist.",
+                    null,
+                    ("reason", "missingFile"),
+                    ("path", SaveFilePath));
+                return;
             }
+
+            File.Delete(SaveFilePath);
+            Diag.Event(
+                "Save",
+                "Deleted",
+                "Primary game save file was deleted.",
+                null,
+                ("path", SaveFilePath));
         }
 
         public static void ResetForNewGame()
         {
-            DeleteIfExists(SaveFilePath);
-            DeleteIfExists(LegacyWorldFilePath);
-            DeleteIfExists(LegacyFogFilePath);
-            DeleteIfExists(LegacySceneSaveFilePath);
+            bool deletedGameSave = DeleteIfExists(SaveFilePath);
+            bool deletedLegacyWorld = DeleteIfExists(LegacyWorldFilePath);
+            bool deletedLegacyFog = DeleteIfExists(LegacyFogFilePath);
+            bool deletedLegacySceneSave = DeleteIfExists(LegacySceneSaveFilePath);
+
+            Diag.Event(
+                "Save",
+                "ResetForNewGame",
+                "Persistence files were cleared for a new game start.",
+                null,
+                ("gameSaveDeleted", deletedGameSave),
+                ("legacyWorldDeleted", deletedLegacyWorld),
+                ("legacyFogDeleted", deletedLegacyFog),
+                ("legacySceneSaveDeleted", deletedLegacySceneSave),
+                ("savePath", SaveFilePath));
         }
 
         public static bool TryLoad(out GameSaveData saveData)
         {
             saveData = null;
+            bool hasSave = HasSave();
 
-            if (!HasSave())
+            Diag.Event(
+                "Load",
+                "Requested",
+                "Load requested from the primary game save.",
+                null,
+                ("path", SaveFilePath),
+                ("hasSave", hasSave));
+
+            if (!hasSave)
             {
+                Diag.Event(
+                    "Load",
+                    "Skipped",
+                    "Load skipped because no primary save file exists.",
+                    null,
+                    ("reason", "missingFile"),
+                    ("path", SaveFilePath));
                 return false;
             }
 
@@ -56,10 +99,48 @@ namespace MinerUnity.Runtime
                 string json = File.ReadAllText(SaveFilePath);
                 saveData = JsonUtility.FromJson<GameSaveData>(json);
                 EnsureInitialized(saveData);
-                return saveData != null;
+                bool success = saveData != null;
+
+                if (success)
+                {
+                    Diag.Event(
+                        "Load",
+                        "Succeeded",
+                        "Primary game save loaded successfully.",
+                        null,
+                        ("path", SaveFilePath),
+                        ("jsonLength", json.Length),
+                        ("worldBytes", saveData.world?.tiles != null ? saveData.world.tiles.Length : 0),
+                        ("fogBytes", saveData.world?.fog != null ? saveData.world.fog.Length : 0),
+                        ("hasHeroPosition", saveData.hero != null && saveData.hero.hasPosition),
+                        ("miningDamageCount", saveData.world?.miningDamage != null ? saveData.world.miningDamage.Count : 0),
+                        ("placedObjectsCount", saveData.world?.placedObjects != null ? saveData.world.placedObjects.Count : 0));
+                }
+                else
+                {
+                    Diag.Warning(
+                        "Load",
+                        "Failed",
+                        "Primary game save deserialized to null.",
+                        null,
+                        ("reason", "deserializedNull"),
+                        ("path", SaveFilePath),
+                        ("jsonLength", json.Length));
+                }
+
+                return success;
             }
             catch (Exception exception)
             {
+                Diag.Warning(
+                    "Load",
+                    "Failed",
+                    "Primary game save failed to load.",
+                    null,
+                    ("reason", "exception"),
+                    ("path", SaveFilePath),
+                    ("exceptionType", exception.GetType().Name),
+                    ("exceptionMessage", exception.Message));
                 Debug.LogWarning($"GamePersistenceService: Failed to load save file. {exception.Message}");
                 saveData = null;
                 return false;
@@ -70,8 +151,43 @@ namespace MinerUnity.Runtime
         {
             EnsureInitialized(saveData);
 
-            string json = JsonUtility.ToJson(saveData, true);
-            File.WriteAllText(SaveFilePath, json);
+            Diag.Event(
+                "Save",
+                "Requested",
+                "Save requested for the primary game save.",
+                null,
+                ("path", SaveFilePath),
+                ("hasHeroPosition", saveData?.hero != null && saveData.hero.hasPosition),
+                ("worldBytes", saveData?.world?.tiles != null ? saveData.world.tiles.Length : 0),
+                ("fogBytes", saveData?.world?.fog != null ? saveData.world.fog.Length : 0),
+                ("miningDamageCount", saveData?.world?.miningDamage != null ? saveData.world.miningDamage.Count : 0),
+                ("placedObjectsCount", saveData?.world?.placedObjects != null ? saveData.world.placedObjects.Count : 0));
+
+            try
+            {
+                string json = JsonUtility.ToJson(saveData, true);
+                File.WriteAllText(SaveFilePath, json);
+                Diag.Event(
+                    "Save",
+                    "Succeeded",
+                    "Primary game save was written successfully.",
+                    null,
+                    ("path", SaveFilePath),
+                    ("jsonLength", json.Length),
+                    ("hasHeroPosition", saveData?.hero != null && saveData.hero.hasPosition));
+            }
+            catch (Exception exception)
+            {
+                Diag.Error(
+                    "Save",
+                    "Failed",
+                    "Primary game save failed to write.",
+                    null,
+                    ("path", SaveFilePath),
+                    ("exceptionType", exception.GetType().Name),
+                    ("exceptionMessage", exception.Message));
+                throw;
+            }
         }
 
         public static GameSaveData CreateFromRuntime(WorldRuntime worldRuntime, byte[] fogGrid, Vector3 heroPosition)
@@ -106,7 +222,19 @@ namespace MinerUnity.Runtime
         public static bool TryRestoreWorld(GameSaveData saveData, WorldData worldData)
         {
             EnsureInitialized(saveData);
-            return saveData != null && worldData.LoadFromBytes(saveData.world.tiles);
+            bool restored = saveData != null && worldData.LoadFromBytes(saveData.world.tiles);
+            if (!restored)
+            {
+                Diag.Warning(
+                    "Load",
+                    "WorldRestoreFailed",
+                    "World bytes could not be restored from the primary save model.",
+                    null,
+                    ("hasSaveData", saveData != null),
+                    ("worldBytes", saveData?.world?.tiles != null ? saveData.world.tiles.Length : 0));
+            }
+
+            return restored;
         }
 
         public static byte[] CreateFogCopy(GameSaveData saveData, int expectedLength)
@@ -153,12 +281,15 @@ namespace MinerUnity.Runtime
             return copy;
         }
 
-        private static void DeleteIfExists(string filePath)
+        private static bool DeleteIfExists(string filePath)
         {
-            if (File.Exists(filePath))
+            if (!File.Exists(filePath))
             {
-                File.Delete(filePath);
+                return false;
             }
+
+            File.Delete(filePath);
+            return true;
         }
 
         private static void EnsureInitialized(GameSaveData saveData)

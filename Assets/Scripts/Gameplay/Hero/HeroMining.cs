@@ -136,7 +136,10 @@ public sealed class HeroMining : MonoBehaviour
         Vector2Int anchorCell = heroCollision.TryGetOpenAnchorCell(out Vector2Int openCell)
             ? openCell
             : heroCollision.GetCurrentCell();
-        if (!runtime.IsInsideMiningArea(anchorCell.x, anchorCell.y))
+        Vector2Int footCell = heroCollision.GetFootCell();
+        bool hasMiningAreaAccess = runtime.IsInsideMiningArea(anchorCell.x, anchorCell.y)
+            || runtime.IsInsideMiningArea(footCell.x, footCell.y);
+        if (!hasMiningAreaAccess)
         {
             EmitDigBlockedOnce("outsideMiningArea", GetDirectionName(GetDominantAxisDirection(input)), anchorCell, runtime.GetTile(anchorCell.x, anchorCell.y));
             StopMining();

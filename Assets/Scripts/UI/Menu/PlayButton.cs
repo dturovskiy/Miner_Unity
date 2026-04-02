@@ -17,12 +17,24 @@ namespace AwesomeTools.MainScene
 
         public void GoToMainScene()
         {
+            Diag.Event(
+                "UI",
+                "NewGameRequested",
+                "New game was requested from the play button.",
+                this,
+                ("targetScene", _sceneData != null ? _sceneData.Key : string.Empty));
             GameLaunchContext.RequestNewGame();
             StartCoroutine(LoadScene(_sceneData));
         }
 
         public void ContinueGame()
         {
+            Diag.Event(
+                "UI",
+                "ContinueRequested",
+                "Continue was requested from the play button.",
+                this,
+                ("targetScene", _sceneData != null ? _sceneData.Key : string.Empty));
             GameLaunchContext.RequestContinue();
             StartCoroutine(LoadScene(_sceneData));
         }
@@ -35,6 +47,29 @@ namespace AwesomeTools.MainScene
         private IEnumerator LoadScene(SceneData type)
         {
             yield return new WaitForSeconds(1);
+            if (type == null)
+            {
+                Diag.Error(
+                    "UI",
+                    "SceneNavigationRejected",
+                    "Play button navigation failed because SceneData is missing.",
+                    this,
+                    ("reason", "missingSceneData"));
+                yield break;
+            }
+
+            if (_sceneLoader == null)
+            {
+                Diag.Error(
+                    "UI",
+                    "SceneNavigationRejected",
+                    "Play button navigation failed because SceneLoader is missing.",
+                    this,
+                    ("reason", "missingSceneLoader"),
+                    ("targetScene", type.Key));
+                yield break;
+            }
+
             _sceneLoader.LoadScene(type.Key);
         }
 

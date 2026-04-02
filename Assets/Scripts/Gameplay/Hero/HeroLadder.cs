@@ -50,6 +50,10 @@ public sealed class HeroLadder : MonoBehaviour
     private bool hasClimbAction;
     private Vector2Int supportLadderCell;
     private LadderSupportContext cachedSupportContext;
+    private bool hasBlockedLatch;
+    private string lastBlockedDirection = string.Empty;
+    private string lastBlockedReason = string.Empty;
+    private Vector2Int lastBlockedCell;
 
     public bool IsOnLadder => isClimbing;
     public bool HasPassiveSupport => hasLadderSupport;
@@ -123,6 +127,7 @@ public sealed class HeroLadder : MonoBehaviour
 
         if (!heroCollision.IsWorldReady())
         {
+            ClearBlockedLatch();
             ReleaseAllLadderState();
             return;
         }
@@ -133,15 +138,22 @@ public sealed class HeroLadder : MonoBehaviour
 
         if (!hasLadderSupport)
         {
+            ClearBlockedLatch();
             hasClimbAction = false;
             ReleaseAllLadderState();
             return;
         }
 
         Vector2 input = heroController.MovementInput;
+        if (!IsVerticalIntent(input))
+        {
+            ClearBlockedLatch();
+        }
+
         hasClimbAction = TryResolveClimbAction(input, supportContext, out Vector2Int climbCell, out string directionName);
         if (hasClimbAction)
         {
+            ClearBlockedLatch();
             if (!isClimbing)
             {
                 EnterClimb(climbCell, directionName);
@@ -154,6 +166,15 @@ public sealed class HeroLadder : MonoBehaviour
             SnapToLadderColumn(climbCell);
             heroMotor.ApplyLadderVelocity(input.y, climbSpeed);
             return;
+        }
+
+        if (TryResolveBlockedAction(input, supportContext, out string blockedDirection, out string blockedReason, out Vector2Int blockedCell, out TileID blockedTile))
+        {
+            EmitLadderBlockedOnce(blockedDirection, blockedReason, blockedCell, blockedTile);
+        }
+        else
+        {
+            ClearBlockedLatch();
         }
 
         if (isClimbing)
@@ -229,6 +250,7 @@ public sealed class HeroLadder : MonoBehaviour
         hasLadderSupport = false;
         cachedSupportContext = default;
         supportLadderCell = Vector2Int.zero;
+        ClearBlockedLatch();
     }
 
     private void EnterPassiveSupport()
@@ -291,6 +313,28 @@ public sealed class HeroLadder : MonoBehaviour
         return TryResolveDownClimb(context, out climbCell);
     }
 
+    private bool TryResolveBlockedAction(Vector2 input, LadderSupportContext context, out string directionName, out string blockedReason, out Vector2Int blockedCell, out TileID blockedTile)
+    {
+        directionName = string.Empty;
+        blockedReason = string.Empty;
+        blockedCell = Vector2Int.zero;
+        blockedTile = TileID.Empty;
+
+        if (!IsVerticalIntent(input))
+        {
+            return false;
+        }
+
+        if (input.y > 0f)
+        {
+            directionName = "Up";
+            return TryResolveUpBlocked(context, out blockedReason, out blockedCell, out blockedTile);
+        }
+
+        directionName = "Down";
+        return TryResolveDownBlocked(context, out blockedReason, out blockedCell, out blockedTile);
+    }
+
     private bool TryResolveUpClimb(LadderSupportContext context, out Vector2Int climbCell)
     {
         climbCell = context.SupportCell;
@@ -312,7 +356,42 @@ public sealed class HeroLadder : MonoBehaviour
 
         Vector2Int nextCell = context.CurrentIsLadder ? context.CurrentCell + Vector2Int.up : context.SupportCell + Vector2Int.up;
         TileID nextTile = heroCollision.GetTileId(nextCell);
-        return heroCollision.IsClimbableCell(nextCell) || WorldCellRules.IsPassable(nextTile);
+        if (heroCollision.IsClimbableCell(nextCell) || WorldCellRules.IsPassable(nextTile))
+        {
+            return true;
+        }
+
+        return !HasReachedCeilingStop(nextCell.y);
+    }
+
+    private bool TryResolveUpBlocked(LadderSupportContext context, out string blockedReason, out Vector2Int blockedCell, out TileID blockedTile)
+    {
+        blockedReason = string.Empty;
+        blockedCell = context.CurrentIsLadder ? context.CurrentCell + Vector2Int.up : context.SupportCell + Vector2Int.up;
+        blockedTile = heroCollision.GetTileId(blockedCell);
+
+        if (context.IsTopStanding && HasClearedTopEdge(context.SupportCell))
+        {
+            return false;
+        }
+
+        if (HasMineableCeiling())
+        {
+            return false;
+        }
+
+        if (heroCollision.IsClimbableCell(blockedCell) || WorldCellRules.IsPassable(blockedTile))
+        {
+            return false;
+        }
+
+        if (!HasReachedCeilingStop(blockedCell.y))
+        {
+            return false;
+        }
+
+        blockedReason = "topBlocked";
+        return true;
     }
 
     private bool TryResolveDownClimb(LadderSupportContext context, out Vector2Int climbCell)
@@ -338,6 +417,36 @@ public sealed class HeroLadder : MonoBehaviour
         }
 
         return !IsAtBottomReach(context.SupportCell);
+    }
+
+    private bool TryResolveDownBlocked(LadderSupportContext context, out string blockedReason, out Vector2Int blockedCell, out TileID blockedTile)
+    {
+        blockedReason = string.Empty;
+        blockedCell = context.SupportCell + Vector2Int.down;
+        blockedTile = heroCollision.GetTileId(blockedCell);
+
+        if (context.IsTopStanding)
+        {
+            return false;
+        }
+
+        if (HasMineableBelow())
+        {
+            return false;
+        }
+
+        if (heroCollision.IsClimbableCell(blockedCell) || WorldCellRules.IsPassable(blockedTile))
+        {
+            return false;
+        }
+
+        if (!IsAtBottomReach(context.SupportCell))
+        {
+            return false;
+        }
+
+        blockedReason = "bottomBlocked";
+        return true;
     }
 
     private void SnapToLadderColumn(Vector2Int ladderCell)
@@ -429,6 +538,18 @@ public sealed class HeroLadder : MonoBehaviour
             && heroBottomY <= ladderTopY + 0.08f;
     }
 
+    private bool HasReachedCeilingStop(int blockedCellY)
+    {
+        if (heroCollider == null)
+        {
+            return false;
+        }
+
+        float heroTopY = heroCollider.bounds.max.y;
+        float blockedCellBottomY = heroCollision.GetCellBottomY(blockedCellY);
+        return heroTopY >= blockedCellBottomY - topExitReachMargin;
+    }
+
     private bool IsAtBottomReach(Vector2Int ladderCell)
     {
         if (heroCollider == null)
@@ -439,5 +560,42 @@ public sealed class HeroLadder : MonoBehaviour
         float heroBottomY = heroCollider.bounds.min.y;
         float ladderBottomY = heroCollision.GetCellBottomY(ladderCell.y);
         return heroBottomY <= ladderBottomY + bottomReachMargin;
+    }
+
+    private void EmitLadderBlockedOnce(string directionName, string blockedReason, Vector2Int blockedCell, TileID blockedTile)
+    {
+        if (hasBlockedLatch
+            && lastBlockedDirection == directionName
+            && lastBlockedReason == blockedReason
+            && lastBlockedCell == blockedCell)
+        {
+            return;
+        }
+
+        hasBlockedLatch = true;
+        lastBlockedDirection = directionName;
+        lastBlockedReason = blockedReason;
+        lastBlockedCell = blockedCell;
+
+        Diag.Warning(
+            "Hero",
+            "LadderBlocked",
+            "Hero ladder movement was blocked.",
+            this,
+            ("direction", directionName),
+            ("reason", blockedReason),
+            ("ladderCell", supportLadderCell),
+            ("currentCell", heroCollision.GetCurrentCell()),
+            ("targetCell", blockedCell),
+            ("tile", blockedTile.ToString()),
+            ("source", heroController.UsesMovementJoystick ? "movementJoystick" : "keyboardFallback"));
+    }
+
+    private void ClearBlockedLatch()
+    {
+        hasBlockedLatch = false;
+        lastBlockedDirection = string.Empty;
+        lastBlockedReason = string.Empty;
+        lastBlockedCell = Vector2Int.zero;
     }
 }

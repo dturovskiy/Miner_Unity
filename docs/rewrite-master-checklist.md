@@ -16,6 +16,7 @@
 - [x] runtime ownership document created
 - [x] scene cleanup checklist created
 - [x] unified cleanup and restructure plan created
+- [x] logging and observability checklist created
 - [x] Stage 0 execution started
 - [x] manual smoke test passed for `New Game`, `Continue`, world restore, fog restore, and basic hero movement
 - [x] script layout cleanup applied without breaking the local build
@@ -24,6 +25,7 @@
 - [x] Stage 1 completed
 - [x] Stage 2 completed
 - [x] Stage 3 completed
+- [ ] observability hardening pass before Stage 4
 - [ ] Stage 4 completed
 
 ## Stage 0 - Cleanup And Safety Rails

@@ -25,16 +25,57 @@ namespace AwesomeTools.Scene
         public void LoadScene(string sceneKey, bool isLevelComplied = true, float delay = 1f)
         {
             IsLevelComplied = isLevelComplied;
+            string currentScene = CurrentScene();
+            Diag.Event(
+                "Scene",
+                "TransitionRequested",
+                "Scene transition requested.",
+                this,
+                ("targetScene", sceneKey),
+                ("currentScene", currentScene),
+                ("isLevelComplied", isLevelComplied),
+                ("delay", delay),
+                ("fadeEnabled", _isFadeScreenPanelEnable));
+
             SceneInfo loadSceneInfo = GetScene(sceneKey);
 
             if (loadSceneInfo == null)
+            {
+                Diag.Warning(
+                    "Scene",
+                    "TransitionCancelled",
+                    "Scene transition cancelled because target scene config was not found.",
+                    this,
+                    ("reason", "missingSceneConfig"),
+                    ("targetScene", sceneKey),
+                    ("currentScene", currentScene));
                 return;
+            }
 
-            if (loadSceneInfo.Key == CurrentScene())
+            if (loadSceneInfo.Key == currentScene)
+            {
+                Diag.Event(
+                    "Scene",
+                    "TransitionCancelled",
+                    "Scene transition cancelled because the target scene is already active.",
+                    this,
+                    ("reason", "alreadyCurrentScene"),
+                    ("targetScene", loadSceneInfo.Key),
+                    ("currentScene", currentScene));
                 return;
+            }
 
-            PrepareCurrentSceneForTransition();
-            PlayerPrefs.SetString(PREVIOUS_SCENE, CurrentScene());
+            int participantCount = PrepareCurrentSceneForTransition();
+            Diag.Event(
+                "Scene",
+                "TransitionPrepared",
+                "Current scene prepared for transition.",
+                this,
+                ("currentScene", currentScene),
+                ("targetScene", loadSceneInfo.Key),
+                ("participantCount", participantCount));
+
+            PlayerPrefs.SetString(PREVIOUS_SCENE, currentScene);
             StartCoroutine(LoadScene(loadSceneInfo, delay));
         }
 
@@ -51,14 +92,52 @@ namespace AwesomeTools.Scene
         private IEnumerator ReloadCurrentSceneStart(bool isLevelComplied = true, float delay = 1f)
         {
             IsLevelComplied = isLevelComplied;
-            PrepareCurrentSceneForTransition();
+            string currentScene = CurrentScene();
+            Diag.Event(
+                "Scene",
+                "ReloadRequested",
+                "Current scene reload requested.",
+                this,
+                ("currentScene", currentScene),
+                ("isLevelComplied", isLevelComplied),
+                ("delay", delay),
+                ("fadeEnabled", _isFadeScreenPanelEnable));
+
+            int participantCount = PrepareCurrentSceneForTransition();
+            Diag.Event(
+                "Scene",
+                "TransitionPrepared",
+                "Current scene prepared for reload.",
+                this,
+                ("currentScene", currentScene),
+                ("targetScene", currentScene),
+                ("participantCount", participantCount),
+                ("reload", true));
 
             if (_fadeScreenPanel != null)
+            {
                 _fadeScreenPanel.FadeIn();
+            }
             else
+            {
+                Diag.Error(
+                    "Scene",
+                    "FadeMissing",
+                    "Scene reload requested with fade enabled but FadeScreenPanel is missing.",
+                    this,
+                    ("currentScene", currentScene));
                 Debug.LogError("FadeScreenPanel is null");
+            }
 
             yield return new WaitForSeconds(delay);
+            Diag.Event(
+                "Scene",
+                "TransitionStarted",
+                "Scene reload async operation started.",
+                this,
+                ("currentScene", currentScene),
+                ("targetScene", currentScene),
+                ("reload", true));
             SceneManager.LoadSceneAsync(CurrentScene());
         }
 
@@ -75,12 +154,26 @@ namespace AwesomeTools.Scene
                 }
                 else
                 {
+                    Diag.Error(
+                        "Scene",
+                        "TransitionCancelled",
+                        "Scene transition failed because the target scene key is not configured.",
+                        this,
+                        ("reason", "invalidSceneKey"),
+                        ("targetScene", sceneKey));
                     Debug.LogError("Name of Scene in config is not correct");
                     return null;
                 }
             }
             else
             {
+                Diag.Error(
+                    "Scene",
+                    "TransitionCancelled",
+                    "Scene transition failed because the scene config array is empty.",
+                    this,
+                    ("reason", "emptySceneConfigArray"),
+                    ("targetScene", sceneKey));
                 Debug.LogError("Array _scenesInfo is empty");
                 return null;
             }
@@ -96,14 +189,47 @@ namespace AwesomeTools.Scene
             if (IsFadeScreenPanelEnable)
             {
                 if (_fadeScreenPanel != null)
+                {
                     _fadeScreenPanel.FadeIn();
+                }
                 else
+                {
+                    Diag.Error(
+                        "Scene",
+                        "FadeMissing",
+                        "Scene transition requested with fade enabled but FadeScreenPanel is missing.",
+                        this,
+                        ("currentScene", CurrentScene()),
+                        ("targetScene", loadSceneInfo != null ? loadSceneInfo.Key : string.Empty));
                     Debug.LogError("FadeScreenPanel is null");
+                }
             }
 
             yield return new WaitForSeconds(delay);
 
             AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(loadSceneInfo.Key);
+            if (asyncLoad == null)
+            {
+                Diag.Error(
+                    "Scene",
+                    "TransitionCancelled",
+                    "Scene async load operation failed to start.",
+                    this,
+                    ("reason", "asyncLoadNull"),
+                    ("currentScene", CurrentScene()),
+                    ("targetScene", loadSceneInfo.Key));
+                yield break;
+            }
+
+            Diag.Event(
+                "Scene",
+                "TransitionStarted",
+                "Scene async load operation started.",
+                this,
+                ("currentScene", CurrentScene()),
+                ("targetScene", loadSceneInfo.Key),
+                ("delay", delay),
+                ("fadeEnabled", _isFadeScreenPanelEnable));
 
             while (!asyncLoad.isDone)
             {
@@ -113,16 +239,20 @@ namespace AwesomeTools.Scene
             }
         }
 
-        private void PrepareCurrentSceneForTransition()
+        private int PrepareCurrentSceneForTransition()
         {
+            int participantCount = 0;
             MonoBehaviour[] behaviours = FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None);
             foreach (MonoBehaviour behaviour in behaviours)
             {
                 if (behaviour is ISceneTransitionSaveParticipant participant)
                 {
                     participant.PrepareForSceneTransition();
+                    participantCount++;
                 }
             }
+
+            return participantCount;
         }
     }
 }

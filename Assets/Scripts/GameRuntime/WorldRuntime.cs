@@ -89,14 +89,14 @@ namespace MinerUnity.Runtime
                 return true;
             }
 
-            if (tile != TileID.Empty)
-            {
-                return false;
-            }
-
             if (HasAdjacentMiningAccess(x, y))
             {
                 return true;
+            }
+
+            if (tile != TileID.Empty)
+            {
+                return false;
             }
 
             int tunnelRow = GetHighestTunnelRow();
@@ -107,6 +107,15 @@ namespace MinerUnity.Runtime
         {
             if (!worldData.IsValidCoordinate(x, y))
             {
+                Diag.Warning(
+                    "World",
+                    "MutationRejected",
+                    "Tile placement rejected because the target cell is out of bounds.",
+                    null,
+                    ("operation", "PlaceTile"),
+                    ("cell", new UnityEngine.Vector2Int(x, y)),
+                    ("tile", tileId.ToString()),
+                    ("reason", "outOfBounds"));
                 return false;
             }
 
@@ -120,8 +129,30 @@ namespace MinerUnity.Runtime
         public bool TryDestroyTile(int x, int y, out TileID previousTile)
         {
             previousTile = worldData.GetTile(x, y);
+            if (!worldData.IsValidCoordinate(x, y))
+            {
+                Diag.Warning(
+                    "World",
+                    "MutationRejected",
+                    "Tile destruction rejected because the target cell is out of bounds.",
+                    null,
+                    ("operation", "DestroyTile"),
+                    ("cell", new UnityEngine.Vector2Int(x, y)),
+                    ("reason", "outOfBounds"));
+                return false;
+            }
+
             if (previousTile is TileID.Empty or TileID.Edge)
             {
+                Diag.Warning(
+                    "World",
+                    "MutationRejected",
+                    "Tile destruction rejected because the target tile is not destroyable.",
+                    null,
+                    ("operation", "DestroyTile"),
+                    ("cell", new UnityEngine.Vector2Int(x, y)),
+                    ("tile", previousTile.ToString()),
+                    ("reason", previousTile == TileID.Empty ? "emptyTile" : "edgeTile"));
                 return false;
             }
 
@@ -166,8 +197,30 @@ namespace MinerUnity.Runtime
         {
             result = default;
 
-            if (!worldData.IsValidCoordinate(x, y) || !IsMineable(x, y))
+            if (!worldData.IsValidCoordinate(x, y))
             {
+                Diag.Warning(
+                    "World",
+                    "MiningHitRejected",
+                    "Mining hit rejected because the target cell is out of bounds.",
+                    null,
+                    ("cell", new UnityEngine.Vector2Int(x, y)),
+                    ("hitsRequired", hitsRequired),
+                    ("reason", "outOfBounds"));
+                return false;
+            }
+
+            if (!IsMineable(x, y))
+            {
+                Diag.Warning(
+                    "World",
+                    "MiningHitRejected",
+                    "Mining hit rejected because the target tile is not mineable.",
+                    null,
+                    ("cell", new UnityEngine.Vector2Int(x, y)),
+                    ("tile", worldData.GetTile(x, y).ToString()),
+                    ("hitsRequired", hitsRequired),
+                    ("reason", "notMineable"));
                 return false;
             }
 
@@ -182,6 +235,15 @@ namespace MinerUnity.Runtime
             {
                 if (!TryDestroyTile(x, y, out _))
                 {
+                    Diag.Warning(
+                        "World",
+                        "MiningHitRejected",
+                        "Mining hit could not finish because the target tile failed to destroy.",
+                        null,
+                        ("cell", new UnityEngine.Vector2Int(x, y)),
+                        ("tile", tileId.ToString()),
+                        ("hitsRequired", normalizedHitsRequired),
+                        ("reason", "destroyFailed"));
                     return false;
                 }
             }

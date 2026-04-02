@@ -11,6 +11,23 @@ namespace AwesomeTools.Scene
     {
         private const string PREVIOUS_SCENE = "previousScene";
 
+        private struct PendingTransition
+        {
+            public bool HasValue;
+            public string SourceScene;
+            public string TargetScene;
+            public bool Reload;
+            public bool IsLevelComplied;
+            public bool FadeEnabled;
+            public float Delay;
+            public int ParticipantCount;
+            public int RequestFrame;
+            public float RequestTime;
+        }
+
+        private static PendingTransition pendingTransition;
+        private static bool sceneLoadedHookRegistered;
+
         public static bool IsLevelComplied = true; // bool which provide whether scene was fully finished
 
         [SerializeField] private SceneInfo[] _scenesInfo;
@@ -20,6 +37,18 @@ namespace AwesomeTools.Scene
         public event Action<float> OnSceneLoadProgress;
 
         public bool IsFadeScreenPanelEnable => _isFadeScreenPanelEnable;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void RegisterSceneLoadedHook()
+        {
+            if (sceneLoadedHookRegistered)
+            {
+                return;
+            }
+
+            SceneManager.sceneLoaded += OnSceneLoaded;
+            sceneLoadedHookRegistered = true;
+        }
 
         // Loads the specified scene with optional delay and fade screen panel
         public void LoadScene(string sceneKey, bool isLevelComplied = true, float delay = 1f)
@@ -76,7 +105,7 @@ namespace AwesomeTools.Scene
                 ("participantCount", participantCount));
 
             PlayerPrefs.SetString(PREVIOUS_SCENE, currentScene);
-            StartCoroutine(LoadScene(loadSceneInfo, delay));
+            StartCoroutine(LoadScene(loadSceneInfo, delay, currentScene, participantCount, isLevelComplied));
         }
 
         public void ReloadCurrentScene()
@@ -130,6 +159,16 @@ namespace AwesomeTools.Scene
             }
 
             yield return new WaitForSeconds(delay);
+
+            TrackPendingTransition(
+                currentScene,
+                currentScene,
+                true,
+                isLevelComplied,
+                _isFadeScreenPanelEnable,
+                delay,
+                participantCount);
+
             Diag.Event(
                 "Scene",
                 "TransitionStarted",
@@ -138,7 +177,21 @@ namespace AwesomeTools.Scene
                 ("currentScene", currentScene),
                 ("targetScene", currentScene),
                 ("reload", true));
-            SceneManager.LoadSceneAsync(CurrentScene());
+
+            AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(currentScene);
+            if (asyncLoad == null)
+            {
+                ClearPendingTransition();
+                Diag.Error(
+                    "Scene",
+                    "TransitionCancelled",
+                    "Scene reload async operation failed to start.",
+                    this,
+                    ("reason", "asyncLoadNull"),
+                    ("currentScene", currentScene),
+                    ("targetScene", currentScene),
+                    ("reload", true));
+            }
         }
 
         // Retrieves the scene information based on the specified scene type
@@ -184,7 +237,7 @@ namespace AwesomeTools.Scene
             => SceneManager.GetActiveScene().name;
 
         //Coroutine to load the scene with optional delay and fade screen panel
-        private IEnumerator LoadScene(SceneInfo loadSceneInfo, float delay)
+        private IEnumerator LoadScene(SceneInfo loadSceneInfo, float delay, string sourceScene, int participantCount, bool isLevelComplied)
         {
             if (IsFadeScreenPanelEnable)
             {
@@ -221,6 +274,15 @@ namespace AwesomeTools.Scene
                 yield break;
             }
 
+            TrackPendingTransition(
+                sourceScene,
+                loadSceneInfo.Key,
+                false,
+                isLevelComplied,
+                _isFadeScreenPanelEnable,
+                delay,
+                participantCount);
+
             Diag.Event(
                 "Scene",
                 "TransitionStarted",
@@ -237,6 +299,66 @@ namespace AwesomeTools.Scene
                 OnSceneLoadProgress?.Invoke(progress);
                 yield return null;
             }
+        }
+
+        private static void TrackPendingTransition(
+            string sourceScene,
+            string targetScene,
+            bool reload,
+            bool isLevelComplied,
+            bool fadeEnabled,
+            float delay,
+            int participantCount)
+        {
+            RegisterSceneLoadedHook();
+
+            pendingTransition = new PendingTransition
+            {
+                HasValue = true,
+                SourceScene = sourceScene,
+                TargetScene = targetScene,
+                Reload = reload,
+                IsLevelComplied = isLevelComplied,
+                FadeEnabled = fadeEnabled,
+                Delay = delay,
+                ParticipantCount = participantCount,
+                RequestFrame = Time.frameCount,
+                RequestTime = Time.time
+            };
+        }
+
+        private static void ClearPendingTransition()
+        {
+            pendingTransition = default;
+        }
+
+        private static void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, LoadSceneMode mode)
+        {
+            if (!pendingTransition.HasValue)
+            {
+                return;
+            }
+
+            PendingTransition completedTransition = pendingTransition;
+            pendingTransition = default;
+
+            Diag.Event(
+                "Scene",
+                "TransitionCompleted",
+                "Scene transition completed.",
+                null,
+                ("sourceScene", completedTransition.SourceScene),
+                ("targetScene", completedTransition.TargetScene),
+                ("loadedScene", scene.name),
+                ("reload", completedTransition.Reload),
+                ("isLevelComplied", completedTransition.IsLevelComplied),
+                ("fadeEnabled", completedTransition.FadeEnabled),
+                ("delay", completedTransition.Delay),
+                ("participantCount", completedTransition.ParticipantCount),
+                ("requestFrame", completedTransition.RequestFrame),
+                ("requestTime", completedTransition.RequestTime),
+                ("mode", mode.ToString()),
+                ("targetMatched", string.Equals(scene.name, completedTransition.TargetScene, StringComparison.Ordinal)));
         }
 
         private int PrepareCurrentSceneForTransition()

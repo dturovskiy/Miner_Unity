@@ -151,7 +151,7 @@
 
 - [x] `LadderEntered`
 - [x] `LadderExited`
-- [-] `LadderBlocked` is deferred for now; recent verified sessions did not need a gameplay ladder-block event, while placement rejections are already covered by `PlaceLadderBlocked`
+- [x] `LadderBlocked`
 
 ### Stage 3 Close-Out
 
@@ -174,6 +174,25 @@
 - [ ] reconnect menu flow on top of stable gameplay runtime
 - [ ] verify UI does not introduce warning noise into gameplay sessions
 - [ ] verify gameplay can boot without menu-side side effects
+
+## Observability Hardening Before Stage 4
+
+### Completed
+
+- [x] structured save and load events added
+- [x] scene transition request and preparation events added
+- [x] world runtime mutation rejection events added
+- [x] gameplay `Hero/LadderBlocked` added
+- [x] world-side mining and destruction events verified in live sessions
+- [x] latest verified ladder and mining sessions read cleanly with no `Unity/Error` or `Unity/Warning`
+
+### Remaining
+
+- [x] add explicit `Scene/TransitionCompleted`
+- [x] add dedicated `Visibility/Updated` and `Visibility/RuleRejected`
+- [x] add hazard hook events such as `Hero/HazardHit` and `Hero/KillHookTriggered`
+- [ ] reserve `Hero/Killed` for actual death flow only
+- [ ] run one final observability smoke session after the remaining events are added
 
 ## Visibility, Fog, And Minimap Track
 

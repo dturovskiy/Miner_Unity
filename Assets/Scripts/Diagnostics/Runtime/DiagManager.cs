@@ -133,7 +133,7 @@ public sealed class DiagManager : MonoBehaviour
     {
         Emit("Info", "General", "SceneLoaded", $"Scene loaded: {scene.name}", this,
             ("scene", scene.name),
-            ("mode", mode));
+            ("mode", mode.ToString()));
     }
 
     private void OnApplicationQuitting()

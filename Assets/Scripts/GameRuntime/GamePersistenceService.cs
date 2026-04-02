@@ -6,20 +6,22 @@ using UnityEngine;
 namespace MinerUnity.Runtime
 {
     /// <summary>
-    /// Central persistence service for the new root save model.
-    /// Legacy world and fog files are only used as migration inputs.
+    /// Central persistence service for the primary save model.
+    /// `game_save.json` is the authoritative save for continue flow.
+    /// `world_grid.dat` remains the active bootstrap input for new games.
+    /// `fog_grid.dat` and `SaveGame.json` remain migration or cleanup inputs only.
     /// </summary>
     public static class GamePersistenceService
     {
         private const string SaveFileName = "game_save.json";
-        private const string LegacyWorldFileName = "world_grid.dat";
-        private const string LegacyFogFileName = "fog_grid.dat";
-        private const string LegacySceneSaveFileName = "SaveGame.json";
+        private const string BootstrapWorldFileName = "world_grid.dat";
+        private const string MigrationFogFileName = "fog_grid.dat";
+        private const string ObsoleteSceneSaveFileName = "SaveGame.json";
 
         public static string SaveFilePath => Path.Combine(Application.persistentDataPath, SaveFileName);
-        public static string LegacyWorldFilePath => Path.Combine(Application.persistentDataPath, LegacyWorldFileName);
-        public static string LegacyFogFilePath => Path.Combine(Application.persistentDataPath, LegacyFogFileName);
-        public static string LegacySceneSaveFilePath => Path.Combine(Application.persistentDataPath, LegacySceneSaveFileName);
+        public static string BootstrapWorldFilePath => Path.Combine(Application.persistentDataPath, BootstrapWorldFileName);
+        public static string MigrationFogFilePath => Path.Combine(Application.persistentDataPath, MigrationFogFileName);
+        public static string ObsoleteSceneSaveFilePath => Path.Combine(Application.persistentDataPath, ObsoleteSceneSaveFileName);
 
         public static bool HasSave()
         {
@@ -53,9 +55,9 @@ namespace MinerUnity.Runtime
         public static void ResetForNewGame()
         {
             bool deletedGameSave = DeleteIfExists(SaveFilePath);
-            bool deletedLegacyWorld = DeleteIfExists(LegacyWorldFilePath);
-            bool deletedLegacyFog = DeleteIfExists(LegacyFogFilePath);
-            bool deletedLegacySceneSave = DeleteIfExists(LegacySceneSaveFilePath);
+            bool deletedBootstrapWorld = DeleteIfExists(BootstrapWorldFilePath);
+            bool deletedMigrationFog = DeleteIfExists(MigrationFogFilePath);
+            bool deletedObsoleteSceneSave = DeleteIfExists(ObsoleteSceneSaveFilePath);
 
             Diag.Event(
                 "Save",
@@ -63,9 +65,9 @@ namespace MinerUnity.Runtime
                 "Persistence files were cleared for a new game start.",
                 null,
                 ("gameSaveDeleted", deletedGameSave),
-                ("legacyWorldDeleted", deletedLegacyWorld),
-                ("legacyFogDeleted", deletedLegacyFog),
-                ("legacySceneSaveDeleted", deletedLegacySceneSave),
+                ("bootstrapWorldDeleted", deletedBootstrapWorld),
+                ("migrationFogDeleted", deletedMigrationFog),
+                ("obsoleteSceneSaveDeleted", deletedObsoleteSceneSave),
                 ("savePath", SaveFilePath));
         }
 

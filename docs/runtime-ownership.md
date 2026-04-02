@@ -140,7 +140,7 @@ Current practical notes:
 
 1. `WorldGridService` is no longer a second mutable gameplay grid; it is a compatibility facade over `WorldRuntime`
 2. `ChunkManager` still coordinates view updates and save timing, but it no longer owns the world model
-3. the legacy raw files remain as migration input for now, not as the primary runtime truth
+3. the world bootstrap file remains part of the active new-game flow, while raw fog and scene-save files remain migration or cleanup inputs rather than primary runtime truth
 4. shared world-to-cell conversion now lives in `WorldCellCoordinates`, so hero-facing and terrain-facing cell math use one code path
 5. current fog reveal still lives inside `ChunkManager`, so visibility is not fully separated yet
 

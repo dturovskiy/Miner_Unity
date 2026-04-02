@@ -59,7 +59,7 @@ namespace MinerUnity.Terrain
 
         private Vector2Int lastHeroPos = new Vector2Int(-999, -999);
         private Vector2Int lastCameraPos = new Vector2Int(-999, -999);
-        private bool? lastFogInCaveState;
+        private string lastVisibilityRejectReason;
         private GameSaveData saveData;
         private Rigidbody2D heroRigidbody;
         private Vector3 defaultHeroSpawnPosition;
@@ -76,6 +76,7 @@ namespace MinerUnity.Terrain
             CacheDefaultHeroSpawnPosition();
 
             GameStartMode startMode = GameLaunchContext.ConsumePendingStartMode(out bool explicitStartModeRequest);
+            bool isNewGameStart = startMode == GameStartMode.NewGame;
             Diag.Event(
                 "Game",
                 "LaunchModeResolved",
@@ -85,7 +86,7 @@ namespace MinerUnity.Terrain
                 ("explicitRequest", explicitStartModeRequest),
                 ("fallbackMode", GameStartMode.Continue.ToString()));
 
-            if (startMode == GameStartMode.NewGame)
+            if (isNewGameStart)
             {
                 GamePersistenceService.ResetForNewGame();
                 saveData = null;
@@ -93,20 +94,45 @@ namespace MinerUnity.Terrain
 
             // 1. Ensure world is generated
             var generator = GetComponent<FastTerrainGenerator>();
+            bool generatedFreshWorld = false;
             if (generator != null)
             {
-                generator.GenerateIfMissing();
+                generatedFreshWorld = generator.GenerateIfMissing();
             }
 
             worldRuntime = new WorldRuntime(new WorldData());
-            bool loadedFromGameSave = TryLoadGameSave();
-            bool worldLoaded = loadedFromGameSave;
+            bool loadedFromGameSave = false;
+            if (isNewGameStart)
+            {
+                Diag.Event(
+                    "Load",
+                    "Skipped",
+                    "Primary game save load skipped because this launch mode requested a new game.",
+                    this,
+                    ("reason", "newGameStart"),
+                    ("path", GamePersistenceService.SaveFilePath),
+                    ("hasSave", false));
+            }
+            else
+            {
+                loadedFromGameSave = TryLoadGameSave();
+            }
 
-            string worldSourcePath = GamePersistenceService.SaveFilePath;
+            bool worldLoaded = loadedFromGameSave;
+            string worldSourcePath = loadedFromGameSave
+                ? GamePersistenceService.SaveFilePath
+                : GamePersistenceService.BootstrapWorldFilePath;
+            string worldSource = loadedFromGameSave
+                ? "gameSave"
+                : "bootstrapWorldFile";
+            string worldReason = loadedFromGameSave
+                ? "primarySave"
+                : isNewGameStart
+                    ? "newGameStart"
+                    : "migrationFallback";
             if (!loadedFromGameSave)
             {
-                // 2. Fallback to the legacy world file until migration is complete.
-                worldSourcePath = GamePersistenceService.LegacyWorldFilePath;
+                // 2. Use the raw world file either as a fresh-start bootstrap or a compatibility fallback.
                 worldLoaded = worldRuntime.LoadFromFile(worldSourcePath);
             }
 
@@ -118,11 +144,13 @@ namespace MinerUnity.Terrain
             Diag.Event(
                 "World",
                 "Loaded",
-                worldLoaded ? (loadedFromGameSave ? "World data loaded from game save." : "World data loaded from legacy file.") : "World data failed to load.",
+                BuildWorldLoadedMessage(worldLoaded, worldSource, worldReason),
                 this,
                 ("path", worldSourcePath),
                 ("success", worldLoaded),
-                ("source", loadedFromGameSave ? "gameSave" : "legacyWorldFile"),
+                ("source", worldSource),
+                ("reason", worldLoaded ? worldReason : "loadFailed"),
+                ("launchMode", startMode.ToString()),
                 ("width", worldData.Width),
                 ("height", worldData.Height));
 
@@ -131,23 +159,47 @@ namespace MinerUnity.Terrain
             fogPath = GamePersistenceService.SaveFilePath;
 
             bool fogLoaded = false;
+            string fogSource = "none";
+            string fogLoadPath = null;
+            string fogReason = "none";
+            bool fogLoadAttempted = false;
             if (loadedFromGameSave && saveData != null)
             {
                 fogGrid = GamePersistenceService.CreateFogCopy(saveData, worldData.Width * worldData.Height);
                 fogLoaded = true;
+                fogSource = "gameSave";
+                fogLoadPath = GamePersistenceService.SaveFilePath;
+                fogReason = "primarySave";
+                fogLoadAttempted = true;
+            }
+            else if (!isNewGameStart)
+            {
+                string migrationFogPath = GamePersistenceService.MigrationFogFilePath;
+                fogLoadPath = migrationFogPath;
+                fogLoadAttempted = true;
+                if (System.IO.File.Exists(migrationFogPath))
+                {
+                    byte[] migrationFog = System.IO.File.ReadAllBytes(migrationFogPath);
+                    if (migrationFog.Length == fogGrid.Length)
+                    {
+                        fogGrid = migrationFog;
+                        fogLoaded = true;
+                        fogSource = "migrationFogFile";
+                        fogReason = "migrationFallback";
+                    }
+                    else
+                    {
+                        fogReason = "migrationFogSizeMismatch";
+                    }
+                }
+                else
+                {
+                    fogReason = "missingMigrationFogFile";
+                }
             }
             else
             {
-                string legacyFogPath = GamePersistenceService.LegacyFogFilePath;
-                if (System.IO.File.Exists(legacyFogPath))
-                {
-                    byte[] legacyFog = System.IO.File.ReadAllBytes(legacyFogPath);
-                    if (legacyFog.Length == fogGrid.Length)
-                    {
-                        fogGrid = legacyFog;
-                        fogLoaded = true;
-                    }
-                }
+                fogReason = "newGameStart";
             }
 
             // Clear already explored fog at start setup
@@ -177,27 +229,45 @@ namespace MinerUnity.Terrain
             Diag.Event(
                 "Fog",
                 "Loaded",
-                fogLoaded ? (loadedFromGameSave ? "Fog data loaded from game save." : "Fog data loaded from legacy file.") : "Fog data file not found. Starting with hidden fog.",
+                BuildFogLoadedMessage(fogLoaded, fogSource, fogReason),
                 this,
-                ("path", fogPath),
+                ("path", fogLoadPath),
+                ("loadAttempted", fogLoadAttempted),
                 ("success", fogLoaded),
-                ("source", loadedFromGameSave ? "gameSave" : "legacyFogFile"),
+                ("source", fogSource),
+                ("reason", fogReason),
                 ("bytes", fogGrid != null ? fogGrid.Length : 0),
                 ("exploredCount", CountExploredFogCells()),
                 ("tilemapAssigned", hiddenAreaFog != null));
 
-            if (!loadedFromGameSave && (worldLoaded || fogLoaded))
+            if (isNewGameStart && worldLoaded)
+            {
+                Diag.Event(
+                    "Load",
+                    "BootstrapUsed",
+                    "New game bootstrapped runtime state from the active world bootstrap file.",
+                    this,
+                    ("worldSource", worldSource),
+                    ("fogSource", fogLoaded ? fogSource : "none"),
+                    ("savePath", GamePersistenceService.SaveFilePath),
+                    ("worldPath", worldSourcePath),
+                    ("fogPath", fogLoadPath),
+                    ("fogLoadAttempted", fogLoadAttempted),
+                    ("generatedFreshWorld", generatedFreshWorld));
+            }
+            else if (!loadedFromGameSave && (worldLoaded || fogLoaded))
             {
                 Diag.Event(
                     "Load",
                     "MigrationUsed",
-                    "Legacy persistence files were used as the runtime load source.",
+                    "Compatibility files were used as runtime migration inputs.",
                     this,
-                    ("worldSource", worldLoaded ? "legacyWorldFile" : "none"),
-                    ("fogSource", fogLoaded ? "legacyFogFile" : "none"),
+                    ("worldSource", worldLoaded ? worldSource : "none"),
+                    ("fogSource", fogLoaded ? fogSource : "none"),
                     ("savePath", GamePersistenceService.SaveFilePath),
-                    ("legacyWorldPath", GamePersistenceService.LegacyWorldFilePath),
-                    ("legacyFogPath", GamePersistenceService.LegacyFogFilePath));
+                    ("worldPath", worldSourcePath),
+                    ("fogPath", fogLoadPath),
+                    ("fogLoadAttempted", fogLoadAttempted));
             }
 
             if (!loadedFromGameSave && worldLoaded)
@@ -211,6 +281,43 @@ namespace MinerUnity.Terrain
             RefreshLastKnownSafeHeroPosition();
             SnapCameraToHeroImmediate();
             runtimeInitialized = true;
+        }
+
+        private static string BuildWorldLoadedMessage(bool success, string source, string reason = null)
+        {
+            if (!success)
+            {
+                return "World data failed to load.";
+            }
+
+            return source switch
+            {
+                "gameSave" => "World data restored from the primary game save.",
+                "bootstrapWorldFile" when reason == "newGameStart" => "World data bootstrapped from the active world bootstrap file.",
+                "bootstrapWorldFile" when reason == "migrationFallback" => "World data restored from the world bootstrap file as a compatibility fallback.",
+                _ => "World data loaded."
+            };
+        }
+
+        private static string BuildFogLoadedMessage(bool success, string source, string reason)
+        {
+            if (success)
+            {
+                return source switch
+                {
+                    "gameSave" => "Fog data restored from the primary game save.",
+                    "migrationFogFile" => "Fog data restored from the migration fog file.",
+                    _ => "Fog data loaded."
+                };
+            }
+
+            return reason switch
+            {
+                "newGameStart" => "New game starts with hidden fog, so no fog file is loaded.",
+                "missingMigrationFogFile" => "Migration fog file was not found. Starting with hidden fog.",
+                "migrationFogSizeMismatch" => "Migration fog data was ignored because its file size did not match the current world.",
+                _ => "Fog data was not loaded. Starting with hidden fog."
+            };
         }
 
         private void Update()
@@ -379,43 +486,47 @@ namespace MinerUnity.Terrain
         {
             if (hiddenAreaFog == null)
             {
-                Diag.Warning("Fog", "Skipped", "Fog reveal skipped: hiddenAreaFog is missing.", this,
-                    ("reason", "hiddenAreaFogMissing"),
-                    ("center", center));
+                RejectVisibilityUpdate(
+                    center,
+                    "hiddenAreaFogMissing",
+                    "Visibility update rejected because hiddenAreaFog is missing.",
+                    "Fog reveal skipped: hiddenAreaFog is missing.");
                 return;
             }
 
             if (hero == null)
             {
-                Diag.Warning("Fog", "Skipped", "Fog reveal skipped: hero is missing.", this,
-                    ("reason", "heroMissing"),
-                    ("center", center));
+                RejectVisibilityUpdate(
+                    center,
+                    "heroMissing",
+                    "Visibility update rejected because hero is missing.",
+                    "Fog reveal skipped: hero is missing.");
                 return;
             }
 
             if (!worldData.IsValidCoordinate(center.x, center.y))
             {
-                Diag.Warning("Fog", "Skipped", "Fog reveal skipped: hero cell is outside world bounds.", this,
-                    ("reason", "centerOutOfBounds"),
-                    ("center", center));
+                RejectVisibilityUpdate(
+                    center,
+                    "centerOutOfBounds",
+                    "Visibility update rejected because the hero cell is outside world bounds.",
+                    "Fog reveal skipped: hero cell is outside world bounds.");
                 return;
             }
 
             bool inCave = worldRuntime != null && worldRuntime.IsInsideMiningArea(center.x, center.y);
             if (!inCave)
             {
-                if (lastFogInCaveState != false)
-                {
-                    Diag.Event("Fog", "Skipped", "Fog reveal skipped: hero is outside cave.", this,
-                        ("reason", "outsideCave"),
-                        ("center", center));
-                }
-
-                lastFogInCaveState = false;
+                RejectVisibilityUpdate(
+                    center,
+                    "outsideCave",
+                    "Visibility update rejected because hero is outside the mining area.",
+                    "Fog reveal skipped: hero is outside cave.");
                 return;
             }
 
-            lastFogInCaveState = true;
+            bool resumedFromRejected = !string.IsNullOrEmpty(lastVisibilityRejectReason);
+            lastVisibilityRejectReason = null;
 
             bool fogChanged = false;
             int revealedCount = 0;
@@ -450,7 +561,21 @@ namespace MinerUnity.Terrain
                 {
                     fogDirty = true;
                 }
+            }
 
+            int discoveredCount = CountExploredFogCells();
+
+            if (fogChanged || resumedFromRejected)
+            {
+                EmitVisibilityUpdated(
+                    center,
+                    revealedCount,
+                    discoveredCount,
+                    fogChanged ? "fogRevealed" : "visibilityResumed");
+            }
+
+            if (fogChanged)
+            {
                 Diag.Event(
                     "Fog",
                     "Revealed",
@@ -458,11 +583,65 @@ namespace MinerUnity.Terrain
                     this,
                     ("center", center),
                     ("revealedCount", revealedCount),
-                    ("radiusX", fogRevealRadiusX),
+                    ("radiusLeftRight", fogRevealRadiusX),
                     ("radiusUp", fogRevealRadiusUp),
                     ("radiusDown", fogRevealRadiusDown),
+                    ("discoveredCount", discoveredCount),
                     ("fogDirty", fogDirty));
             }
+        }
+
+        private void RejectVisibilityUpdate(Vector2Int center, string reason, string visibilityMessage, string fogMessage)
+        {
+            if (lastVisibilityRejectReason == reason)
+            {
+                return;
+            }
+
+            lastVisibilityRejectReason = reason;
+            int discoveredCount = CountExploredFogCells();
+
+            Diag.Warning(
+                "Visibility",
+                "RuleRejected",
+                visibilityMessage,
+                this,
+                ("center", center),
+                ("reason", reason),
+                ("radiusLeftRight", fogRevealRadiusX),
+                ("radiusUp", fogRevealRadiusUp),
+                ("radiusDown", fogRevealRadiusDown),
+                ("lanternLevel", 0),
+                ("discoveredCount", discoveredCount));
+
+            Diag.Warning(
+                "Fog",
+                "Skipped",
+                fogMessage,
+                this,
+                ("center", center),
+                ("reason", reason),
+                ("discoveredCount", discoveredCount));
+        }
+
+        private void EmitVisibilityUpdated(Vector2Int center, int revealedCount, int discoveredCount, string reason)
+        {
+            Diag.Event(
+                "Visibility",
+                "Updated",
+                revealedCount > 0
+                    ? "Visibility state updated and revealed new fog cells."
+                    : "Visibility state updated without new fog changes.",
+                this,
+                ("center", center),
+                ("reason", reason),
+                ("revealedCount", revealedCount),
+                ("radiusLeftRight", fogRevealRadiusX),
+                ("radiusUp", fogRevealRadiusUp),
+                ("radiusDown", fogRevealRadiusDown),
+                ("lanternLevel", 0),
+                ("discoveredCount", discoveredCount),
+                ("fogDirty", fogDirty));
         }
 
         private Vector2Int ResolveHeroVisibilityCell()
@@ -699,9 +878,116 @@ namespace MinerUnity.Terrain
                     ("from", result.From),
                     ("to", result.To));
 
+                EmitHeroStoneHazardHooks(result);
+
                 SaveWorldData();
                 TryScheduleStoneAfterSupportLoss(result.From.x, result.From.y + 1);
             }
+        }
+
+        private void EmitHeroStoneHazardHooks(StoneFallResult result)
+        {
+            if (!TryGetHeroHazardCellBounds(out Vector2Int minCell, out Vector2Int maxCell))
+            {
+                return;
+            }
+
+            int pathMinY = Mathf.Min(result.From.y, result.To.y);
+            int pathMaxY = Mathf.Max(result.From.y, result.To.y);
+            if (result.From.x < minCell.x || result.From.x > maxCell.x || maxCell.y < pathMinY || minCell.y > pathMaxY)
+            {
+                return;
+            }
+
+            int impactY = Mathf.Min(maxCell.y, pathMaxY);
+            if (impactY < pathMinY)
+            {
+                impactY = pathMinY;
+            }
+
+            Vector2Int impactCell = new Vector2Int(result.From.x, impactY);
+            Vector2Int heroCell = ResolveHeroVisibilityCell();
+            int fallDistance = Mathf.Abs(result.From.y - result.To.y);
+
+            Diag.Event(
+                "Hero",
+                "HazardHit",
+                "Hero hazard hook fired for a falling stone impact.",
+                hero,
+                ("hazard", "stoneFall"),
+                ("impactCell", impactCell),
+                ("heroCell", heroCell),
+                ("heroMinCell", minCell),
+                ("heroMaxCell", maxCell),
+                ("stoneFrom", result.From),
+                ("stoneTo", result.To),
+                ("fallDistance", fallDistance));
+
+            Diag.Event(
+                "Hero",
+                "KillHookTriggered",
+                "Hero kill hook triggered for a falling stone hazard. No death flow is implemented yet.",
+                hero,
+                ("hazard", "stoneFall"),
+                ("impactCell", impactCell),
+                ("heroCell", heroCell),
+                ("stoneFrom", result.From),
+                ("stoneTo", result.To),
+                ("fallDistance", fallDistance),
+                ("implemented", false),
+                ("futureEvent", "Hero/Killed"));
+        }
+
+        private bool TryGetHeroHazardCellBounds(out Vector2Int minCell, out Vector2Int maxCell)
+        {
+            minCell = Vector2Int.zero;
+            maxCell = Vector2Int.zero;
+
+            if (hero == null)
+            {
+                return false;
+            }
+
+            HeroCollision heroCollision = hero.GetComponent<HeroCollision>();
+            if (heroCollision != null && heroCollision.IsWorldReady() && heroCollision.Capsule != null)
+            {
+                Bounds bounds = heroCollision.Capsule.bounds;
+                Vector2 minPoint = new Vector2(bounds.min.x + 0.05f, bounds.min.y + 0.05f);
+                Vector2 maxPoint = new Vector2(bounds.max.x - 0.05f, bounds.max.y - 0.05f);
+                minCell = heroCollision.WorldToCell(minPoint);
+                maxCell = heroCollision.WorldToCell(maxPoint);
+
+                if (minCell.x > maxCell.x)
+                {
+                    int swap = minCell.x;
+                    minCell.x = maxCell.x;
+                    maxCell.x = swap;
+                }
+
+                if (minCell.y > maxCell.y)
+                {
+                    int swap = minCell.y;
+                    minCell.y = maxCell.y;
+                    maxCell.y = swap;
+                }
+
+                return true;
+            }
+
+            if (worldData == null)
+            {
+                return false;
+            }
+
+            Vector2Int fallbackCell = WorldToCell(hero.position);
+            if (!worldData.IsValidCoordinate(fallbackCell.x, fallbackCell.y))
+            {
+                return false;
+            }
+
+            minCell = fallbackCell;
+            maxCell = fallbackCell;
+            return true;
         }
 
         private void MoveSpawnedStoneView(Vector2Int from, Vector2Int to)
@@ -972,8 +1258,8 @@ namespace MinerUnity.Terrain
             {
                 Diag.Event(
                     "Hero",
-                    "AdjustedSavedPosition",
-                    "Saved hero position was adjusted to the nearest safe cell.",
+                    "AdjustedLoadPosition",
+                    "Loaded hero position was adjusted to the nearest safe cell.",
                     this,
                     ("savedPosition", candidate),
                     ("adjustedPosition", adjustedPosition),

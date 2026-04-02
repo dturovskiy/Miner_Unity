@@ -20,14 +20,14 @@ namespace MinerUnity.Terrain
         private const int DUNGEON_HEIGHT = 250;
         private const int MAX_TUNNEL_X = 22; // MAX_X_OFFSET
 
-        public void GenerateIfMissing()
+        public bool GenerateIfMissing()
         {
-            string path = GamePersistenceService.LegacyWorldFilePath;
+            string path = GamePersistenceService.BootstrapWorldFilePath;
             
             if (File.Exists(path))
             {
                 Debug.Log($"FastTerrainGenerator: World file already exists at {path}. Skipping generation.");
-                return;
+                return false;
             }
 
             Debug.Log("FastTerrainGenerator: Starting optimized world generation...");
@@ -50,9 +50,10 @@ namespace MinerUnity.Terrain
                 }
             }
             
-            // Save the raw byte array
+            // Save the bootstrap world byte array.
             world.SaveToFile(path);
             Debug.Log($"FastTerrainGenerator: Generation complete! 25KB map saved to {path}.");
+            return true;
         }
 
         private TileID DetermineTileID(int x, int y)

@@ -55,6 +55,15 @@ Not started yet:
 - [ ] observability hardening pass before Stage 4
 - [ ] Stage 4 save and UI reintegration
 
+Observability progress before Stage 4:
+
+1. structured save and load events are now in place
+2. scene transition request and preparation events are now in place
+3. world runtime mutation rejection events are now in place
+4. gameplay `Hero/LadderBlocked` is now in place
+5. the remaining observability tail is explicit:
+   `Scene/TransitionCompleted`, visibility rule events, and hazard or death hook events
+
 ## Verified Baseline
 
 These items are treated as verified facts, not guesses:
@@ -454,7 +463,7 @@ Stage 3 close-out:
 
 Status:
 
-`Blocked by Stages 0 through 3`
+`Ready to start after the remaining observability tail is closed`
 
 Goals:
 

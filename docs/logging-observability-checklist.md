@@ -54,9 +54,12 @@
 5. `Load/Requested`
 6. `Load/Succeeded`
 7. `Load/Failed`
-8. `Load/MigrationUsed`
-9. `Hero/AdjustedSavePosition`
-10. `Hero/InvalidSavedPosition`
+8. `Load/BootstrapUsed`
+9. `Load/MigrationUsed`
+10. `Hero/AdjustedLoadPosition`
+11. `Hero/AdjustedSavePosition`
+12. `Hero/InvalidSavedPosition`
+13. `Hero/SkippedInvalidSavePosition`
 
 Важливі поля:
 
@@ -220,7 +223,9 @@
 2. `Stone/LandingResolved`
 3. `Stone/FallExecuted`
 4. `Stone/StartCheckRejected`
-5. `Hero/HazardHit` або майбутній `Hero/Killed`
+5. `Hero/HazardHit`
+6. `Hero/KillHookTriggered`
+7. майбутній `Hero/Killed`
 
 Навіщо:
 
@@ -253,15 +258,20 @@
 4. fog basic reveal flow
 5. ladder enter and exit
 6. ladder placement через UI
+7. save and load structured events
+8. scene transition request, start, and completion events
+9. visibility update and reject events
+10. world runtime mutation and mining rejection events
+11. gameplay `Hero/LadderBlocked`
+12. stone hazard hook events
 
 ## Сліпі Зони На Зараз
 
 ### Критичні
 
-1. `GamePersistenceService` майже без `Diag`
-2. `SceneLoader` майже без `Diag`
-3. `WorldRuntime` не логить власні rule rejects і mutation decisions
-4. `HeroLadder` не має повноцінного `Hero/LadderBlocked`
+1. actual death or game-over flow ще не має фінального semantic event `Hero/Killed`
+2. hazard hook треба лишати явно відокремленим як `Hero/KillHookTriggered`, поки смерть героя не реалізована
+3. `NewGame` bootstrap і legacy migration треба й далі тримати розділеними в `Load/*`, `World/Loaded`, і `Fog/Loaded`
 
 ### Другорядні
 
@@ -274,11 +284,9 @@
 
 Перед `Stage 4` я хочу закрити такий мінімум:
 
-1. повне save/load logging
-2. scene transition logging
-3. world runtime rejection logging
-4. gameplay `LadderBlocked`
-5. явні `Fog/Visibility` rule logs на майбутній visibility-track
+1. явний `Scene/TransitionCompleted`
+2. явні `Fog/Visibility` rule logs на майбутній visibility-track
+3. hazard hooks `Hero/HazardHit` і `Hero/KillHookTriggered` для майбутнього stone death flow
 
 ## Чого Я Не Хочу В Логах
 
@@ -293,11 +301,9 @@
 
 Ось порядок, який дасть найбільше користі:
 
-1. `GamePersistenceService`
-2. `SceneLoader`
-3. `WorldRuntime`
-4. `HeroLadder`
-5. `ChunkManager` visibility/fog rules
+1. `SceneLoader`
+2. visibility service or current fog owner
+3. stone or hero hazard layer
 
 ## Exit Criteria Для Logging Pass
 
@@ -307,4 +313,6 @@ Logging pass можна вважати завершеним, коли:
 2. scene transitions видно від початку до завершення
 3. world runtime пояснює основні mutation rejects
 4. ladder має не тільки `Entered/Exited`, а й `Blocked`
-5. остання чиста smoke session читається без “сліпих плям” у core flow
+5. visibility decisions мають окремі правила і причини в логах
+6. hazard/death flow має свої майбутні hook events
+7. остання чиста smoke session читається без “сліпих плям” у core flow

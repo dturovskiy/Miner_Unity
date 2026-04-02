@@ -23,7 +23,7 @@
 - [x] Stage 0 completed
 - [x] Stage 1 completed
 - [x] Stage 2 completed
-- [ ] Stage 3 completed
+- [x] Stage 3 completed
 - [ ] Stage 4 completed
 
 ## Stage 0 - Cleanup And Safety Rails
@@ -139,17 +139,24 @@
 
 ### Behavior
 
-- [ ] vertical ladder movement is deterministic
-- [ ] side exit is deterministic
-- [ ] top exit is deterministic
-- [ ] bottom exit is deterministic
-- [ ] ladder logic does not break ground logic
+- [x] vertical ladder movement is deterministic
+- [x] side exit is deterministic
+- [x] top exit is deterministic
+- [x] bottom exit is deterministic
+- [x] ladder logic does not break ground logic
 
 ### Logging
 
-- [ ] `LadderEntered`
-- [ ] `LadderExited`
-- [ ] `LadderBlocked`
+- [x] `LadderEntered`
+- [x] `LadderExited`
+- [-] `LadderBlocked` is deferred for now; recent verified sessions did not need a gameplay ladder-block event, while placement rejections are already covered by `PlaceLadderBlocked`
+
+### Stage 3 Close-Out
+
+- [x] latest verified session logs show deterministic ladder climb, top exit, bottom exit, and side interaction with no `Unity/Error` or `Unity/Warning`
+- [x] upward mining now coexists correctly with ladder usage when the hero is inside the ladder column and when standing on the top of the ladder
+- [x] recent sessions show matched `LadderEntered` and `LadderExited` counts with no re-entry spam loop
+- [-] monitor occasional `DigBlocked reason=outsideMiningArea` when the hero steps into open cells beyond the cave edge after digging; current behavior is not blocking Stage 3
 
 ## Stage 4 - Save, UI, And Secondary Systems
 

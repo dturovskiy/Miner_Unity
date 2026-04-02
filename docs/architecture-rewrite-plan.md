@@ -49,7 +49,7 @@ Not started yet:
 - [ ] single world authority implementation finished
 - [x] Stage 1 ground core refactor
 - [x] Stage 2 mining rewrite completed
-- [ ] Stage 3 ladder rewrite
+- [x] Stage 3 ladder rewrite
 - [ ] Stage 4 save and UI reintegration
 
 ## Verified Baseline
@@ -412,7 +412,7 @@ Legacy references that informed the redesign:
 
 Status:
 
-`Started`
+`Completed`
 
 Goals:
 
@@ -429,16 +429,23 @@ Work packages:
 
 Current implementation status:
 
-1. `HeroLadder` is introduced and owns explicit ladder mode over the existing hero runtime
-2. ladder entry is driven by joystick intent plus runtime cell queries, while `HeroGroundCore` and `HeroMining` now back off when ladder mode claims the input
-3. current ladder placement testing now routes through the existing HUD button and places a ladder only into the hero current cell
-4. behavior and logs still need play-mode verification before Stage 3 can be marked complete
+1. `HeroLadder` now owns ladder support, active climb, and transition arbitration without reintroducing ground or mining regressions
+2. ladder entry is driven by joystick intent plus runtime cell queries, while `HeroGroundCore` and `HeroMining` yield only when ladder actually owns the vertical action
+3. ladder placement testing routes through the existing HUD button and places a ladder only into the hero current cell
+4. recent verified logs show deterministic top exit, bottom exit, and side interaction, with upward mining working both inside the ladder column and while standing on the ladder top
+5. recent verified ladder sessions show matched `LadderEntered` and `LadderExited` counts, with no warning or error spam and no re-entry loop
 
 Exit criteria:
 
 1. ladder mode is explicit
 2. ladder transitions are deterministic
 3. ladder logic does not break ground logic
+
+Stage 3 close-out:
+
+1. latest verified session `session-20260402-002024-9706c6` boots cleanly and contains no `Unity/Error` or `Unity/Warning`
+2. ladder traversal now coexists with ground movement and mining instead of fighting for ownership of the same input
+3. the remaining note is not a ladder blocker: `DigBlocked reason=outsideMiningArea` can still appear when the hero steps into open air beyond the cave edge after digging, so mining-area rules remain a monitored topic rather than a Stage 3 stop-sign
 
 ## Stage 4 - Save, UI, And Secondary Systems
 
